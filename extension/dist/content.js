@@ -1,0 +1,1 @@
+(()=>{"use strict";console.log("BuyWise content script loaded")})();
