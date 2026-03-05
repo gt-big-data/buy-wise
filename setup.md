@@ -14,7 +14,7 @@
 ```
 ┌─────────────────────────────────────────────────┐
 │           CHROME EXTENSION (React)              │
-│  - Detects Amazon product pages (/dp/[ASIN])   │
+│  - Detects Amazon product pages (/dp/[ASIN])    │
 │  - Calls backend API with ASIN                  │
 │  - Renders prediction overlay on page           │
 └────────────────────┬────────────────────────────┘
@@ -38,12 +38,12 @@
                                  │
                     ┌────────────┴────────────┐
                     ↓                         ↓
-            ┌──────────────┐         ┌──────────────┐
-            │ KEEPA API    │         │  ML MODELS   │
-            │ - Historical │         │  - XGBoost   │
-            │   price data │         │  - Feature   │
+            ┌──────────────┐         ┌───────────────┐
+            │   KEEPA API  │         │   ML MODELS   │
+            │ - Historical │         │  - XGBoost    │
+            │   price data │         │  - Feature    │
             │ - Daily sync │         │    engineering│
-            └──────────────┘         └──────────────┘
+            └──────────────┘         └───────────────┘
 ```
 
 ---
