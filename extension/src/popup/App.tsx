@@ -1,31 +1,24 @@
 import React, { useEffect, useState } from "react";
-import BuyWisePanel from "../components/BuyWisePanel";
-import LoadingState from "../components/LoadingState";
-import { BuyWiseData } from "../types";
-import { getMockBuyWiseData } from "../content/mockData";
 import {
   extractASINFromUrl,
   isAmazonProductPageUrl
 } from "../content/amazon";
-import "../content/styles.css";
 
 type PopupState =
   | { status: "loading" }
-  | { status: "product"; data: BuyWiseData }
+  | { status: "product-opened"; asin: string }
   | { status: "non-product" }
   | { status: "error"; message: string };
 
 const popupShellStyle: React.CSSProperties = {
-  width: 460,
-  minHeight: 560,
-  maxHeight: 700,
-  overflowY: "auto",
+  width: 360,
+  minHeight: 260,
   background: "#f7f6f4",
   fontFamily: "Arial, Helvetica, sans-serif",
   color: "#1d1d1d"
 };
 
-const nonProductWrapStyle: React.CSSProperties = {
+const wrapStyle: React.CSSProperties = {
   padding: 20
 };
 
@@ -89,6 +82,7 @@ const App: React.FC = () => {
 
         const activeTab = tabs[0];
         const url = activeTab?.url;
+        const tabId = activeTab?.id;
 
         if (!url || !isAmazonProductPageUrl(url)) {
           setPopupState({ status: "non-product" });
@@ -96,6 +90,7 @@ const App: React.FC = () => {
         }
 
         const asin = extractASINFromUrl(url);
+
         if (!asin) {
           setPopupState({
             status: "error",
@@ -104,8 +99,30 @@ const App: React.FC = () => {
           return;
         }
 
-        const data = getMockBuyWiseData(asin);
-        setPopupState({ status: "product", data });
+        if (typeof tabId !== "number") {
+          setPopupState({
+            status: "error",
+            message: "BuyWise couldn’t access the current tab."
+          });
+          return;
+        }
+
+        try {
+          await chrome.tabs.sendMessage(tabId, {
+            type: "BUYWISE_OPEN_PANEL"
+          });
+
+          setPopupState({
+            status: "product-opened",
+            asin
+          });
+        } catch (error) {
+          console.error("Failed to reopen BuyWise panel", error);
+          setPopupState({
+            status: "error",
+            message: "BuyWise couldn’t reopen the recommendation on this page."
+          });
+        }
       } catch (error) {
         console.error("BuyWise popup failed to load", error);
         setPopupState({
@@ -121,48 +138,35 @@ const App: React.FC = () => {
   if (popupState.status === "loading") {
     return (
       <div style={popupShellStyle}>
-        <div style={{ padding: 16 }}>
-          <LoadingState />
+        <div style={wrapStyle}>
+          <div style={titleStyle}>BuyWise</div>
+          <div style={cardStyle}>
+            <div style={badgeStyle}>Loading...</div>
+            <p style={mutedStyle}>Checking the current page.</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (popupState.status === "product") {
+  if (popupState.status === "product-opened") {
     return (
       <div style={popupShellStyle}>
-        <div
-          style={{
-            padding: 14
-          }}
-        >
-          <div
-            style={{
-              background: "#f7f6f4",
-              borderRadius: 16
-            }}
-          >
-            <BuyWisePanel
-              data={popupState.data}
-              onActionClick={() => {
-                console.log("BuyWise popup action clicked", {
-                  asin: popupState.data.asin,
-                  recommendation: popupState.data.recommendation
-                });
+        <div style={wrapStyle}>
+          <div style={titleStyle}>BuyWise</div>
+          <div style={cardStyle}>
+            <div style={badgeStyle}>Recommendation opened</div>
+            <p style={mutedStyle}>
+              The full BuyWise recommendation, graph, and explanation have been opened
+              in the top-right corner of this product page.
+            </p>
 
-                chrome.storage.local.set({
-                  lastBuyWiseAction: {
-                    asin: popupState.data.asin,
-                    recommendation: popupState.data.recommendation,
-                    timestamp: new Date().toISOString(),
-                    source: "popup"
-                  }
-                });
-              }}
-              showCloseButton={false}
-              title="BuyWise"
-              embedded={true}
-            />
+            <div style={helperBoxStyle}>
+              <div style={helperTitleStyle}>Detected product</div>
+              <p style={{ ...mutedStyle, marginBottom: 0 }}>
+                ASIN: {popupState.asin}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -172,7 +176,7 @@ const App: React.FC = () => {
   if (popupState.status === "error") {
     return (
       <div style={popupShellStyle}>
-        <div style={nonProductWrapStyle}>
+        <div style={wrapStyle}>
           <div style={titleStyle}>BuyWise</div>
           <div style={cardStyle}>
             <div style={badgeStyle}>Couldn’t load recommendation</div>
@@ -185,7 +189,7 @@ const App: React.FC = () => {
 
   return (
     <div style={popupShellStyle}>
-      <div style={nonProductWrapStyle}>
+      <div style={wrapStyle}>
         <div style={titleStyle}>BuyWise</div>
 
         <div style={cardStyle}>
