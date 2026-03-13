@@ -4,13 +4,14 @@
   "version": "1.0.0",
   "description": "Smart shopping assistant",
   "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://*.amazon.com/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "BuyWise"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["https://*.amazon.com/*"],
       "js": ["content.js"]
     }
   ],
