@@ -10,7 +10,7 @@ type BuyWisePanelProps = {
   onActionClick: () => void;
   showCloseButton?: boolean;
   title?: string;
-  embedded?: boolean;
+  floating?: boolean;
 };
 
 const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
@@ -19,11 +19,11 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
   onActionClick,
   showCloseButton = false,
   title = "BuyWise",
-  embedded = true
+  floating = false
 }) => {
   return (
-    <div className={embedded ? "buywise-embedded-shell" : "buywise-overlay"}>
-      <div className={embedded ? "buywise-embedded-modal" : "buywise-modal"}>
+    <div className={floating ? "buywise-floating-shell" : "buywise-embedded-shell"}>
+      <div className={floating ? "buywise-floating-modal" : "buywise-embedded-modal"}>
         {showCloseButton && onClose ? (
           <button
             className="buywise-close-button"
