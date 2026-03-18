@@ -1,1 +1,159 @@
-# db/connection.py - Database connection and session setup
+import os
+from dotenv import load_dotenv
+import mysql.connector
+from mysql.connector import pooling
+
+load_dotenv()
+
+dbconfig = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "database": os.getenv("DB_NAME", "buywise")
+}
+
+
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name="mypool",
+    pool_size=5,
+    **dbconfig
+)
+
+def get_connection():
+    return connection_pool.get_connection()
+
+def get_product(asin):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+            SELECT * From products WHERE asin = %s
+
+    """
+    cursor.execute(query, (asin,)) 
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return result
+
+def insert_product(asin, title, brand, category):
+    conn = None
+    cursor = None
+
+    
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+        INSERT INTO products (asin, title, brand, category)
+        VALUES (%s, %s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+                title = VALUES(title),
+                brand = VALUES(brand),
+                category = VALUES(category)
+
+        """
+
+        cursor.execute(query, (asin, title, brand, category))
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+
+
+def insert_price(product_id, price, availability=True, deal_flag=False):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = """
+            INSERT INTO prices (product_id, price, timestamp, availability, deal_flag)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (product_id, price, datetime.now(), availability, deal_flag))
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def get_price_history(product_id, limit=100):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT * 
+        FROM prices 
+        WHERE product_id = %s
+        ORDER BY timestamp DESC
+        Limit s
+    """
+
+    cursor.execute(query,(product_id,limit))
+    results = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return results
+
+def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            INSERT INTO predictions (
+                product_id,
+                pred_7d,
+                pred_14d,
+                pred_30d,
+                recommendation,
+                confidence_score
+            )
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+
+        values = (product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence)
+
+        cursor.execute(query, values)
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def get_latest_prediction(product_id):
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT *
+        FROM predictions
+        WHERE product_id = %s
+        ORDER BY created_at DESC
+        LIMIT 1
+    """
+    cursor.execute(query, (product_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return result
