@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
+
 #buywise-root {
   all: initial;
 }
@@ -5,7 +7,7 @@
 #buywise-root,
 #buywise-root * {
   box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", "DM Sans", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .buywise-floating-shell {
@@ -23,9 +25,9 @@
   position: relative;
   width: 100%;
   background: #f7f6f4;
-  border-radius: 16px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
-  padding: 18px 18px 20px;
+  border-radius: 18px;
+  box-shadow: 0 22px 56px rgba(15, 23, 15, 0.18);
+  padding: 20px;
   color: #1d1d1d;
   border: 1px solid #e7e1d5;
 }
@@ -38,8 +40,8 @@
   position: relative;
   width: 100%;
   background: #f7f6f4;
-  border-radius: 14px;
-  padding: 16px 16px 18px;
+  border-radius: 16px;
+  padding: 20px;
   color: #1d1d1d;
 }
 
@@ -58,36 +60,48 @@
 .buywise-header {
   display: flex;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .buywise-logo {
   color: #1a1a1a;
   font-size: 28px;
   font-weight: 900;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.03em;
 }
 
 .buywise-logo-no-underline {
   text-decoration: none;
 }
 
+.buywise-animate-in-up {
+  animation: buywise-fade-up 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .buywise-banner {
   display: grid;
-  grid-template-columns: 145px 1fr;
-  gap: 16px;
-  background: #efdf93;
-  border-radius: 14px;
-  padding: 18px 18px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+  grid-template-columns: 150px 1fr;
+  gap: 18px;
+  border-radius: 18px;
+  padding: 18px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
   align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.buywise-banner--wait {
+  background: linear-gradient(135deg, #f4e9b2 0%, #e8d68f 100%);
+}
+
+.buywise-banner--buy {
+  background: linear-gradient(135deg, #d9f0dd 0%, #bddfbf 100%);
 }
 
 .buywise-banner-left {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
 }
 
 .buywise-recommendation-word {
@@ -95,23 +109,67 @@
   line-height: 1;
   font-weight: 900;
   color: #1d6b25;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.04em;
+  transform-origin: left center;
+  animation: buywise-pop-in 620ms cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.buywise-banner--wait .buywise-recommendation-word {
+  color: #7b5b00;
+}
+
+.buywise-banner--buy .buywise-recommendation-word {
+  color: #155e33;
 }
 
 .buywise-action-button {
   border: none;
-  background: #3f912f;
-  color: #10230e;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 3px 8px rgba(31, 94, 34, 0.25);
+  box-shadow: 0 8px 20px rgba(31, 94, 34, 0.18);
+  transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease, opacity 120ms ease;
 }
 
-.buywise-action-button:hover {
-  filter: brightness(0.98);
+.buywise-action-button--wait {
+  background: #7f9d34;
+  color: #162103;
+}
+
+.buywise-action-button--buy {
+  background: #1f7a45;
+  color: #f4fff7;
+}
+
+.buywise-action-button:hover:not(:disabled) {
+  filter: brightness(1.03);
+  box-shadow: 0 12px 24px rgba(31, 94, 34, 0.2);
+}
+
+.buywise-action-button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.buywise-action-button:disabled {
+  cursor: default;
+  opacity: 0.78;
+}
+
+.buywise-action-button__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.buywise-button-loader {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: buywise-spin 800ms linear infinite;
 }
 
 .buywise-banner-right {
@@ -120,29 +178,138 @@
 }
 
 .buywise-banner-copy {
-  font-size: 24px;
-  line-height: 1.15;
-  font-weight: 800;
-  color: #161616;
-  max-width: 220px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.buywise-emphasis {
-  color: #1d8e33;
-  text-decoration: underline;
+.buywise-banner-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.48);
+}
+
+.buywise-banner-headline {
+  font-size: 24px;
+  line-height: 1.14;
+  font-weight: 800;
+  color: #171717;
+  letter-spacing: -0.04em;
+}
+
+.buywise-banner-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.buywise-confidence-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 138px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(17, 24, 17, 0.08);
+}
+
+.buywise-confidence-ring {
+  width: 44px;
+  height: 44px;
+  transform: rotate(-90deg);
+}
+
+.buywise-confidence-ring__track,
+.buywise-confidence-ring__progress {
+  fill: none;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  path-length: 100;
+}
+
+.buywise-confidence-ring__track {
+  stroke: rgba(23, 23, 23, 0.12);
+}
+
+.buywise-confidence-ring__progress {
+  stroke: #1f7a45;
+  animation: buywise-draw-ring 900ms ease forwards;
+}
+
+.buywise-banner--wait .buywise-confidence-ring__progress {
+  stroke: #8a6a11;
+}
+
+.buywise-confidence-ring__label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.buywise-confidence-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.buywise-confidence-caption,
+.buywise-savings-pill__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #596058;
+}
+
+.buywise-savings-pill {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 128px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.48);
+  border: 1px solid rgba(17, 24, 17, 0.08);
+}
+
+.buywise-savings-pill__value {
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 800;
+  color: #111827;
 }
 
 .buywise-info-row {
-  margin-top: 14px;
+  margin-top: 16px;
+  border: 1px solid #e5e6df;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  overflow: hidden;
+}
+
+.buywise-info-row--expanded {
+  box-shadow: 0 8px 24px rgba(22, 29, 22, 0.06);
+}
+
+.buywise-info-toggle {
+  width: 100%;
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
 }
 
 .buywise-info-icon {
   flex: 0 0 auto;
-  width: 19px;
-  height: 19px;
+  width: 22px;
+  height: 22px;
   border-radius: 999px;
   background: #4f8b46;
   color: white;
@@ -151,37 +318,112 @@
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  margin-top: 2px;
 }
 
 .buywise-info-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
+  min-width: 0;
 }
 
 .buywise-info-title {
   font-size: 14px;
   font-weight: 700;
-  color: #4d6a47;
+  color: #1f2937;
+}
+
+.buywise-info-preview {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #5b6458;
+}
+
+.buywise-info-chevron {
+  margin-left: auto;
+  color: #5b6458;
+  font-size: 16px;
+  transition: transform 180ms ease;
+}
+
+.buywise-info-row--expanded .buywise-info-chevron {
+  transform: rotate(180deg);
+}
+
+.buywise-info-panel {
+  padding: 0 16px 16px 50px;
 }
 
 .buywise-info-text {
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.55;
   color: #434343;
+  animation: buywise-fade-up 220ms ease;
 }
 
 .buywise-chart-card {
   margin-top: 20px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e4e7de;
+}
+
+.buywise-chart-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
 }
 
 .buywise-section-title {
   font-size: 16px;
   font-weight: 800;
-  color: #5a5a5a;
-  text-decoration: underline;
-  margin-bottom: 10px;
+  color: #253125;
+  margin-bottom: 4px;
+  letter-spacing: -0.03em;
+}
+
+.buywise-section-subtitle {
+  font-size: 12px;
+  color: #647062;
+  line-height: 1.45;
+}
+
+.buywise-chart-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.buywise-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  background: #eef1ea;
+  border: 1px solid #dbe2d7;
+  border-radius: 999px;
+  gap: 4px;
+}
+
+.buywise-segmented-control__button {
+  border: none;
+  background: transparent;
+  color: #5f6a5e;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.buywise-segmented-control__button.is-active {
+  background: #ffffff;
+  color: #1f7a45;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .buywise-chart-wrap {
@@ -191,12 +433,12 @@
 }
 
 .buywise-chart-footer {
-  margin-top: 2px;
+  margin-top: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  color: #666;
+  color: #667164;
   font-size: 11px;
 }
 
@@ -214,7 +456,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: #8d938c;
+  background: #c2ccc0;
 }
 
 .buywise-chart-timeline-dot {
@@ -229,7 +471,7 @@
   position: absolute;
   top: 12px;
   font-size: 11px;
-  color: #666;
+  color: #667164;
   background: #f7f6f4;
   padding: 0 6px;
 }
@@ -237,21 +479,235 @@
 .buywise-tooltip {
   background: white;
   border: 1px solid #d0d7cf;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
 .buywise-tooltip-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #1a1a1a;
   margin-bottom: 4px;
 }
 
 .buywise-tooltip-row {
-  font-size: 13px;
-  color: #444;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.buywise-status-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: min(430px, calc(100vw - 32px));
+  background: rgba(247, 246, 244, 0.96);
+  border: 1px solid #e6e0d5;
+  border-radius: 18px;
+  box-shadow: 0 22px 56px rgba(15, 23, 15, 0.16);
+  padding: 18px;
+  color: #1d1d1d;
+  animation: buywise-fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.buywise-status-card--loading {
+  backdrop-filter: blur(8px);
+}
+
+.buywise-status-card--error {
+  align-items: flex-start;
+}
+
+.buywise-status-graphic {
+  flex: 0 0 auto;
+  width: 78px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #eef5ec 0%, #e3ede0 100%);
+}
+
+.buywise-loading-orbit {
+  width: 62px;
+  height: 62px;
+}
+
+.buywise-loading-orbit__track,
+.buywise-loading-orbit__pulse,
+.buywise-loading-orbit__arc {
+  stroke-linecap: round;
+}
+
+.buywise-loading-orbit__track {
+  fill: none;
+  stroke: rgba(31, 122, 69, 0.12);
+  stroke-width: 8;
+}
+
+.buywise-loading-orbit__pulse {
+  fill: none;
+  stroke: rgba(31, 122, 69, 0.2);
+  stroke-width: 8;
+  stroke-dasharray: 36 120;
+  animation: buywise-spin 1.3s linear infinite;
+  transform-origin: center;
+}
+
+.buywise-loading-orbit__arc {
+  stroke: #1f7a45;
+  stroke-width: 8;
+}
+
+.buywise-loading-orbit__dot {
+  fill: #1f7a45;
+  animation: buywise-pulse 1.2s ease-in-out infinite;
+}
+
+.buywise-status-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.buywise-status-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a7267;
+}
+
+.buywise-status-title {
+  font-size: 20px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.buywise-status-text {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.buywise-skeleton-stack {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.buywise-skeleton {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(201, 211, 198, 0.6) 25%, rgba(240, 243, 239, 0.95) 50%, rgba(201, 211, 198, 0.6) 75%);
+  background-size: 200% 100%;
+  animation: buywise-shimmer 1.35s ease infinite;
+}
+
+.buywise-skeleton--short {
+  width: 38%;
+}
+
+.buywise-skeleton--medium {
+  width: 68%;
+}
+
+.buywise-skeleton--full {
+  width: 100%;
+}
+
+.buywise-error-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #fff0e5;
+  color: #c05621;
+}
+
+.buywise-error-icon__svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.buywise-retry-button {
+  margin-top: 6px;
+  align-self: flex-start;
+  border: none;
+  border-radius: 10px;
+  background: #1f7a45;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+@keyframes buywise-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes buywise-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes buywise-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes buywise-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes buywise-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.12);
+  }
+}
+
+@keyframes buywise-draw-ring {
+  from {
+    stroke-dasharray: 0 100;
+  }
 }
 
 @media (max-width: 720px) {
@@ -267,12 +723,27 @@
     grid-template-columns: 1fr;
   }
 
-  .buywise-banner-copy {
-    max-width: none;
+  .buywise-banner-headline {
     font-size: 22px;
   }
 
-  .buywise-recommendation-word {
-    font-size: 38px;
+  .buywise-chart-header {
+    flex-direction: column;
+  }
+
+  .buywise-chart-controls {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .buywise-segmented-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .buywise-status-card {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
