@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import pooling
@@ -23,18 +24,19 @@ def get_connection():
     return connection_pool.get_connection()
 
 def get_product(asin):
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    query = """
-            SELECT * From products WHERE asin = %s
-
-    """
-    cursor.execute(query, (asin,)) 
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return result
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM products WHERE asin = %s"
+        cursor.execute(query, (asin,))
+        return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 def insert_product(asin, title, brand, category):
     conn = None
@@ -91,22 +93,25 @@ def insert_price(product_id, price, availability=True, deal_flag=False):
             conn.close()
 
 def get_price_history(product_id, limit=100):
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    query = """
-        SELECT * 
-        FROM prices 
-        WHERE product_id = %s
-        ORDER BY timestamp DESC
-        Limit s
-    """
-
-    cursor.execute(query,(product_id,limit))
-    results = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return results
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT *
+            FROM prices
+            WHERE product_id = %s
+            ORDER BY timestamp DESC
+            LIMIT %s
+        """
+        cursor.execute(query, (product_id, limit))
+        return cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence):
     conn = None
@@ -142,18 +147,22 @@ def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, c
             conn.close()
 
 def get_latest_prediction(product_id):
-    conn = get_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    query = """
-        SELECT *
-        FROM predictions
-        WHERE product_id = %s
-        ORDER BY created_at DESC
-        LIMIT 1
-    """
-    cursor.execute(query, (product_id,))
-    result = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    return result
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT *
+            FROM predictions
+            WHERE product_id = %s
+            ORDER BY created_at DESC
+            LIMIT 1
+        """
+        cursor.execute(query, (product_id,))
+        return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
