@@ -1,6 +1,6 @@
 # BuyWise Extension
 
-A Chrome extension that shows price recommendations, confidence scores, and price history charts on Amazon product pages.
+BuyWise watches the Amazon product page you're on and tells you whether to buy now or wait — backed by a confidence score, recent price history, and market insights so you can see exactly why it's making that call.
 
 ---
 
