@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from "react";
+import "../content/styles.css";
 import {
   extractASINFromUrl,
   isAmazonProductPageUrl
 } from "../content/amazon";
+import ActionButton from "../components/ActionButton";
+import ErrorState from "../components/ErrorState";
+import InfoBlurb from "../components/InfoBlurb";
+import LoadingState from "../components/LoadingState";
+import PriceChart from "../components/PriceChart";
+import RecommendationBanner from "../components/RecommendationBanner";
+import { PricePoint } from "../types";
 
 type PopupState =
   | { status: "loading" }
@@ -187,26 +195,76 @@ const App: React.FC = () => {
     );
   }
 
+  const mockPoints: PricePoint[] = [
+    { label: "W-4", actual: 120 },
+    { label: "W-3", actual: 115 },
+    { label: "W-2", actual: 118 },
+    { label: "W-1", actual: 110 },
+    { label: "Now", actual: 108, predicted: 108 },
+    { label: "W+1", predicted: 102 },
+    { label: "W+2", predicted: 95 },
+    { label: "W+3", predicted: 91 },
+    { label: "W+4", predicted: 89 }
+  ];
+
   return (
-    <div style={popupShellStyle}>
+    <div style={{ ...popupShellStyle, width: 420, minHeight: "unset" }}>
       <div style={wrapStyle}>
-        <div style={titleStyle}>BuyWise</div>
+        <div style={titleStyle}>BuyWise — Component Showcase</div>
 
-        <div style={cardStyle}>
-          <div style={badgeStyle}>No product detected</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <div style={helperTitleStyle}>RecommendationBanner (BUY)</div>
+            <RecommendationBanner
+              recommendation="BUY"
+              confidence={82}
+              expectedSavings={19}
+              onActionClick={() => {}}
+            />
+          </div>
 
-          <p style={mutedStyle}>
-            Open an Amazon product page to see a BuyWise recommendation, savings estimate,
-            confidence score, and price graph.
-          </p>
+          <div>
+            <div style={helperTitleStyle}>RecommendationBanner (WAIT)</div>
+            <RecommendationBanner
+              recommendation="WAIT"
+              confidence={67}
+              expectedSavings={12}
+              onActionClick={() => {}}
+            />
+          </div>
 
-          <div style={helperBoxStyle}>
-            <div style={helperTitleStyle}>Works on pages like:</div>
-            <p style={{ ...mutedStyle, marginBottom: 0 }}>
-              amazon.com/.../dp/XXXXXXXXXX
-              <br />
-              amazon.com/gp/product/XXXXXXXXXX
-            </p>
+          <div>
+            <div style={helperTitleStyle}>ActionButton (BUY)</div>
+            <ActionButton recommendation="BUY" onClick={() => {}} />
+          </div>
+
+          <div>
+            <div style={helperTitleStyle}>ActionButton (WAIT)</div>
+            <ActionButton recommendation="WAIT" onClick={() => {}} />
+          </div>
+
+          <div>
+            <div style={helperTitleStyle}>PriceChart</div>
+            <PriceChart
+              title="Price history & forecast"
+              points={mockPoints}
+              predictedBestPrice={89}
+            />
+          </div>
+
+          <div>
+            <div style={helperTitleStyle}>InfoBlurb</div>
+            <InfoBlurb text="Our model uses 30 days of price history to predict where prices will go in the next 4 weeks." />
+          </div>
+
+          <div>
+            <div style={helperTitleStyle}>LoadingState</div>
+            <LoadingState />
+          </div>
+
+          <div>
+            <div style={helperTitleStyle}>ErrorState</div>
+            <ErrorState />
           </div>
         </div>
       </div>
