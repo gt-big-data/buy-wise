@@ -7,7 +7,7 @@
 #buywise-root,
 #buywise-root * {
   box-sizing: border-box;
-  font-family: "Inter", "DM Sans", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .buywise-floating-shell {

@@ -235,7 +235,8 @@ const PriceChart: React.FC<PriceChartProps> = ({
               animationDuration={1050}
               label={({ x, y, value }: { x?: number; y?: number; value?: number }) => {
                 if (
-                  value !== bestPredictionValue ||
+                  typeof value !== "number" ||
+                  Math.abs(value - bestPredictionValue) > 0.001 ||
                   typeof x !== "number" ||
                   typeof y !== "number"
                 ) {
