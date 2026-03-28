@@ -21,7 +21,7 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
   onActionClick,
   showCloseButton = false,
   title = "BuyWise",
-  floating = false
+  floating = false,
 }) => {
   const [isDismissing, setIsDismissing] = useState(false);
   const dismissStartedRef = useRef(false);
@@ -44,7 +44,9 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
   return (
     <div className={shellClass}>
       <div
-        className={floating ? "buywise-floating-modal" : "buywise-embedded-modal"}
+        className={
+          floating ? "buywise-floating-modal" : "buywise-embedded-modal"
+        }
       >
         {showCloseButton && onClose ? (
           <button
@@ -60,7 +62,9 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
         <div className="buywise-panel-body">
           <header className="buywise-panel-top">
             <div className="buywise-header">
-              <div className="buywise-logo buywise-logo-no-underline">{title}</div>
+              <div className="buywise-logo buywise-logo-no-underline">
+                {title}
+              </div>
             </div>
 
             <section className="buywise-product-summary" aria-label="Product">
