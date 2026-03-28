@@ -15,10 +15,12 @@
   top: 20px;
   right: 20px;
   z-index: 2147483647;
-  width: 430px;
+  width: min(430px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 40px);
+  max-height: min(92vh, calc(100vh - 40px));
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .buywise-floating-modal {
@@ -30,6 +32,20 @@
   padding: 20px;
   color: #1d1d1d;
   border: 1px solid #e7e1d5;
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+  transform-origin: top right;
+}
+
+.buywise-panel-is-dismissing {
+  pointer-events: none;
+}
+
+.buywise-panel-is-dismissing .buywise-floating-modal,
+.buywise-panel-is-dismissing .buywise-embedded-modal {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.985);
 }
 
 .buywise-embedded-shell {
@@ -43,24 +59,95 @@
   border-radius: 16px;
   padding: 20px;
   color: #1d1d1d;
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+  transform-origin: top center;
 }
 
 .buywise-close-button {
   position: absolute;
-  right: 14px;
-  top: 10px;
+  right: 12px;
+  top: 8px;
+  z-index: 2;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: none;
+  border-radius: 10px;
   background: transparent;
   color: #6f6f6f;
-  font-size: 30px;
+  font-size: 28px;
   line-height: 1;
   cursor: pointer;
+  transition:
+    color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.buywise-close-button:hover {
+  color: #b42318;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.buywise-close-button:active {
+  transform: scale(0.94);
+}
+
+.buywise-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.buywise-panel-top {
+  margin-bottom: 4px;
+  padding-right: 36px;
 }
 
 .buywise-header {
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+.buywise-product-summary {
+  background: #ffffff;
+  border: 1px solid #e9e2d3;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.buywise-product-summary-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #1a1a1a;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.buywise-panel-section {
+  margin-top: 16px;
+}
+
+.buywise-panel-section--recommendation {
+  margin-top: 18px;
+}
+
+.buywise-panel-section--detail .buywise-info-row {
+  margin-top: 0;
+}
+
+.buywise-panel-section--chart .buywise-chart-card {
+  margin-top: 0;
 }
 
 .buywise-logo {
@@ -710,13 +797,130 @@
   }
 }
 
+.buywise-popup-root {
+  width: 360px;
+  max-width: 100vw;
+  min-height: 260px;
+  box-sizing: border-box;
+  background: #f7f6f4;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #1d1d1d;
+}
+
+.buywise-popup-inner {
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.buywise-popup-title {
+  font-size: 30px;
+  font-weight: 900;
+  margin: 0 0 14px;
+  letter-spacing: 0.01em;
+}
+
+.buywise-popup-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+  border: 1px solid #ece8df;
+}
+
+.buywise-popup-badge {
+  display: inline-block;
+  background: #efdf93;
+  color: #1d6b25;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.buywise-popup-muted {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #4e4e4e;
+  margin: 0;
+}
+
+.buywise-popup-muted--tight {
+  margin-bottom: 0;
+}
+
+.buywise-popup-helper {
+  margin-top: 14px;
+  background: #f4f2eb;
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid #e9e2d3;
+}
+
+.buywise-popup-helper-title {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: #2f2f2f;
+}
+
+.buywise-popup-error-detail {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #5c5c5c;
+}
+
+.buywise-status-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 22px 18px;
+  border: 1px solid #ece8df;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.buywise-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  border: 3px solid #e3dfd6;
+  border-top-color: #3f912f;
+  animation: buywise-spin 0.75s linear infinite;
+}
+
+@keyframes buywise-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.buywise-status-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.buywise-status-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4e4e4e;
+  margin: 0;
+}
+
 @media (max-width: 720px) {
   .buywise-floating-shell {
-    top: 12px;
-    right: 12px;
-    left: 12px;
+    top: max(12px, env(safe-area-inset-top, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    left: max(12px, env(safe-area-inset-left, 0px));
     width: auto;
     max-width: none;
+  }
+
+  .buywise-floating-modal {
+    padding: 16px 14px 18px;
   }
 
   .buywise-banner {
@@ -745,5 +949,33 @@
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .buywise-chart-wrap {
+    height: 220px;
+  }
+}
+
+@media (max-width: 380px) {
+  .buywise-popup-root {
+    width: 100%;
+  }
+
+  .buywise-popup-inner {
+    padding: 16px;
+  }
+
+  .buywise-popup-title {
+    font-size: 26px;
+  }
+}
+
+@media (max-height: 520px) {
+  .buywise-floating-shell {
+    max-height: calc(100vh - 24px);
+  }
+
+  .buywise-chart-wrap {
+    height: 200px;
   }
 }
