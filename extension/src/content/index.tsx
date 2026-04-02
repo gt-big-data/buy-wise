@@ -1,9 +1,13 @@
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import BuyWisePanel from "../components/BuyWisePanel";
+import LoadingState from "../components/LoadingState";
+import ErrorState from "../components/ErrorState";
 import { isAmazonProductPage, extractASIN } from "./amazon";
-import { getMockBuyWiseData } from "./mockData";
+import { BuyWiseData } from "../types";
 import "./styles.css";
+
+const BACKEND_URL = "http://localhost:8000";
 
 let currentRoot: Root | null = null;
 let currentContainer: HTMLDivElement | null = null;
@@ -13,59 +17,104 @@ function removeExistingUI(): void {
     currentRoot.unmount();
     currentRoot = null;
   }
-
   if (currentContainer && currentContainer.parentNode) {
     currentContainer.parentNode.removeChild(currentContainer);
   }
-
   currentContainer = null;
 }
 
 function createContainer(): HTMLDivElement {
   const existing = document.getElementById("buywise-root");
-  if (existing) {
-    existing.remove();
-  }
-
+  if (existing) existing.remove();
   const container = document.createElement("div");
   container.id = "buywise-root";
   document.body.appendChild(container);
   return container;
 }
 
-function mountFloatingPanel(): boolean {
-  if (!isAmazonProductPage()) {
-    return false;
+async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
+  const [predictRes, historyRes] = await Promise.all([
+    fetch(`${BACKEND_URL}/predict/${asin}`),
+    fetch(`${BACKEND_URL}/price-history/${asin}`),
+  ]);
+
+  if (!predictRes.ok) throw new Error(`predict: ${predictRes.status}`);
+  if (!historyRes.ok) throw new Error(`price-history: ${historyRes.status}`);
+
+  const predict = await predictRes.json();
+  const history = await historyRes.json();
+
+  return {
+    asin: predict.asin,
+    productTitle: document.title.replace(/^Amazon\.com\s*:\s*/i, "").trim(),
+    currentPrice: history.current_price,
+    predictedBestPrice: history.predicted_best_price,
+    expectedSavings: predict.potential_savings,
+    confidence: Math.round(predict.confidence),
+    recommendation: predict.recommendation as "BUY" | "WAIT",
+    why: predict.why,
+    chartTitle: history.chart_title,
+    points: history.points,
+  };
+}
+
+async function postActivity(asin: string, action: string): Promise<void> {
+  try {
+    await fetch(`${BACKEND_URL}/activity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asin, action, timestamp: new Date().toISOString() }),
+    });
+  } catch (err) {
+    console.warn("BuyWise: activity logging failed", err);
   }
+}
+
+async function mountFloatingPanel(): Promise<boolean> {
+  if (!isAmazonProductPage()) return false;
 
   const asin = extractASIN();
-  if (!asin) {
-    return false;
-  }
-
-  const data = getMockBuyWiseData(asin);
+  if (!asin) return false;
 
   removeExistingUI();
   currentContainer = createContainer();
   currentRoot = createRoot(currentContainer);
 
-  const handleClose = () => {
-    removeExistingUI();
-  };
+  currentRoot.render(
+    <div className="buywise-floating-shell">
+      <LoadingState />
+    </div>
+  );
+
+  let data: BuyWiseData;
+  try {
+    data = await fetchBuyWiseData(asin);
+  } catch (err) {
+    console.error("BuyWise: failed to fetch data", err);
+    currentRoot.render(
+      <div className="buywise-floating-shell">
+        <ErrorState
+          title="Couldn't load recommendation"
+          message="BuyWise couldn't reach the server. Make sure the backend is running."
+          onRetry={() => { mountFloatingPanel(); }}
+        />
+      </div>
+    );
+    return true;
+  }
+
+  const handleClose = () => removeExistingUI();
 
   const handleActionClick = () => {
-    console.log("BuyWise floating action clicked", {
-      asin: data.asin,
-      recommendation: data.recommendation
-    });
-
+    const action = data.recommendation === "BUY" ? "purchased" : "dismissed";
+    postActivity(data.asin, action);
     chrome.storage.local.set({
       lastBuyWiseAction: {
         asin: data.asin,
         recommendation: data.recommendation,
         timestamp: new Date().toISOString(),
-        source: "page-floating-popup"
-      }
+        source: "page-floating-popup",
+      },
     });
   };
 
@@ -85,34 +134,24 @@ function mountFloatingPanel(): boolean {
 
 function init(): void {
   console.log("BuyWise content script loaded");
-
-  if (!isAmazonProductPage()) {
-    return;
-  }
-
-  window.setTimeout(() => {
-    mountFloatingPanel();
-  }, 500);
+  if (!isAmazonProductPage()) return;
+  window.setTimeout(() => { mountFloatingPanel(); }, 500);
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "BUYWISE_OPEN_PANEL") {
-    const opened = mountFloatingPanel();
-    sendResponse({ opened });
+    mountFloatingPanel().then((opened) => sendResponse({ opened }));
     return true;
   }
-
   if (message?.type === "BUYWISE_CLOSE_PANEL") {
     removeExistingUI();
     sendResponse({ closed: true });
     return true;
   }
-
   if (message?.type === "BUYWISE_IS_PANEL_OPEN") {
     sendResponse({ isOpen: Boolean(currentContainer) });
     return true;
   }
-
   return false;
 });
 
