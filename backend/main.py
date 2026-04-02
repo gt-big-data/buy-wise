@@ -15,7 +15,9 @@ try:
         get_product,
         get_latest_prediction,
         get_price_history as db_get_price_history,
+        insert_prediction,
     )
+    from jobs.keepa_fetch import fetch_price_history as keepa_fetch
     _DB_AVAILABLE = True
 except Exception as _exc:
     logger.warning("DB unavailable at startup: %s", _exc)
@@ -167,6 +169,49 @@ def _bucket_price_history(
     )
 
 
+def _fetch_and_seed(asin: str) -> None:
+    """Pull price history from Keepa for an unseen ASIN and generate a stub prediction.
+
+    Called the first time any endpoint is hit for an ASIN not yet in the DB.
+    Keepa populates products + prices. We then compute a simple trend-based
+    prediction so the extension has something to show immediately. The real ML
+    model will overwrite this row once it runs.
+    """
+    keepa_fetch(asin)
+
+    product = get_product(asin)
+    if not product:
+        return
+
+    prices = db_get_price_history(product["product_id"], limit=100)
+    if not prices:
+        return
+
+    current = float(prices[0]["price"])
+    avg = sum(float(p["price"]) for p in prices) / len(prices)
+    diff = (current - avg) / avg if avg else 0
+
+    if diff > 0.05:
+        # Price is elevated — likely to come down
+        recommendation = "WAIT"
+        confidence = min(0.90, 0.55 + abs(diff))
+        pred_7d  = round(avg + (current - avg) * 0.6, 2)
+        pred_14d = round(avg + (current - avg) * 0.3, 2)
+        pred_30d = round(avg, 2)
+    else:
+        # Price is at or below average — good time to buy
+        recommendation = "BUY"
+        confidence = min(0.90, 0.55 + abs(diff))
+        pred_7d  = round(current * 1.02, 2)
+        pred_14d = round(current * 1.04, 2)
+        pred_30d = round(current * 1.06, 2)
+
+    insert_prediction(
+        product["product_id"], pred_7d, pred_14d, pred_30d, recommendation, confidence
+    )
+    logger.info("seeded prediction for %s: %s %.0f%%", asin, recommendation, confidence * 100)
+
+
 # ── Endpoints ──────────────────────────────────────────────────────────────
 
 @app.get("/health", response_model=HealthResponse)
@@ -180,7 +225,10 @@ def get_prediction(asin: str) -> PredictResponse:
 
     product = get_product(asin)
     if not product:
-        raise HTTPException(status_code=404, detail=f"Product {asin} not found")
+        _fetch_and_seed(asin)
+        product = get_product(asin)
+    if not product:
+        raise HTTPException(status_code=404, detail=f"Could not retrieve data for {asin}")
 
     prediction = get_latest_prediction(product["product_id"])
     if not prediction:
@@ -240,7 +288,10 @@ def get_price_history(asin: str) -> PriceHistoryResponse:
 
     product = get_product(asin)
     if not product:
-        raise HTTPException(status_code=404, detail=f"Product {asin} not found")
+        _fetch_and_seed(asin)
+        product = get_product(asin)
+    if not product:
+        raise HTTPException(status_code=404, detail=f"Could not retrieve data for {asin}")
 
     prices = db_get_price_history(product["product_id"], limit=100)
     prediction = get_latest_prediction(product["product_id"])
