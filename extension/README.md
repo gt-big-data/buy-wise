@@ -4,9 +4,16 @@ BuyWise watches the Amazon product page you're on and tells you whether to buy n
 
 ---
 
-## Setup
+## Prerequisites
 
-**Prerequisites:** Node.js and npm installed.
+- Node.js and npm installed
+- The BuyWise backend running at `http://localhost:8000` (see `backend/README.md`)
+
+The extension's content script (`src/content/index.tsx`) fetches data from `localhost:8000` — if the backend is not running, the panel will show an error state with a retry button.
+
+---
+
+## Setup
 
 1. Install dependencies:
 

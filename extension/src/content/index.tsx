@@ -7,8 +7,6 @@ import { isAmazonProductPage, extractASIN } from "./amazon";
 import { BuyWiseData } from "../types";
 import "./styles.css";
 
-const BACKEND_URL = "http://localhost:8000";
-
 let currentRoot: Root | null = null;
 let currentContainer: HTMLDivElement | null = null;
 
@@ -33,17 +31,10 @@ function createContainer(): HTMLDivElement {
 }
 
 async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
-  const [predictRes, historyRes] = await Promise.all([
-    fetch(`${BACKEND_URL}/predict/${asin}`),
-    fetch(`${BACKEND_URL}/price-history/${asin}`),
-  ]);
+  const response = await chrome.runtime.sendMessage({ type: "BUYWISE_FETCH", asin });
+  if (!response?.ok) throw new Error(response?.error ?? "unknown error from background");
 
-  if (!predictRes.ok) throw new Error(`predict: ${predictRes.status}`);
-  if (!historyRes.ok) throw new Error(`price-history: ${historyRes.status}`);
-
-  const predict = await predictRes.json();
-  const history = await historyRes.json();
-
+  const { predict, history } = response;
   return {
     asin: predict.asin,
     productTitle: document.title.replace(/^Amazon\.com\s*:\s*/i, "").trim(),
@@ -58,16 +49,8 @@ async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
   };
 }
 
-async function postActivity(asin: string, action: string): Promise<void> {
-  try {
-    await fetch(`${BACKEND_URL}/activity`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asin, action, timestamp: new Date().toISOString() }),
-    });
-  } catch (err) {
-    console.warn("BuyWise: activity logging failed", err);
-  }
+function postActivity(asin: string, action: string): void {
+  chrome.runtime.sendMessage({ type: "BUYWISE_POST_ACTIVITY", asin, action }).catch(() => {});
 }
 
 async function mountFloatingPanel(): Promise<boolean> {

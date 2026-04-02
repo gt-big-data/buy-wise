@@ -28,6 +28,49 @@ source .venv/bin/activate       # Mac/Linux
 pip install -r requirements.txt
 ```
 
+### Database Setup: Docker
+
+Run MySQL locally using Docker to avoid installation issues and ensure a consistent environment across all teammates.
+
+1. **Install Docker:** Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+
+2. **Start MySQL container:**
+```bash
+docker run --name buywise-mysql \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=buywise \
+  -p 3306:3306 \
+  -d mysql:8
+```
+
+3. **Verify container is running:**
+```bash
+docker ps
+```
+*(You should see a container named `buywise-mysql`)*
+
+4. **Initialize the database:**
+```bash
+docker exec -i buywise-mysql mysql -uroot -proot buywise < db/schema.sql
+docker exec -i buywise-mysql mysql -uroot -proot buywise < db/seed.sql
+```
+
+5. **Update `.env`:**
+Copy `.env.example` to `.env` and use these local Docker credentials:
+```text
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=root
+DB_NAME=buywise
+KEEPA_API_KEY=your_keepa_key
+```
+
+*Optional: Stop / restart container*
+```bash
+docker stop buywise-mysql
+docker start buywise-mysql
+```
+
 3. Copy `.env.example` to `.env` and fill in your values:
 
 ```
@@ -61,10 +104,31 @@ Interactive docs available at http://127.0.0.1:8000/docs
 |---|---|---|
 | GET | `/health` | Liveness check |
 | GET | `/predict/{asin}` | Recommendation, confidence, predicted price, potential savings, horizon |
-| GET | `/product-info/{asin}` | Product metadata (title, brand, category, price, rating) |
+| GET | `/price-history/{asin}` | Weekly-bucketed price history + 30-day forecast points for the chart |
+| GET | `/product-info/{asin}` | Product metadata (title, brand, category, current price) |
 | POST | `/activity` | Log a user action on a recommendation |
 
 All responses use Pydantic models — see `/docs` for full schemas.
+
+### Fetch-on-demand behavior
+
+If `/predict/{asin}` or `/price-history/{asin}` is called for an ASIN not yet in the database, the server automatically:
+
+1. Calls `keepa_fetch(asin)` to pull real price history from Keepa and write it to the DB
+2. Runs a stub trend-based prediction (`_fetch_and_seed` in `main.py`) and inserts it
+
+This means the extension works on any Amazon product page without pre-seeding. The DB is populated on first hit.
+
+### Stub prediction (temporary)
+
+The real ML model (XGBoost/LightGBM) has not been built yet. Until the Analysis team delivers it, `_fetch_and_seed` generates predictions using a simple heuristic:
+
+- Compute `diff = (current_price − 30-day average) / 30-day average`
+- If `diff > 0.05` (current price is 5%+ above its own history): **WAIT**, predicted prices trend back toward average over 7/14/30 days
+- Otherwise: **BUY**, predicted prices drift slightly upward (2% / 4% / 6%)
+- Confidence = `min(90%, 55% + |diff|%)`
+
+When the real model is ready, it should call `insert_prediction(...)` with its own values — the latest prediction row is always what the extension sees, so the stub row gets naturally superseded.
 
 ---
 
