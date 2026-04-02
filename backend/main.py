@@ -8,6 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from routes.dashboard import router as dashboard_router
+from schemas.common import RecommendationDirection
+
 logger = logging.getLogger(__name__)
 
 # Lazy DB import — server stays up even if DB is unavailable at startup
@@ -26,9 +29,11 @@ except Exception as _exc:
 
 app = FastAPI(
     title="BuyWise API",
-    description="Backend for the BuyWise Chrome extension.",
+    description="Backend for the BuyWise Chrome extension and web dashboard.",
     version="0.1.0",
 )
+
+app.include_router(dashboard_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -58,11 +63,6 @@ async def private_network_access(request: Request, call_next):
 class HealthResponse(BaseModel):
     status: str = Field(..., example="ok")
     started_at: datetime = Field(..., example="2026-03-16T00:00:00Z")
-
-
-class RecommendationDirection(str, Enum):
-    BUY = "BUY"
-    WAIT = "WAIT"
 
 
 class PredictResponse(BaseModel):
