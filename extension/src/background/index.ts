@@ -13,11 +13,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     const { asin } = message;
     Promise.all([
       fetch(`${BACKEND_URL}/predict/${asin}`).then(async (r) => {
-        if (!r.ok) throw new Error(`predict: ${r.status}`);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ?? `predict: ${r.status}`);
+        }
         return r.json();
       }),
       fetch(`${BACKEND_URL}/price-history/${asin}`).then(async (r) => {
-        if (!r.ok) throw new Error(`price-history: ${r.status}`);
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ?? `price-history: ${r.status}`);
+        }
         return r.json();
       }),
     ])

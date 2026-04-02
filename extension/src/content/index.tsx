@@ -74,12 +74,17 @@ async function mountFloatingPanel(): Promise<boolean> {
     data = await fetchBuyWiseData(asin);
   } catch (err) {
     console.error("BuyWise: failed to fetch data", err);
+    const isNotTracked = err instanceof Error && err.message === "not_tracked";
     currentRoot.render(
       <div className="buywise-floating-shell">
         <ErrorState
-          title="Couldn't load recommendation"
-          message="BuyWise couldn't reach the server. Make sure the backend is running."
-          onRetry={() => { mountFloatingPanel(); }}
+          title={isNotTracked ? "Product not tracked" : "Couldn't load recommendation"}
+          message={
+            isNotTracked
+              ? "BuyWise doesn't have price history for this product yet. Try a more popular item."
+              : "BuyWise couldn't reach the server. Make sure the backend is running."
+          }
+          onRetry={isNotTracked ? undefined : () => { mountFloatingPanel(); }}
         />
       </div>
     );

@@ -16,7 +16,8 @@ API_KEY = os.getenv("KEEPA_API_KEY")
 _KEEPA_EPOCH_OFFSET_MINUTES = 21564000
 
 # Keepa csv array indices for price types
-_CSV_AMAZON_PRICE = 0  # Amazon-fulfilled price (the one we care about)
+_CSV_AMAZON_PRICE = 0       # Amazon-fulfilled price (preferred)
+_CSV_MARKETPLACE_NEW = 1    # Third-party new (fallback when Amazon doesn't sell directly)
 
 # Rate limit: max retries before giving up on a throttled request
 _MAX_RETRIES = 3
@@ -60,7 +61,10 @@ def fetch_price_history(asin: str, days: int = 30) -> list[dict]:
     product = _fetch_with_retry(url, params)
 
     csv_data = product.get("csv") or []
-    new_prices = csv_data[_CSV_AMAZON_PRICE] if len(csv_data) > _CSV_AMAZON_PRICE else []
+    amazon_prices = csv_data[_CSV_AMAZON_PRICE] if len(csv_data) > _CSV_AMAZON_PRICE else []
+    marketplace_prices = csv_data[_CSV_MARKETPLACE_NEW] if len(csv_data) > _CSV_MARKETPLACE_NEW else []
+    # Prefer Amazon-fulfilled; fall back to marketplace new for third-party-only products
+    new_prices = amazon_prices if amazon_prices else marketplace_prices
     name = product.get("title", "Unknown Product")
 
     records = _parse_price_records(asin, name, new_prices)
