@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Smart shopping assistant",
   "permissions": ["activeTab", "storage"],
-  "host_permissions": ["https://*.amazon.com/*"],
+  "host_permissions": ["https://*.amazon.com/*", "http://localhost:8000/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "BuyWise"
