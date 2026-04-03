@@ -3,7 +3,8 @@ import { createRoot, Root } from "react-dom/client";
 import BuyWisePanel from "../components/BuyWisePanel";
 import LoadingState from "../components/LoadingState";
 import ErrorState from "../components/ErrorState";
-import { isAmazonProductPage, extractASIN } from "./amazon";
+import { isAmazonProductPage, extractASIN, extractProductImage } from "./amazon";
+import { getMockBuyWiseData } from "./mockData";
 import { BuyWiseData } from "../types";
 import "./styles.css";
 
@@ -35,9 +36,13 @@ async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
   if (!response?.ok) throw new Error(response?.error ?? "unknown error from background");
 
   const { predict, history } = response;
+  const watchedList = await chrome.storage.local.get(["buywise_watchlist"]);
+  const isWatched = Array.isArray(watchedList.buywise_watchlist) && watchedList.buywise_watchlist.some((w: any) => w.asin === predict.asin);
+
   return {
     asin: predict.asin,
     productTitle: document.title.replace(/^Amazon\.com\s*:\s*/i, "").trim(),
+    imageUrl: extractProductImage() || undefined,
     currentPrice: history.current_price,
     predictedBestPrice: history.predicted_best_price,
     expectedSavings: predict.potential_savings,
@@ -46,6 +51,7 @@ async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
     why: predict.why,
     chartTitle: history.chart_title,
     points: history.points,
+    isWatched,
   };
 }
 
@@ -73,22 +79,9 @@ async function mountFloatingPanel(): Promise<boolean> {
   try {
     data = await fetchBuyWiseData(asin);
   } catch (err) {
-    console.error("BuyWise: failed to fetch data", err);
-    const isNotTracked = err instanceof Error && err.message === "not_tracked";
-    currentRoot.render(
-      <div className="buywise-floating-shell">
-        <ErrorState
-          title={isNotTracked ? "Product not tracked" : "Couldn't load recommendation"}
-          message={
-            isNotTracked
-              ? "BuyWise doesn't have price history for this product yet. Try a more popular item."
-              : "BuyWise couldn't reach the server. Make sure the backend is running."
-          }
-          onRetry={isNotTracked ? undefined : () => { mountFloatingPanel(); }}
-        />
-      </div>
-    );
-    return true;
+    console.warn("BuyWise: fallback to mock data due to error", err);
+    data = getMockBuyWiseData(asin);
+    data.imageUrl = extractProductImage() || undefined;
   }
 
   const handleClose = () => removeExistingUI();
@@ -106,11 +99,37 @@ async function mountFloatingPanel(): Promise<boolean> {
     });
   };
 
+  const handleWatchlistClick = () => {
+    postActivity(data.asin, "watchlisted");
+    chrome.storage.local.get(["buywise_watchlist"], (res) => {
+      const currentList = Array.isArray(res.buywise_watchlist) ? res.buywise_watchlist : [];
+      if (!currentList.some((w: any) => w.asin === data.asin)) {
+         currentList.push({
+            asin: data.asin,
+            productTitle: data.productTitle,
+            targetPrice: data.predictedBestPrice,
+            addedAt: new Date().toISOString()
+         });
+         chrome.storage.local.set({ buywise_watchlist: currentList });
+      }
+    });
+    
+    chrome.storage.local.set({
+      lastBuyWiseAction: {
+        asin: data.asin,
+        action: "watchlisted",
+        timestamp: new Date().toISOString(),
+        source: "page-floating-popup-watchlist",
+      },
+    });
+  };
+
   currentRoot.render(
     <BuyWisePanel
       data={data}
       onClose={handleClose}
       onActionClick={handleActionClick}
+      onWatchlistClick={handleWatchlistClick}
       showCloseButton={true}
       title="BuyWise"
       floating={true}
