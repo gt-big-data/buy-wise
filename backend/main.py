@@ -142,43 +142,119 @@ def _generate_why(
     )
 
 
+def _day_label_utc(d: datetime) -> str:
+    """Chart x-axis: month abbreviation + day (UTC calendar day)."""
+    return f"{d.strftime('%b')} {d.day}"
+
+
 def _bucket_price_history(
     prices: list, prediction: Optional[dict], asin: str
 ) -> PriceHistoryResponse:
+    """~30 daily actuals (forward-filled EOD per UTC day) plus forecast points."""
     now = datetime.utcnow()
-    prices_asc = list(reversed(prices))  # prices come in DESC from DB
-
-    points: List[PricePoint] = []
-    for weeks_back in range(4, 0, -1):
-        start = now - timedelta(weeks=weeks_back)
-        end = now - timedelta(weeks=weeks_back - 1)
-        bucket = [
-            float(p["price"]) for p in prices_asc
-            if start <= p["timestamp"] < end
-        ]
-        if bucket:
-            avg = round(sum(bucket) / len(bucket), 2)
-            points.append(PricePoint(label=f"-{weeks_back}w", actual=avg))
+    prices_asc = sorted(prices, key=lambda p: p["timestamp"])
 
     current_price = float(prices[0]["price"]) if prices else 0.0
 
-    if prediction:
-        points.append(PricePoint(label="Today", actual=current_price, predicted=current_price))
-        if prediction.get("pred_7d") is not None:
-            points.append(PricePoint(label="+1w", predicted=float(prediction["pred_7d"])))
-        if prediction.get("pred_14d") is not None:
-            points.append(PricePoint(label="+2w", predicted=float(prediction["pred_14d"])))
-        if prediction.get("pred_30d") is not None:
-            points.append(PricePoint(label="+1m", predicted=float(prediction["pred_30d"])))
+    points: List[PricePoint] = []
+    if prices_asc:
+        now_date = now.date()
+        last_close: Optional[float] = None
+        p_i = 0
+        n = len(prices_asc)
+
+        for days_back in range(29, -1, -1):
+            day = now_date - timedelta(days=days_back)
+            next_day = day + timedelta(days=1)
+            day_end_excl = datetime.combine(next_day, datetime.min.time())
+
+            while p_i < n and prices_asc[p_i]["timestamp"] < day_end_excl:
+                last_close = float(prices_asc[p_i]["price"])
+                p_i += 1
+
+            if last_close is None:
+                continue
+
+            label = _day_label_utc(datetime.combine(day, datetime.min.time()))
+            is_today = days_back == 0
+            if is_today and prediction:
+                points.append(
+                    PricePoint(
+                        label=label,
+                        actual=round(last_close, 2),
+                        predicted=round(last_close, 2),
+                    )
+                )
+            else:
+                points.append(PricePoint(label=label, actual=round(last_close, 2)))
+
+        if prediction:
+            if prediction.get("pred_7d") is not None:
+                d = now_date + timedelta(days=7)
+                points.append(
+                    PricePoint(
+                        label=_day_label_utc(datetime.combine(d, datetime.min.time())),
+                        predicted=round(float(prediction["pred_7d"]), 2),
+                    )
+                )
+            if prediction.get("pred_14d") is not None:
+                d = now_date + timedelta(days=14)
+                points.append(
+                    PricePoint(
+                        label=_day_label_utc(datetime.combine(d, datetime.min.time())),
+                        predicted=round(float(prediction["pred_14d"]), 2),
+                    )
+                )
+            if prediction.get("pred_30d") is not None:
+                d = now_date + timedelta(days=30)
+                points.append(
+                    PricePoint(
+                        label=_day_label_utc(datetime.combine(d, datetime.min.time())),
+                        predicted=round(float(prediction["pred_30d"]), 2),
+                    )
+                )
     else:
-        points.append(PricePoint(label="Today", actual=current_price))
+        if prediction:
+            points.append(
+                PricePoint(
+                    label=_day_label_utc(now),
+                    actual=current_price,
+                    predicted=current_price,
+                )
+            )
+            if prediction.get("pred_7d") is not None:
+                d = now.date() + timedelta(days=7)
+                points.append(
+                    PricePoint(
+                        label=_day_label_utc(datetime.combine(d, datetime.min.time())),
+                        predicted=round(float(prediction["pred_7d"]), 2),
+                    )
+                )
+            if prediction.get("pred_14d") is not None:
+                d = now.date() + timedelta(days=14)
+                points.append(
+                    PricePoint(
+                        label=_day_label_utc(datetime.combine(d, datetime.min.time())),
+                        predicted=round(float(prediction["pred_14d"]), 2),
+                    )
+                )
+            if prediction.get("pred_30d") is not None:
+                d = now.date() + timedelta(days=30)
+                points.append(
+                    PricePoint(
+                        label=_day_label_utc(datetime.combine(d, datetime.min.time())),
+                        predicted=round(float(prediction["pred_30d"]), 2),
+                    )
+                )
+        else:
+            points.append(PricePoint(label=_day_label_utc(now), actual=current_price))
 
     future_preds = [p.predicted for p in points if p.predicted is not None]
     predicted_best = min(future_preds) if future_preds else current_price
 
     return PriceHistoryResponse(
         asin=asin,
-        chart_title="Price history & 30-day forecast",
+        chart_title="Price history (30 days, UTC) & forecast",
         current_price=current_price,
         predicted_best_price=round(predicted_best, 2),
         points=points,
@@ -204,7 +280,7 @@ def _fetch_and_seed(asin: str) -> None:
     if not product:
         return
 
-    prices = db_get_price_history(product["product_id"], limit=100)
+    prices = db_get_price_history(product["product_id"], limit=1000)
     if not prices:
         return
 
@@ -314,7 +390,7 @@ def get_price_history(asin: str) -> PriceHistoryResponse:
     if not product:
         raise HTTPException(status_code=404, detail="not_tracked")
 
-    prices = db_get_price_history(product["product_id"], limit=100)
+    prices = db_get_price_history(product["product_id"], limit=1000)
     prediction = get_latest_prediction(product["product_id"])
 
     return _bucket_price_history(prices, prediction, asin)
