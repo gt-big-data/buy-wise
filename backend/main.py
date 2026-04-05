@@ -193,7 +193,12 @@ def _fetch_and_seed(asin: str) -> None:
     prediction so the extension has something to show immediately. The real ML
     model will overwrite this row once it runs.
     """
-    keepa_fetch(asin)
+    try:
+        records = keepa_fetch(asin)
+        logger.info("Keepa returned %d records for %s", len(records), asin)
+    except Exception as exc:
+        logger.error("Keepa fetch failed for %s: %s", asin, exc)
+        return
 
     product = get_product(asin)
     if not product:
@@ -244,7 +249,7 @@ def get_prediction(asin: str) -> PredictResponse:
         _fetch_and_seed(asin)
         product = get_product(asin)
     if not product:
-        raise HTTPException(status_code=404, detail=f"Could not retrieve data for {asin}")
+        raise HTTPException(status_code=404, detail="not_tracked")
 
     prediction = get_latest_prediction(product["product_id"])
     if not prediction:
@@ -307,7 +312,7 @@ def get_price_history(asin: str) -> PriceHistoryResponse:
         _fetch_and_seed(asin)
         product = get_product(asin)
     if not product:
-        raise HTTPException(status_code=404, detail=f"Could not retrieve data for {asin}")
+        raise HTTPException(status_code=404, detail="not_tracked")
 
     prices = db_get_price_history(product["product_id"], limit=100)
     prediction = get_latest_prediction(product["product_id"])
