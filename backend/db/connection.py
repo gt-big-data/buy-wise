@@ -177,3 +177,71 @@ def get_latest_prediction(product_id):
             cursor.close()
         if conn:
             conn.close()
+
+def insert_user_activity(
+    asin,
+    recommendation_shown,
+    action,
+    timestamp,
+    user_id=None,
+):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = """
+            INSERT INTO user_activity (
+                asin,
+                recommendation_shown,
+                action,
+                user_id,
+                timestamp
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(
+            query,
+            (asin, recommendation_shown, action, user_id, timestamp),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def get_recent_user_activity(limit=20, user_id=None):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        if user_id:
+            query = """
+                SELECT *
+                FROM user_activity
+                WHERE user_id = %s
+                ORDER BY timestamp DESC, activity_id DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (user_id, limit))
+        else:
+            query = """
+                SELECT *
+                FROM user_activity
+                ORDER BY timestamp DESC, activity_id DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+        return cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
