@@ -14,9 +14,13 @@ logger = logging.getLogger(__name__)
 try:
     from db.connection import (
         get_product,
+        get_product_by_id,
         get_latest_prediction,
         get_price_history as db_get_price_history,
         insert_prediction,
+        add_to_watchlist,
+        remove_from_watchlist,
+        get_watchlist,
     )
     from jobs.keepa_fetch import fetch_price_history as keepa_fetch
     _DB_AVAILABLE = True
@@ -33,7 +37,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Chrome extension content scripts run under the page origin
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -117,6 +121,10 @@ class ActivityResponse(BaseModel):
     received_at: datetime = Field(..., example="2026-03-16T00:00:00Z")
     details: Optional[str] = Field(None)
 
+class WatchlistAddRequest(BaseModel):
+    user_id: int
+    product_id: int
+    target_price: Optional[float] = None
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -331,3 +339,48 @@ def log_activity(request: ActivityRequest) -> ActivityResponse:
         received_at=datetime.utcnow(),
         details=f"Action '{request.action}' on ASIN {request.asin}",
     )
+
+
+@app.post("/watchlist")
+def add_watchlist_item(req: WatchlistAddRequest):
+    _require_db()
+    try:
+        product = get_product_by_id(req.product_id)
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        latest = get_latest_prediction(req.product_id)
+        if not latest:
+            raise HTTPException(status_code=404, detail="No prediction found for product")
+
+        add_to_watchlist(
+            user_id=req.user_id,
+            product_id=req.product_id,
+            recommendation_at_add=latest["recommendation"],
+            target_price=req.target_price,
+        )
+        return {"status": "added", "product_id": req.product_id, "user_id": req.user_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@app.delete("/watchlist/{user_id}/{product_id}")
+def remove_watchlist_item(user_id: int, product_id: int):
+    _require_db()
+    try:
+        remove_from_watchlist(user_id=user_id, product_id=product_id)
+        return {"status": "removed", "product_id": product_id, "user_id": user_id}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@app.get("/watchlist/{user_id}")
+def get_user_watchlist(user_id: int):
+    _require_db()
+    try:
+        items = get_watchlist(user_id=user_id)
+        return {"user_id": user_id, "watchlist": items}
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))

@@ -107,6 +107,12 @@ Interactive docs available at http://127.0.0.1:8000/docs
 | GET | `/price-history/{asin}` | Weekly-bucketed price history + 30-day forecast points for the chart |
 | GET | `/product-info/{asin}` | Product metadata (title, brand, category, current price) |
 | POST | `/activity` | Log a user action on a recommendation |
+| POST | `/watchlist` | Add a product to a user's watchlist, records recommendation at time of adding |
+| DELETE | `/watchlist/{user_id}/{product_id}` | Remove a product from a user's watchlist |
+| GET | `/watchlist/{user_id}` | Retrieve full watchlist with current recommendations and `recommendation_changed` flag |
+
+> **Note:** The `users` table has not yet been implemented. `user_id` is accepted as a plain integer with no foreign key constraint until the user authentication feature is complete.
+
 
 All responses use Pydantic models — see `/docs` for full schemas.
 
@@ -134,7 +140,7 @@ When the real model is ready, it should call `insert_prediction(...)` with its o
 
 ## Database Layer (`db/`)
 
-**`schema.sql`** — Three tables: `products`, `prices`, `predictions`. Run this from scratch to initialize. Safe to re-run (uses `DROP IF EXISTS`).
+**`schema.sql`** — Four tables: `products`, `prices`, `predictions`, `watchlist`. Run this from scratch to initialize. Safe to re-run (uses `DROP IF EXISTS`).
 
 **`seed.sql`** — 5 fake products with price history and predictions. Useful for local development without real Keepa data.
 
@@ -143,11 +149,15 @@ When the real model is ready, it should call `insert_prediction(...)` with its o
 | Function | Description |
 |---|---|
 | `get_product(asin)` | Returns product row dict or None |
+| `get_product_by_id(product_id)` | Returns product row dict by product_id or None |
 | `insert_product(asin, title, brand, category)` | Upserts a product |
 | `insert_price(product_id, price, availability, deal_flag)` | Inserts a price record |
 | `get_price_history(product_id, limit=100)` | Returns price rows ordered by timestamp DESC |
 | `insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence)` | Inserts a prediction |
 | `get_latest_prediction(product_id)` | Returns the most recent prediction row or None |
+| `add_to_watchlist(user_id, product_id, recommendation_at_add, target_price)` | Adds a product to a user's watchlist |
+| `remove_from_watchlist(user_id, product_id)` | Removes a product from a user's watchlist |
+| `get_watchlist(user_id)` | Returns all watchlist items with product info, latest prediction, and `recommendation_changed` boolean |
 
 ---
 
