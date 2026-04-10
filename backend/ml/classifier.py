@@ -150,7 +150,7 @@ class PriceRecommendationClassifier:
             earliest_horizon=earliest["days"]
         )
 
-'
+
 ""'Test""'
 if __name__ == "__main__":
     clf = PriceRecommendationClassifier()

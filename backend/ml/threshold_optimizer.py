@@ -1,7 +1,7 @@
 from typing import List, Dict
 from sklearn.metrics import precision_score, recall_score, f1_score
 
-from ml.classifier import PriceRecommendationClassifier
+from backend.ml.classifier import PriceRecommendationClassifier
 
 
 def optimize_threshold(
