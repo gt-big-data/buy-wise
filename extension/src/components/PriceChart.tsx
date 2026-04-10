@@ -33,13 +33,33 @@ const RANGE_OPTIONS: RangeOption[] = ["2W", "1M", "ALL"];
 const formatMoney = (value: number): string => `$${Math.round(value)}`;
 const formatDelta = (value: number): string => `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 
+const firstForecastOnlyIndex = (points: PricePoint[]): number => {
+  const idx = points.findIndex(
+    (p) => typeof p.predicted === "number" && typeof p.actual !== "number"
+  );
+  return idx === -1 ? points.length : idx;
+};
+
 const clampRange = (points: PricePoint[], range: RangeOption): PricePoint[] => {
-  if (range === "ALL") {
+  if (range === "ALL" || points.length === 0) {
     return points;
   }
 
-  const size = range === "2W" ? Math.min(points.length, 4) : Math.min(points.length, 6);
-  return points.slice(points.length - size);
+  const split = firstForecastOnlyIndex(points);
+  const history = points.slice(0, split);
+  const forecastTail = points.slice(split);
+
+  if (range === "1M") {
+    return points;
+  }
+
+  if (range === "2W") {
+    const window = 15;
+    const histShown = history.slice(Math.max(0, history.length - window));
+    return [...histShown, ...forecastTail];
+  }
+
+  return points;
 };
 
 const toChartData = (points: PricePoint[], mode: AxisMode): ChartDatum[] => {
