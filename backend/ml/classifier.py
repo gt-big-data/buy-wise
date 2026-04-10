@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ml.volatility import compute_volatility
+from backend.ml.volatility import compute_volatility
 
 @dataclass
 class ClassificationResult:
@@ -9,8 +9,8 @@ class ClassificationResult:
     threshold: float
     drop_pct: float
     sufficient_data: bool
-    days_to_wait: int        # max savings horizon — shown to user
-    earliest_horizon: int    # earliest qualifying horizon — tracked internally
+    days_to_wait: int   
+    earliest_horizon: int   
 
 class PriceRecommendationClassifier:
 
@@ -71,7 +71,6 @@ class PriceRecommendationClassifier:
         predicted_price_30d: float,
         price_history: list[dict]
     ) -> ClassificationResult:
-        # current price is most recent available price
         available = [r for r in price_history if r["availability"]]
 
         if not available:
@@ -86,7 +85,6 @@ class PriceRecommendationClassifier:
                 earliest_horizon=0
             )
 
-        # check deal flag — already on a deal, no point waiting
         if available[0]["deal_flag"]:
             return ClassificationResult(
                 recommendation="BUY",
@@ -101,7 +99,6 @@ class PriceRecommendationClassifier:
 
         current_price = float(available[0]["price"])
 
-        # evaluate all three horizons
         horizons = {
             7:  float(predicted_price_7d),
             14: float(predicted_price_14d),
@@ -152,3 +149,33 @@ class PriceRecommendationClassifier:
             days_to_wait=best["days"],
             earliest_horizon=earliest["days"]
         )
+
+'
+""'Test""'
+if __name__ == "__main__":
+    clf = PriceRecommendationClassifier()
+
+    sample_history = [
+        {
+            "price": 100.0,
+            "availability": True,
+            "deal_flag": False,
+            "timestamp": "2025-01-01"
+        },
+        {
+            "price": 98.0,
+            "availability": True,
+            "deal_flag": False,
+            "timestamp": "2024-12-01"
+        }
+    ]
+
+    result = clf.classify(
+        predicted_price_7d=97.0,
+        predicted_price_14d=94.0,
+        predicted_price_30d=90.0,
+        price_history=sample_history
+    )
+
+    print(result)
+        

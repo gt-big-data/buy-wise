@@ -57,7 +57,6 @@ Returns:
             sufficient_data=False
         )
 
-    # filter out unavailable prices
     available = [
         row for row in price_history
         if row["availability"]
@@ -71,10 +70,8 @@ Returns:
             sufficient_data=False
         )
 
-    # sort oldest first since get_price_history returns newest first
     sorted_history = sorted(available, key=lambda x: x["timestamp"])
 
-    # take last window_days entries
     recent = sorted_history[-window_days:]
 
     prices_arr = np.array([row["price"] for row in recent])
