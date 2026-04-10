@@ -131,6 +131,45 @@ const PriceChart: React.FC<PriceChartProps> = ({
           return ((predictedBestPrice - baselineValue) / baselineValue) * 100;
         })();
 
+  const yAxisDomain = useMemo((): [number, number] | [string, string] => {
+    const values: number[] = [];
+    if (axisMode === "price") {
+      for (const row of chartData) {
+        if (typeof row.actual === "number") {
+          values.push(row.actual);
+        }
+        if (typeof row.predicted === "number") {
+          values.push(row.predicted);
+        }
+      }
+      values.push(predictedBestPrice);
+    } else {
+      for (const row of chartData) {
+        if (typeof row.actualDelta === "number") {
+          values.push(row.actualDelta);
+        }
+        if (typeof row.predictedDelta === "number") {
+          values.push(row.predictedDelta);
+        }
+      }
+      values.push(bestPredictionValue);
+    }
+
+    if (values.length === 0) {
+      return ["auto", "auto"];
+    }
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || Math.max(Math.abs(max), 1);
+    const pad =
+      axisMode === "price"
+        ? Math.max(8, span * 0.04)
+        : Math.max(3, span * 0.1);
+
+    return [min - pad, max + pad];
+  }, [axisMode, chartData, predictedBestPrice, bestPredictionValue]);
+
   const yFormatter = axisMode === "price" ? formatMoney : formatDelta;
 
   return (
@@ -200,7 +239,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
               axisLine={{ stroke: "#c7d0c4" }}
               tickLine={false}
               width={54}
-              domain={axisMode === "price" ? ["dataMin - 8", "dataMax + 8"] : ["auto", "auto"]}
+              domain={yAxisDomain}
             />
             <Tooltip content={<CustomTooltip mode={axisMode} />} />
 
