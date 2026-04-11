@@ -9,6 +9,7 @@ export type PricePoint = {
 export type BuyWiseData = {
   asin: string;
   productTitle: string;
+  imageUrl?: string;
   currentPrice: number;
   predictedBestPrice: number;
   expectedSavings: number;
@@ -17,4 +18,5 @@ export type BuyWiseData = {
   why: string;
   chartTitle: string;
   points: PricePoint[];
+  isWatched?: boolean;
 };

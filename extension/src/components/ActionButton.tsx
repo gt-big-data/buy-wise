@@ -7,6 +7,7 @@ type ActionButtonProps = {
   isLoading?: boolean;
   disabled?: boolean;
   labelOverride?: string;
+  isWatched?: boolean;
 };
 
 const ActionButton: React.FC<ActionButtonProps> = ({
@@ -14,14 +15,22 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   onClick,
   isLoading = false,
   disabled = false,
-  labelOverride
+  labelOverride,
+  isWatched = false
 }) => {
-  const defaultLabel = recommendation === "WAIT" ? "Add to Watchlist" : "Buy With Confidence";
+  const defaultLabel = isWatched 
+    ? (
+       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          Watching <span className="buywise-live-dot" />
+       </span>
+    )
+    : (recommendation === "WAIT" ? "Add to Watchlist" : "Buy");
   const buttonLabel = isLoading ? "Working..." : labelOverride ?? defaultLabel;
+  const watchedClass = isWatched ? " is-watched" : "";
 
   return (
     <button
-      className={`buywise-action-button buywise-action-button--${recommendation.toLowerCase()}`}
+      className={`buywise-action-button buywise-ripple buywise-action-button--${recommendation.toLowerCase()}${watchedClass}`}
       onClick={onClick}
       type="button"
       disabled={disabled || isLoading}

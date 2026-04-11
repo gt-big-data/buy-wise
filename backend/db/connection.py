@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from typing import Optional
+
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import pooling
@@ -71,9 +73,18 @@ def insert_product(asin, title, brand, category):
 
 
 
-def insert_price(product_id, price, availability=True, deal_flag=False):
+def insert_price(
+    product_id,
+    price,
+    availability=True,
+    deal_flag=False,
+    *,
+    recorded_at: Optional[datetime] = None,
+):
+    """Insert a price row. Pass ``recorded_at`` for historical samples (e.g. Keepa); else UTC now."""
     conn = None
     cursor = None
+    ts = recorded_at if recorded_at is not None else datetime.utcnow()
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -81,7 +92,7 @@ def insert_price(product_id, price, availability=True, deal_flag=False):
             INSERT INTO prices (product_id, price, timestamp, availability, deal_flag)
             VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (product_id, price, datetime.now(), availability, deal_flag))
+        cursor.execute(query, (product_id, price, ts, availability, deal_flag))
         conn.commit()
     except Exception as e:
         if conn:
