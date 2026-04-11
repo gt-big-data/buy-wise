@@ -207,6 +207,7 @@ def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=No
     except Exception as e:
         if conn:
             conn.rollback()
+        raise e
     finally:
         if cursor:
             cursor.close()
