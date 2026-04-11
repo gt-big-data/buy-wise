@@ -3,7 +3,7 @@ from enum import Enum
 from typing import List, Optional
 import logging
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -20,6 +20,8 @@ try:
         get_latest_prediction,
         get_price_history as db_get_price_history,
         insert_prediction,
+        insert_user_activity,
+        get_recent_user_activity,
     )
     from jobs.keepa_fetch import fetch_price_history as keepa_fetch
     _DB_AVAILABLE = True
@@ -102,11 +104,13 @@ class PriceHistoryResponse(BaseModel):
 class ActivityAction(str, Enum):
     purchased = "purchased"
     dismissed = "dismissed"
+    added_to_watchlist = "added_to_watchlist"
 
 
 class ActivityRequest(BaseModel):
     asin: str = Field(..., example="B08N5WRWNW")
     action: ActivityAction = Field(..., example="dismissed")
+    recommendation_shown: Optional[RecommendationDirection] = Field(None, example="WAIT")
     user_id: Optional[str] = Field(None, example="user_123")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     metadata: Optional[dict] = Field(None, example={"price": 199.99})
@@ -116,6 +120,21 @@ class ActivityResponse(BaseModel):
     status: str = Field(..., example="logged")
     received_at: datetime = Field(..., example="2026-03-16T00:00:00Z")
     details: Optional[str] = Field(None)
+
+
+class ActivityRecord(BaseModel):
+    activity_id: int = Field(..., example=42)
+    asin: str = Field(..., example="B08N5WRWNW")
+    recommendation_shown: RecommendationDirection = Field(..., example="WAIT")
+    action: ActivityAction = Field(..., example="dismissed")
+    user_id: Optional[str] = Field(None, example="user_123")
+    timestamp: datetime = Field(..., example="2026-03-16T00:00:00Z")
+
+
+class RecentActivityResponse(BaseModel):
+    items: List[ActivityRecord]
+    total_count: int = Field(..., ge=0, example=20)
+    limit: int = Field(..., ge=1, example=20)
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -140,6 +159,27 @@ def _generate_why(
         f"Based on recent price history, the current price is competitive "
         f"and unlikely to drop significantly in the next {horizon_days} days."
     )
+
+
+def _resolve_activity_recommendation(request: ActivityRequest) -> RecommendationDirection:
+    if request.recommendation_shown:
+        return request.recommendation_shown
+
+    product = get_product(request.asin)
+    if not product:
+        raise HTTPException(
+            status_code=400,
+            detail="recommendation_shown is required when no product prediction exists",
+        )
+
+    prediction = get_latest_prediction(product["product_id"])
+    if not prediction:
+        raise HTTPException(
+            status_code=400,
+            detail="recommendation_shown is required when no product prediction exists",
+        )
+
+    return RecommendationDirection(prediction["recommendation"])
 
 
 def _day_label_utc(d: datetime) -> str:
@@ -398,12 +438,48 @@ def get_price_history(asin: str) -> PriceHistoryResponse:
 
 @app.post("/activity", response_model=ActivityResponse)
 def log_activity(request: ActivityRequest) -> ActivityResponse:
+    _require_db()
+
+    recommendation_shown = _resolve_activity_recommendation(request)
+    activity_id = insert_user_activity(
+        request.asin,
+        recommendation_shown.value,
+        request.action.value,
+        request.timestamp,
+        request.user_id,
+    )
     logger.info(
-        "activity: asin=%s action=%s user=%s",
-        request.asin, request.action, request.user_id,
+        "activity saved: id=%s asin=%s recommendation=%s action=%s user=%s",
+        activity_id,
+        request.asin,
+        recommendation_shown.value,
+        request.action.value,
+        request.user_id,
     )
     return ActivityResponse(
-        status="logged",
+        status="saved",
         received_at=datetime.utcnow(),
-        details=f"Action '{request.action}' on ASIN {request.asin}",
+        details=f"Action '{request.action.value}' on ASIN {request.asin}",
     )
+
+
+@app.get("/activity/recent", response_model=RecentActivityResponse)
+def get_recent_activity(
+    limit: int = Query(20, ge=1, le=100),
+    user_id: Optional[str] = Query(None),
+) -> RecentActivityResponse:
+    _require_db()
+
+    rows = get_recent_user_activity(limit=limit, user_id=user_id)
+    items = [
+        ActivityRecord(
+            activity_id=row["activity_id"],
+            asin=row["asin"],
+            recommendation_shown=RecommendationDirection(row["recommendation_shown"]),
+            action=ActivityAction(row["action"]),
+            user_id=row.get("user_id"),
+            timestamp=row["timestamp"],
+        )
+        for row in rows
+    ]
+    return RecentActivityResponse(items=items, total_count=len(items), limit=limit)
