@@ -7,7 +7,9 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
+  YAxis,
+  ReferenceLine,
+  ReferenceDot
 } from "recharts";
 import { PricePoint } from "../types";
 
@@ -33,13 +35,33 @@ const RANGE_OPTIONS: RangeOption[] = ["2W", "1M", "ALL"];
 const formatMoney = (value: number): string => `$${Math.round(value)}`;
 const formatDelta = (value: number): string => `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 
+const firstForecastOnlyIndex = (points: PricePoint[]): number => {
+  const idx = points.findIndex(
+    (p) => typeof p.predicted === "number" && typeof p.actual !== "number"
+  );
+  return idx === -1 ? points.length : idx;
+};
+
 const clampRange = (points: PricePoint[], range: RangeOption): PricePoint[] => {
-  if (range === "ALL") {
+  if (range === "ALL" || points.length === 0) {
     return points;
   }
 
-  const size = range === "2W" ? Math.min(points.length, 4) : Math.min(points.length, 6);
-  return points.slice(points.length - size);
+  const split = firstForecastOnlyIndex(points);
+  const history = points.slice(0, split);
+  const forecastTail = points.slice(split);
+
+  if (range === "1M") {
+    return points;
+  }
+
+  if (range === "2W") {
+    const window = 15;
+    const histShown = history.slice(Math.max(0, history.length - window));
+    return [...histShown, ...forecastTail];
+  }
+
+  return points;
 };
 
 const toChartData = (points: PricePoint[], mode: AxisMode): ChartDatum[] => {
@@ -131,6 +153,48 @@ const PriceChart: React.FC<PriceChartProps> = ({
           return ((predictedBestPrice - baselineValue) / baselineValue) * 100;
         })();
 
+  const bestDataPoint = chartData.find(d => d[predictedLineKey] !== undefined && Math.abs(d[predictedLineKey]! - bestPredictionValue) < 0.001);
+  const bestPointLabel = bestDataPoint?.label;
+
+  const yAxisDomain = useMemo((): [number, number] | [string, string] => {
+    const values: number[] = [];
+    if (axisMode === "price") {
+      for (const row of chartData) {
+        if (typeof row.actual === "number") {
+          values.push(row.actual);
+        }
+        if (typeof row.predicted === "number") {
+          values.push(row.predicted);
+        }
+      }
+      values.push(predictedBestPrice);
+    } else {
+      for (const row of chartData) {
+        if (typeof row.actualDelta === "number") {
+          values.push(row.actualDelta);
+        }
+        if (typeof row.predictedDelta === "number") {
+          values.push(row.predictedDelta);
+        }
+      }
+      values.push(bestPredictionValue);
+    }
+
+    if (values.length === 0) {
+      return ["auto", "auto"];
+    }
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || Math.max(Math.abs(max), 1);
+    const pad =
+      axisMode === "price"
+        ? Math.max(8, span * 0.04)
+        : Math.max(3, span * 0.1);
+
+    return [min - pad, max + pad];
+  }, [axisMode, chartData, predictedBestPrice, bestPredictionValue]);
+
   const yFormatter = axisMode === "price" ? formatMoney : formatDelta;
 
   return (
@@ -138,7 +202,12 @@ const PriceChart: React.FC<PriceChartProps> = ({
       <div className="buywise-chart-header">
         <div>
           <div className="buywise-section-title">{title}</div>
-          <div className="buywise-section-subtitle">Compare recent movement with the current forecast.</div>
+          <div className="buywise-section-subtitle">
+            <span style={{ display: 'block' }}>Compare recent movement with the current forecast.</span>
+            <span style={{ display: 'block', marginTop: '6px', fontWeight: 600, color: '#1f7a45' }}>
+               ⭐ Best time to buy lowest target: {formatMoney(predictedBestPrice)}
+            </span>
+          </div>
         </div>
 
         <div className="buywise-chart-controls">
@@ -185,6 +254,17 @@ const PriceChart: React.FC<PriceChartProps> = ({
                 <stop offset="0%" stopColor="#5ea55f" stopOpacity={0.34} />
                 <stop offset="100%" stopColor="#5ea55f" stopOpacity={0.05} />
               </linearGradient>
+              <linearGradient id="buywiseFutureGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8a6a11" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#8a6a11" stopOpacity={0.02} />
+              </linearGradient>
+              <filter id="buywise-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
             </defs>
 
             <CartesianGrid stroke="#d7ddd5" vertical={false} />
@@ -200,8 +280,11 @@ const PriceChart: React.FC<PriceChartProps> = ({
               axisLine={{ stroke: "#c7d0c4" }}
               tickLine={false}
               width={54}
-              domain={axisMode === "price" ? ["dataMin - 8", "dataMax + 8"] : ["auto", "auto"]}
+              domain={yAxisDomain}
             />
+            
+            <ReferenceLine x="Today" stroke="#8a6a11" strokeDasharray="3 3" label={{ position: 'top', value: 'Prediction starts', fill: '#8a6a11', fontSize: 10 }} />
+            
             <Tooltip content={<CustomTooltip mode={axisMode} />} />
 
             <Area
@@ -213,6 +296,14 @@ const PriceChart: React.FC<PriceChartProps> = ({
               connectNulls
               animationDuration={800}
             />
+            <Area
+              type="monotone"
+              dataKey={predictedLineKey}
+              stroke="none"
+              fill="url(#buywiseFutureGradient)"
+              connectNulls
+              animationDuration={1050}
+            />
             <Line
               type="monotone"
               dataKey={actualLineKey}
@@ -223,6 +314,17 @@ const PriceChart: React.FC<PriceChartProps> = ({
               connectNulls
               animationDuration={900}
             />
+            {bestPointLabel && (
+              <ReferenceDot 
+                 x={bestPointLabel} 
+                 y={bestPredictionValue} 
+                 r={6} 
+                 fill="#ffffff" 
+                 stroke="#1d6b25" 
+                 strokeWidth={3} 
+                 style={{ filter: 'url(#buywise-glow)' }} 
+              />
+            )}
             <Line
               type="monotone"
               dataKey={predictedLineKey}

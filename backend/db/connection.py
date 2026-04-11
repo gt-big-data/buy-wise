@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from typing import Optional
+
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import pooling
@@ -87,9 +89,18 @@ def insert_product(asin, title, brand, category):
 
 
 
-def insert_price(product_id, price, availability=True, deal_flag=False):
+def insert_price(
+    product_id,
+    price,
+    availability=True,
+    deal_flag=False,
+    *,
+    recorded_at: Optional[datetime] = None,
+):
+    """Insert a price row. Pass ``recorded_at`` for historical samples (e.g. Keepa); else UTC now."""
     conn = None
     cursor = None
+    ts = recorded_at if recorded_at is not None else datetime.utcnow()
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -97,7 +108,7 @@ def insert_price(product_id, price, availability=True, deal_flag=False):
             INSERT INTO prices (product_id, price, timestamp, availability, deal_flag)
             VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (product_id, price, datetime.now(), availability, deal_flag))
+        cursor.execute(query, (product_id, price, ts, availability, deal_flag))
         conn.commit()
     except Exception as e:
         if conn:
@@ -194,9 +205,9 @@ def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=No
 
         query = """
             INSERT INTO watchlist (
-                user_id, 
-                product_id, 
-                recommendation_at_add, 
+                user_id,
+                product_id,
+                recommendation_at_add,
                 target_price
             )
             VALUES (%s, %s, %s, %s)
@@ -212,7 +223,8 @@ def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=No
         if cursor:
             cursor.close()
         if conn:
-            conn.close()        
+            conn.close()
+
 
 def remove_from_watchlist(user_id, product_id):
     conn = None
@@ -235,6 +247,7 @@ def remove_from_watchlist(user_id, product_id):
             cursor.close()
         if conn:
             conn.close()
+
 
 def get_watchlist(user_id):
     conn = None
@@ -266,6 +279,76 @@ def get_watchlist(user_id):
                 row['current_recommendation'] != row['recommendation_at_add']
             )
         return rows
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def insert_user_activity(
+    asin,
+    recommendation_shown,
+    action,
+    timestamp,
+    user_id=None,
+):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = """
+            INSERT INTO user_activity (
+                asin,
+                recommendation_shown,
+                action,
+                user_id,
+                timestamp
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(
+            query,
+            (asin, recommendation_shown, action, user_id, timestamp),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def get_recent_user_activity(limit=20, user_id=None):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        if user_id:
+            query = """
+                SELECT *
+                FROM user_activity
+                WHERE user_id = %s
+                ORDER BY timestamp DESC, activity_id DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (user_id, limit))
+        else:
+            query = """
+                SELECT *
+                FROM user_activity
+                ORDER BY timestamp DESC, activity_id DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+        return cursor.fetchall()
     finally:
         if cursor:
             cursor.close()

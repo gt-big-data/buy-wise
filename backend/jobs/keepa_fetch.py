@@ -136,5 +136,11 @@ def _write_to_db(asin: str, name: str, records: list[dict]) -> None:
 
     product_id = product["product_id"]
     for record in records:
-        ts = datetime.utcfromtimestamp(record["timestamp"])
-        insert_price(product_id, record["price"], availability=True, deal_flag=False)
+        ts = datetime.utcfromtimestamp(int(record["timestamp"]))
+        insert_price(
+            product_id,
+            record["price"],
+            availability=True,
+            deal_flag=False,
+            recorded_at=ts,
+        )

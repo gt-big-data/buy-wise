@@ -13,6 +13,22 @@ type PopupState =
   | { status: "non-product" }
   | { status: "error"; message: string };
 
+const MOCK_DASHBOARD = {
+  watchlist: [
+    { title: "Sony XM5", rec: "WAIT" },
+    { title: "AirPods Pro", rec: "BUY" }
+  ],
+  alerts: [{ title: "Samsung SSD", change: "WAIT → BUY" }],
+  recent: [
+    { title: "Kindle", rec: "WAIT" },
+    { title: "Anker Charger", rec: "BUY" }
+  ],
+  summary: {
+    savings: "$214",
+    accuracy: "88%"
+  }
+};
+
 const App: React.FC = () => {
   const [popupState, setPopupState] = useState<PopupState>({ status: "loading" });
 
@@ -93,13 +109,63 @@ const App: React.FC = () => {
   if (popupState.status === "non-product") {
     return (
       <div className="buywise-popup-root">
-        <div className="buywise-popup-inner">
+        <div className="buywise-popup-inner buywise-dashboard-inner">
           <div className="buywise-popup-title">BuyWise</div>
-          <div className="buywise-popup-card">
-            <div className="buywise-popup-badge">Not a product page</div>
-            <p className="buywise-popup-muted">
-              Open an Amazon product detail page to see price insight and a Buy / Wait recommendation.
-            </p>
+
+          <div className="buywise-dashboard-summary-row">
+            <div className="buywise-popup-card buywise-dashboard-summary-card">
+              <div className="buywise-popup-helper-title">Saved</div>
+              <div className="buywise-popup-badge">
+                {MOCK_DASHBOARD.summary.savings}
+              </div>
+            </div>
+
+            <div className="buywise-popup-card buywise-dashboard-summary-card">
+              <div className="buywise-popup-helper-title">Accuracy</div>
+              <div className="buywise-popup-badge">
+                {MOCK_DASHBOARD.summary.accuracy}
+              </div>
+            </div>
+          </div>
+
+          <div className="buywise-dashboard-grid">
+            <div className="buywise-dashboard-col">
+              <div className="buywise-popup-card buywise-dashboard-section-card">
+                <div className="buywise-popup-helper-title">Alerts</div>
+                {MOCK_DASHBOARD.alerts.map((item) => (
+                  <div key={item.title} className="buywise-popup-helper">
+                    <div className="buywise-popup-badge buywise-popup-badge--alert">{item.change}</div>
+                    <p className="buywise-popup-muted buywise-popup-muted--tight">
+                      {item.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="buywise-popup-card buywise-dashboard-section-card">
+                <div className="buywise-popup-helper-title">Recent</div>
+                {MOCK_DASHBOARD.recent.map((item) => (
+                  <div key={item.title} className="buywise-popup-helper">
+                    <div className={`buywise-popup-badge buywise-popup-badge--${item.rec.toLowerCase()}`}>{item.rec}</div>
+                    <p className="buywise-popup-muted buywise-popup-muted--tight">
+                      {item.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="buywise-popup-card buywise-dashboard-section-card">
+              <div className="buywise-popup-helper-title">Watchlist</div>
+              {MOCK_DASHBOARD.watchlist.map((item) => (
+                <div key={item.title} className="buywise-popup-helper">
+                  <div className={`buywise-popup-badge buywise-popup-badge--${item.rec.toLowerCase()}`}>{item.rec}</div>
+                  <p className="buywise-popup-muted buywise-popup-muted--tight">
+                    {item.title}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
