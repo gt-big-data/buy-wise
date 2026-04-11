@@ -35,13 +35,33 @@ const RANGE_OPTIONS: RangeOption[] = ["2W", "1M", "ALL"];
 const formatMoney = (value: number): string => `$${Math.round(value)}`;
 const formatDelta = (value: number): string => `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
 
+const firstForecastOnlyIndex = (points: PricePoint[]): number => {
+  const idx = points.findIndex(
+    (p) => typeof p.predicted === "number" && typeof p.actual !== "number"
+  );
+  return idx === -1 ? points.length : idx;
+};
+
 const clampRange = (points: PricePoint[], range: RangeOption): PricePoint[] => {
-  if (range === "ALL") {
+  if (range === "ALL" || points.length === 0) {
     return points;
   }
 
-  const size = range === "2W" ? Math.min(points.length, 4) : Math.min(points.length, 6);
-  return points.slice(points.length - size);
+  const split = firstForecastOnlyIndex(points);
+  const history = points.slice(0, split);
+  const forecastTail = points.slice(split);
+
+  if (range === "1M") {
+    return points;
+  }
+
+  if (range === "2W") {
+    const window = 15;
+    const histShown = history.slice(Math.max(0, history.length - window));
+    return [...histShown, ...forecastTail];
+  }
+
+  return points;
 };
 
 const toChartData = (points: PricePoint[], mode: AxisMode): ChartDatum[] => {
@@ -136,6 +156,45 @@ const PriceChart: React.FC<PriceChartProps> = ({
   const bestDataPoint = chartData.find(d => d[predictedLineKey] !== undefined && Math.abs(d[predictedLineKey]! - bestPredictionValue) < 0.001);
   const bestPointLabel = bestDataPoint?.label;
 
+  const yAxisDomain = useMemo((): [number, number] | [string, string] => {
+    const values: number[] = [];
+    if (axisMode === "price") {
+      for (const row of chartData) {
+        if (typeof row.actual === "number") {
+          values.push(row.actual);
+        }
+        if (typeof row.predicted === "number") {
+          values.push(row.predicted);
+        }
+      }
+      values.push(predictedBestPrice);
+    } else {
+      for (const row of chartData) {
+        if (typeof row.actualDelta === "number") {
+          values.push(row.actualDelta);
+        }
+        if (typeof row.predictedDelta === "number") {
+          values.push(row.predictedDelta);
+        }
+      }
+      values.push(bestPredictionValue);
+    }
+
+    if (values.length === 0) {
+      return ["auto", "auto"];
+    }
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = max - min || Math.max(Math.abs(max), 1);
+    const pad =
+      axisMode === "price"
+        ? Math.max(8, span * 0.04)
+        : Math.max(3, span * 0.1);
+
+    return [min - pad, max + pad];
+  }, [axisMode, chartData, predictedBestPrice, bestPredictionValue]);
+
   const yFormatter = axisMode === "price" ? formatMoney : formatDelta;
 
   return (
@@ -221,7 +280,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
               axisLine={{ stroke: "#c7d0c4" }}
               tickLine={false}
               width={54}
-              domain={axisMode === "price" ? ["dataMin - 8", "dataMax + 8"] : ["auto", "auto"]}
+              domain={yAxisDomain}
             />
             
             <ReferenceLine x="Today" stroke="#8a6a11" strokeDasharray="3 3" label={{ position: 'top', value: 'Prediction starts', fill: '#8a6a11', fontSize: 10 }} />
