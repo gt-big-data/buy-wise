@@ -13,6 +13,22 @@ type PopupState =
   | { status: "non-product" }
   | { status: "error"; message: string };
 
+const MOCK_DASHBOARD = {
+  watchlist: [
+    { title: "Sony XM5", rec: "WAIT" },
+    { title: "AirPods Pro", rec: "BUY" }
+  ],
+  alerts: [{ title: "Samsung SSD", change: "WAIT → BUY" }],
+  recent: [
+    { title: "Kindle", rec: "WAIT" },
+    { title: "Anker Charger", rec: "BUY" }
+  ],
+  summary: {
+    savings: "$214",
+    accuracy: "88%"
+  }
+};
+
 const App: React.FC = () => {
   const [popupState, setPopupState] = useState<PopupState>({ status: "loading" });
 
@@ -90,70 +106,58 @@ const App: React.FC = () => {
     );
   }
 
-if (popupState.status === "non-product") {
-  const mockDashboard = {
-    watchlist: [
-      { title: "Sony XM5", rec: "WAIT" },
-      { title: "AirPods Pro", rec: "BUY" }
-    ],
-    alerts: [{ title: "Samsung SSD", change: "WAIT → BUY" }],
-    recent: [
-      { title: "Kindle", rec: "WAIT" },
-      { title: "Anker Charger", rec: "BUY" }
-    ],
-    summary: {
-      savings: "$214",
-      accuracy: "88%"
-    }
-  };
+  if (popupState.status === "non-product") {
+    return (
+      <div className="buywise-popup-root">
+        <div className="buywise-popup-inner buywise-dashboard-inner">
+          <div className="buywise-popup-title">BuyWise</div>
 
-  return (
-    <div className="buywise-popup-root">
-      <div
-        className="buywise-popup-inner"
-        style={{ width: 380, maxWidth: 380 }}
-      >
-        <div className="buywise-popup-title">BuyWise</div>
+          <div className="buywise-dashboard-summary-row">
+            <div className="buywise-popup-card buywise-dashboard-summary-card">
+              <div className="buywise-popup-helper-title">Saved</div>
+              <div className="buywise-popup-badge">
+                {MOCK_DASHBOARD.summary.savings}
+              </div>
+            </div>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-          <div className="buywise-popup-card" style={{ flex: 1, padding: 10 }}>
-            <div className="buywise-popup-helper-title">Saved</div>
-            <div className="buywise-popup-badge">
-              {mockDashboard.summary.savings}
+            <div className="buywise-popup-card buywise-dashboard-summary-card">
+              <div className="buywise-popup-helper-title">Accuracy</div>
+              <div className="buywise-popup-badge">
+                {MOCK_DASHBOARD.summary.accuracy}
+              </div>
             </div>
           </div>
 
-          <div className="buywise-popup-card" style={{ flex: 1, padding: 10 }}>
-            <div className="buywise-popup-helper-title">Accuracy</div>
-            <div className="buywise-popup-badge">
-              {mockDashboard.summary.accuracy}
-            </div>
-          </div>
-        </div>
+          <div className="buywise-dashboard-grid">
+            <div className="buywise-dashboard-col">
+              <div className="buywise-popup-card buywise-dashboard-section-card">
+                <div className="buywise-popup-helper-title">Alerts</div>
+                {MOCK_DASHBOARD.alerts.map((item) => (
+                  <div key={item.title} className="buywise-popup-helper">
+                    <div className="buywise-popup-badge">{item.change}</div>
+                    <p className="buywise-popup-muted buywise-popup-muted--tight">
+                      {item.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 8
-          }}
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div className="buywise-popup-card" style={{ padding: 10 }}>
-              <div className="buywise-popup-helper-title">Alerts</div>
-              {mockDashboard.alerts.map((item) => (
-                <div key={item.title} className="buywise-popup-helper">
-                  <div className="buywise-popup-badge">{item.change}</div>
-                  <p className="buywise-popup-muted buywise-popup-muted--tight">
-                    {item.title}
-                  </p>
-                </div>
-              ))}
+              <div className="buywise-popup-card buywise-dashboard-section-card">
+                <div className="buywise-popup-helper-title">Recent</div>
+                {MOCK_DASHBOARD.recent.map((item) => (
+                  <div key={item.title} className="buywise-popup-helper">
+                    <div className="buywise-popup-badge">{item.rec}</div>
+                    <p className="buywise-popup-muted buywise-popup-muted--tight">
+                      {item.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="buywise-popup-card" style={{ padding: 10 }}>
-              <div className="buywise-popup-helper-title">Recent</div>
-              {mockDashboard.recent.map((item) => (
+            <div className="buywise-popup-card buywise-dashboard-section-card">
+              <div className="buywise-popup-helper-title">Watchlist</div>
+              {MOCK_DASHBOARD.watchlist.map((item) => (
                 <div key={item.title} className="buywise-popup-helper">
                   <div className="buywise-popup-badge">{item.rec}</div>
                   <p className="buywise-popup-muted buywise-popup-muted--tight">
@@ -163,22 +167,10 @@ if (popupState.status === "non-product") {
               ))}
             </div>
           </div>
-          <div className="buywise-popup-card" style={{ padding: 10 }}>
-            <div className="buywise-popup-helper-title">Watchlist</div>
-            {mockDashboard.watchlist.map((item) => (
-              <div key={item.title} className="buywise-popup-helper">
-                <div className="buywise-popup-badge">{item.rec}</div>
-                <p className="buywise-popup-muted buywise-popup-muted--tight">
-                  {item.title}
-                </p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   if (popupState.status === "product-opened") {
     return (
