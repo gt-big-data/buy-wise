@@ -134,7 +134,7 @@ const App: React.FC = () => {
                 <div className="buywise-popup-helper-title">Alerts</div>
                 {MOCK_DASHBOARD.alerts.map((item) => (
                   <div key={item.title} className="buywise-popup-helper">
-                    <div className="buywise-popup-badge">{item.change}</div>
+                    <div className="buywise-popup-badge buywise-popup-badge--alert">{item.change}</div>
                     <p className="buywise-popup-muted buywise-popup-muted--tight">
                       {item.title}
                     </p>
@@ -146,7 +146,7 @@ const App: React.FC = () => {
                 <div className="buywise-popup-helper-title">Recent</div>
                 {MOCK_DASHBOARD.recent.map((item) => (
                   <div key={item.title} className="buywise-popup-helper">
-                    <div className="buywise-popup-badge">{item.rec}</div>
+                    <div className={`buywise-popup-badge buywise-popup-badge--${item.rec.toLowerCase()}`}>{item.rec}</div>
                     <p className="buywise-popup-muted buywise-popup-muted--tight">
                       {item.title}
                     </p>
@@ -159,7 +159,7 @@ const App: React.FC = () => {
               <div className="buywise-popup-helper-title">Watchlist</div>
               {MOCK_DASHBOARD.watchlist.map((item) => (
                 <div key={item.title} className="buywise-popup-helper">
-                  <div className="buywise-popup-badge">{item.rec}</div>
+                  <div className={`buywise-popup-badge buywise-popup-badge--${item.rec.toLowerCase()}`}>{item.rec}</div>
                   <p className="buywise-popup-muted buywise-popup-muted--tight">
                     {item.title}
                   </p>
