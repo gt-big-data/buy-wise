@@ -8,6 +8,7 @@ type BuyWisePanelProps = {
   data: BuyWiseData;
   onClose?: () => void;
   onActionClick: () => void;
+  onWatchlistClick?: () => void;
   showCloseButton?: boolean;
   title?: string;
   floating?: boolean;
@@ -19,12 +20,23 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
   data,
   onClose,
   onActionClick,
+  onWatchlistClick,
   showCloseButton = false,
   title = "BuyWise",
   floating = false,
 }) => {
   const [isDismissing, setIsDismissing] = useState(false);
+  const [isWatched, setIsWatched] = useState(Boolean(data.isWatched));
+  const [showToast, setShowToast] = useState(false);
   const dismissStartedRef = useRef(false);
+
+  const handleWatchlist = useCallback(() => {
+     if (isWatched) return;
+     setIsWatched(true);
+     setShowToast(true);
+     setTimeout(() => setShowToast(false), 3000);
+     if (onWatchlistClick) onWatchlistClick();
+  }, [isWatched, onWatchlistClick]);
 
   const handleRequestClose = useCallback(() => {
     if (!onClose || dismissStartedRef.current) {
@@ -68,9 +80,18 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
             </div>
 
             <section className="buywise-product-summary" aria-label="Product">
-              <h2 className="buywise-product-summary-title">
-                {data.productTitle || "This product"}
-              </h2>
+              <div className="buywise-header-product-info">
+                {data.imageUrl && (
+                  <img
+                    src={data.imageUrl}
+                    alt="Product"
+                    className="buywise-product-image"
+                  />
+                )}
+                <h2 className="buywise-product-summary-title">
+                  {data.productTitle || "This product"}
+                </h2>
+              </div>
             </section>
           </header>
 
@@ -83,6 +104,8 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
               confidence={data.confidence}
               expectedSavings={data.expectedSavings}
               onActionClick={onActionClick}
+              onWatchlistClick={handleWatchlist}
+              isWatched={isWatched}
             />
           </section>
 
@@ -98,6 +121,15 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
             />
           </section>
         </div>
+        
+        {showToast && (
+          <div className="buywise-toast-wrap">
+            <div className="buywise-toast">
+              <span className="buywise-toast-icon">✓</span>
+              Item added to your BuyWise Watchlist!
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
