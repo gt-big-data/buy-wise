@@ -199,7 +199,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
                 <stop offset="0%" stopColor="#8a6a11" stopOpacity={0.25} />
                 <stop offset="100%" stopColor="#8a6a11" stopOpacity={0.02} />
               </linearGradient>
-              <filter id="buwyise-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <filter id="buywise-glow" x="-50%" y="-50%" width="200%" height="200%">
                 <feGaussianBlur stdDeviation="4" result="coloredBlur" />
                 <feMerge>
                   <feMergeNode in="coloredBlur" />
@@ -263,7 +263,7 @@ const PriceChart: React.FC<PriceChartProps> = ({
                  fill="#ffffff" 
                  stroke="#1d6b25" 
                  strokeWidth={3} 
-                 style={{ filter: 'url(#buwyise-glow)' }} 
+                 style={{ filter: 'url(#buywise-glow)' }} 
               />
             )}
             <Line
