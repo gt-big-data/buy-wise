@@ -12,6 +12,7 @@ dbconfig = {
     "host": os.getenv("DB_HOST", "localhost"),
     "user": os.getenv("DB_USER"),
     "password": os.getenv("DB_PASSWORD"),
+    "port": int(os.getenv("DB_PORT", 3306)),
     "database": os.getenv("DB_NAME", "buywise")
 }
 
@@ -33,6 +34,21 @@ def get_product(asin):
         cursor = conn.cursor(dictionary=True)
         query = "SELECT * FROM products WHERE asin = %s"
         cursor.execute(query, (asin,))
+        return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def get_product_by_id(product_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM products WHERE product_id = %s"
+        cursor.execute(query, (product_id,))
         return cursor.fetchone()
     finally:
         if cursor:
@@ -178,6 +194,98 @@ def get_latest_prediction(product_id):
         if conn:
             conn.close()
 
+
+def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=None):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            INSERT INTO watchlist (
+                user_id,
+                product_id,
+                recommendation_at_add,
+                target_price
+            )
+            VALUES (%s, %s, %s, %s)
+        """
+
+        cursor.execute(query, (user_id, product_id, recommendation_at_add, target_price))
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def remove_from_watchlist(user_id, product_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = """
+            DELETE FROM watchlist
+            WHERE user_id = %s AND product_id = %s
+        """
+        cursor.execute(query, (user_id, product_id))
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def get_watchlist(user_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT
+                w.product_id, recommendation_at_add, w.target_price, w.added_at,
+                p.asin, p.title, p.brand, p.category,
+                pred.recommendation AS current_recommendation, pred.confidence_score, pred.pred_7d, pred.pred_14d, pred.pred_30d
+            FROM watchlist w
+            JOIN products p ON w.product_id = p.product_id
+            LEFT JOIN predictions pred ON pred.prediction_id = (
+                SELECT prediction_id FROM predictions
+                WHERE product_id = w.product_id
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+            WHERE w.user_id = %s
+            ORDER BY w.added_at DESC
+        """
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()
+        for row in rows:
+            row['recommendation_changed'] = (
+                row['current_recommendation'] is not None and
+                row['current_recommendation'] != row['recommendation_at_add']
+            )
+        return rows
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
 def insert_user_activity(
     asin,
     recommendation_shown,
@@ -215,6 +323,7 @@ def insert_user_activity(
             cursor.close()
         if conn:
             conn.close()
+
 
 def get_recent_user_activity(limit=20, user_id=None):
     conn = None

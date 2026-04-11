@@ -5,6 +5,7 @@
 CREATE database IF NOT EXISTS buywise;
 USE buywise;
 
+DROP TABLE IF EXISTS watchlist;
 DROP TABLE IF EXISTS predictions;
 DROP TABLE IF EXISTS user_activity;
 DROP TABLE IF EXISTS prices;
@@ -64,6 +65,26 @@ CREATE TABLE user_activity (
     INDEX idx_activity_time (timestamp),
     INDEX idx_activity_user_time (user_id, timestamp),
     INDEX idx_activity_asin_time (asin, timestamp)
+);
+
+CREATE TABLE watchlist (
+    watchlist_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    recommendation_at_add ENUM('BUY', 'WAIT') NOT NULL,
+    target_price DECIMAL(10,2),
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON DELETE CASCADE,
+
+-- add the following fk when the user relation is added
+    -- FOREIGN KEY (user_id) REFERENCES users(user_id)
+    -- ON DELETE CASCADE
+
+    UNIQUE KEY unique_watchlist (user_id, product_id),
+    INDEX idx_user (user_id),
+    INDEX idx_user_product (user_id, product_id)
 );
 
     
