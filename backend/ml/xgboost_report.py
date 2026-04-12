@@ -1,7 +1,7 @@
 """
 xgboost_report.py
 =================
-Generates XGBOOST_MODEL_BENCHMARK_REPORT.md from a RunResult produced by
+Generates MODEL_BENCHMARK_REPORT.md from a RunResult produced by
 xgboost_price_model.main().
 
 This file is NOT meant to be run directly. It is imported and called
@@ -12,7 +12,7 @@ automatically at the end of xgboost_price_model.main().
 
 Output
 ------
-  XGBOOST_MODEL_BENCHMARK_REPORT.md   — full markdown benchmark report
+  MODEL_BENCHMARK_REPORT.md   — full markdown benchmark report
 """
 
 from __future__ import annotations
@@ -76,7 +76,7 @@ def _early_late_split(
 # ── Public entry point ────────────────────────────────────────────────────────
 def generate_report(run_result: "RunResult") -> None:
     """
-    Build XGBOOST_MODEL_BENCHMARK_REPORT.md from a RunResult.
+    Build MODEL_BENCHMARK_REPORT.md from a RunResult.
 
     Called automatically by xgboost_price_model.main() — do not call directly.
     """
@@ -94,7 +94,7 @@ def generate_report(run_result: "RunResult") -> None:
     # ═══════════════════════════════════════════════════════════════════════
     # Header
     # ═══════════════════════════════════════════════════════════════════════
-    ln("# XGBOOST_MODEL_BENCHMARK_REPORT")
+    ln("# MODEL_BENCHMARK_REPORT")
     ln()
     ln(f"Generated: {now}")
     ln(f"Model: XGBoost ({model_files})")
@@ -197,11 +197,10 @@ def generate_report(run_result: "RunResult") -> None:
     # ═══════════════════════════════════════════════════════════════════════
     ln("## 3. Latency Benchmarks (batch_size=1)")
     ln()
-    ln(f"Measured on {run_result.horizons[horizons[0]].latency.get('n_runs', LATENCY_P99_TARGET_MS):.0f} "
-       f"predictions after {run_result.horizons[horizons[0]].latency.get('n_warmup', 10)} warm-up calls.")
+    _lat0 = run_result.horizons[horizons[0]].latency
+    ln(f"Measured on {_lat0.get('n_runs', 200)} predictions after "
+       f"{_lat0.get('n_warmup', 10)} warm-up calls.")
     ln()
-    ln("| Metric   | " + " | ".join(f"{h}d" for h in horizons) + " | Target | Result |")
-    ln("|----------|" + "|".join(["-" * 10] * len(horizons)) + "|--------|--------|")
 
     latency_rows = [
         ("Mean",   "mean",   None),
@@ -209,16 +208,20 @@ def generate_report(run_result: "RunResult") -> None:
         ("p95",    "p95",    None),
         ("p99",    "p99",    LATENCY_P99_TARGET_MS),
     ]
-    for row_label, key, target in latency_rows:
-        vals = [run_result.horizons[h].latency.get(key, float("nan")) for h in horizons]
-        val_cells = " | ".join(f"{v:.3f}ms" for v in vals)
-        if target is not None:
-            # use worst (max) p99 across horizons for the gate
-            worst = max(vals)
-            gate_str, _ = _check_gate("latency_p99", worst)
-            ln(f"| {row_label:<8} | {val_cells} | <{target:.0f}ms   | {gate_str} |")
-        else:
-            ln(f"| {row_label:<8} | {val_cells} | —      | —      |")
+    for h in horizons:
+        lat = run_result.horizons[h].latency
+        ln(f"### {h}-Day Horizon")
+        ln()
+        ln("| Metric | Value    | Target   | Result   |")
+        ln("|--------|----------|----------|----------|")
+        for row_label, key, target in latency_rows:
+            val = lat.get(key, float("nan"))
+            if target is not None:
+                gate_str, _ = _check_gate("latency_p99", val)
+                ln(f"| {row_label:<6} | {val:.3f}ms | <{target:.0f}ms    | {gate_str} |")
+            else:
+                ln(f"| {row_label:<6} | {val:.3f}ms | —        | —        |")
+        ln()
     ln()
     ln("---")
     ln()
@@ -389,6 +392,6 @@ def generate_report(run_result: "RunResult") -> None:
     # ═══════════════════════════════════════════════════════════════════════
     # Write report
     # ═══════════════════════════════════════════════════════════════════════
-    report_path = _HERE / "XGBOOST_MODEL_BENCHMARK_REPORT.md"
+    report_path = _HERE / "MODEL_BENCHMARK_REPORT.md"
     report_path.write_text("\n".join(lines), encoding="utf-8")
     print(f"\nReport written to: {report_path}")
