@@ -274,7 +274,8 @@ class PricePredictor:
             X = X.copy()
             X[col] = 0.0
 
-        return X[FEATURE_COLS]  # enforce exact column order
+        X = X[FEATURE_COLS].astype(float)  # enforce exact column order
+        return X
 
     # -----------------------------------------------------------------------
     # Single prediction (primary real-time path)

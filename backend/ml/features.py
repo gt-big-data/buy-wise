@@ -23,7 +23,6 @@ LAG_FEATURES = [
     "price", "price_lag1", "price_lag30",
     "amazon_lag_7d", "amazon_lag_14d",
     "amazon_ma_7d", "amazon_ma_14d",
-    "roll7_mean",   # via roll14_mean proxy
     "roll14_mean", "roll30_mean",
 ]
 

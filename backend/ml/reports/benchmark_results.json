@@ -1,0 +1,90 @@
+{
+  "7d": {
+    "regression": {
+      "horizon": 7,
+      "mae": 0.0583,
+      "rmse": 0.1369,
+      "r2": 0.925,
+      "meets_r2_gate": true,
+      "n_samples": 98996
+    },
+    "regression_dollars": {
+      "horizon": 7,
+      "mae_usd": 0.04,
+      "rmse_usd": 0.13,
+      "mean_actual_price_usd": 140.12
+    },
+    "classification": {
+      "horizon": 7,
+      "precision": 0.1,
+      "recall": 0.372,
+      "f1": 0.158,
+      "accuracy": 0.906,
+      "meets_f1_gate": false,
+      "confusion_matrix": {
+        "tn": 88844,
+        "fp": 7813,
+        "fn": 1468,
+        "tp": 871
+      },
+      "n_samples": 98996,
+      "n_wait_predicted": 8684,
+      "n_wait_actual": 2339,
+      "calibration": {
+        "mean_confidence_correct_waits": 0.995,
+        "mean_confidence_incorrect_waits": 1.0,
+        "n_correct_waits": 871,
+        "n_incorrect_waits": 7813
+      }
+    }
+  },
+  "14d": {
+    "regression": {
+      "horizon": 14,
+      "mae": 0.1144,
+      "rmse": 0.1966,
+      "r2": 0.8453,
+      "meets_r2_gate": true,
+      "n_samples": 95514
+    },
+    "regression_dollars": {
+      "horizon": 14,
+      "mae_usd": 0.08,
+      "rmse_usd": 0.19,
+      "mean_actual_price_usd": 139.95
+    },
+    "classification": {
+      "horizon": 14,
+      "precision": 0.101,
+      "recall": 0.368,
+      "f1": 0.159,
+      "accuracy": 0.908,
+      "meets_f1_gate": false,
+      "confusion_matrix": {
+        "tn": 85925,
+        "fp": 7343,
+        "fn": 1419,
+        "tp": 827
+      },
+      "n_samples": 95514,
+      "n_wait_predicted": 8170,
+      "n_wait_actual": 2246,
+      "calibration": {
+        "mean_confidence_correct_waits": 0.995,
+        "mean_confidence_incorrect_waits": 1.0,
+        "n_correct_waits": 827,
+        "n_incorrect_waits": 7343
+      }
+    }
+  },
+  "latency": {
+    "mean_ms": 0.795,
+    "median_ms": 0.796,
+    "p95_ms": 0.819,
+    "p99_ms": 0.844,
+    "n_measured": 200,
+    "warmup_discarded": 10,
+    "meets_p99_gate": true,
+    "target_ms": 200.0
+  }
+}

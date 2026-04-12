@@ -1,0 +1,185 @@
+{
+  "trained_horizons": [
+    14
+  ],
+  "results": {
+    "14d": {
+      "horizon": 14,
+      "task": "binary_classification",
+      "best_round": 36,
+      "train_time_sec": 2.07,
+      "threshold": 0.3,
+      "features_used": [
+        "roll7_std",
+        "roll14_std",
+        "roll30_std",
+        "roll7_min",
+        "roll7_max",
+        "roll14_min",
+        "roll14_max",
+        "roll30_min",
+        "roll30_max",
+        "pct_change_1d",
+        "pct_change_14d",
+        "amazon_pct_change_7d",
+        "amazon_delta_7d",
+        "price",
+        "price_lag1",
+        "price_lag30",
+        "amazon_lag_7d",
+        "amazon_lag_14d",
+        "amazon_ma_7d",
+        "amazon_ma_14d",
+        "roll14_mean",
+        "roll30_mean",
+        "price_vs_7d_mean",
+        "price_vs_14d_mean",
+        "price_vs_30d_mean",
+        "price_vs_global_min",
+        "price_vs_global_max",
+        "price_vs_global_mean",
+        "price_vs_new",
+        "price_vs_used",
+        "price_vs_list",
+        "global_norm_sd",
+        "log_mean_price",
+        "global_min",
+        "global_max",
+        "global_mean",
+        "day_of_week",
+        "month",
+        "week_of_year",
+        "is_weekend",
+        "sales_rank",
+        "sales_score",
+        "count_new",
+        "count_used"
+      ],
+      "features_dropped": [],
+      "train_metrics": {
+        "f1": 0.9925,
+        "precision": 0.985,
+        "recall": 1.0,
+        "accuracy": 0.9934,
+        "auc": 1.0,
+        "threshold": 0.3,
+        "n_samples": 249329,
+        "n_positive": 107901,
+        "positive_rate": 0.4328
+      },
+      "test_metrics": {
+        "f1": 0.9613,
+        "precision": 0.9256,
+        "recall": 0.9998,
+        "accuracy": 0.9609,
+        "auc": 0.9511,
+        "threshold": 0.3,
+        "n_samples": 95514,
+        "n_positive": 46346,
+        "positive_rate": 0.4852
+      },
+      "top_features": [
+        {
+          "feature": "price",
+          "importance_gain": 1700625.8054542542
+        },
+        {
+          "feature": "price_lag1",
+          "importance_gain": 618487.5855751038
+        },
+        {
+          "feature": "week_of_year",
+          "importance_gain": 52647.26052188873
+        },
+        {
+          "feature": "month",
+          "importance_gain": 4673.965972900391
+        },
+        {
+          "feature": "price_vs_list",
+          "importance_gain": 3925.90482711792
+        },
+        {
+          "feature": "price_vs_global_min",
+          "importance_gain": 3807.8058598041534
+        },
+        {
+          "feature": "day_of_week",
+          "importance_gain": 3365.0639867782593
+        },
+        {
+          "feature": "price_vs_global_max",
+          "importance_gain": 3157.4216141700745
+        },
+        {
+          "feature": "price_vs_global_mean",
+          "importance_gain": 2891.784119129181
+        },
+        {
+          "feature": "global_min",
+          "importance_gain": 2816.1686687469482
+        },
+        {
+          "feature": "price_vs_used",
+          "importance_gain": 2358.987633705139
+        },
+        {
+          "feature": "count_used",
+          "importance_gain": 1917.4041924476624
+        },
+        {
+          "feature": "price_vs_new",
+          "importance_gain": 1871.7223165035248
+        },
+        {
+          "feature": "sales_rank",
+          "importance_gain": 1854.2339372634888
+        },
+        {
+          "feature": "roll30_max",
+          "importance_gain": 1696.3340110778809
+        },
+        {
+          "feature": "global_norm_sd",
+          "importance_gain": 1534.3260426521301
+        },
+        {
+          "feature": "price_vs_30d_mean",
+          "importance_gain": 1434.5664954185486
+        },
+        {
+          "feature": "roll7_min",
+          "importance_gain": 1313.8845422267914
+        },
+        {
+          "feature": "price_lag30",
+          "importance_gain": 1297.4560487270355
+        },
+        {
+          "feature": "count_new",
+          "importance_gain": 1275.0389823913574
+        }
+      ],
+      "hyperparams": {
+        "objective": "binary",
+        "metric": [
+          "binary_logloss"
+        ],
+        "learning_rate": 0.05,
+        "num_leaves": 63,
+        "max_depth": -1,
+        "min_child_samples": 20,
+        "feature_fraction": 0.8,
+        "bagging_fraction": 0.8,
+        "bagging_freq": 5,
+        "lambda_l1": 0.1,
+        "lambda_l2": 0.1,
+        "verbose": -1,
+        "n_jobs": -1,
+        "seed": 42,
+        "is_unbalance": false
+      }
+    }
+  },
+  "lgbm_version": "4.6.0"
+}
