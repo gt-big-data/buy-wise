@@ -6,6 +6,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from ml.classifier import PriceRecommendationClassifier
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -213,19 +214,27 @@ def _fetch_and_seed(asin: str) -> None:
     diff = (current - avg) / avg if avg else 0
 
     if diff > 0.05:
-        # Price is elevated — likely to come down
-        recommendation = "WAIT"
-        confidence = min(0.90, 0.55 + abs(diff))
-        pred_7d  = round(avg + (current - avg) * 0.6, 2)
+        pred_7d = round(avg + (current - avg) * 0.6, 2)
         pred_14d = round(avg + (current - avg) * 0.3, 2)
         pred_30d = round(avg, 2)
     else:
-        # Price is at or below average — good time to buy
-        recommendation = "BUY"
-        confidence = min(0.90, 0.55 + abs(diff))
-        pred_7d  = round(current * 1.02, 2)
+        pred_7d = round(current * 1.02, 2)
         pred_14d = round(current * 1.04, 2)
         pred_30d = round(current * 1.06, 2)
+
+    classifier = PriceRecommendationClassifier(
+        threshold=0.07,
+        min_savings=5.0
+    )
+
+    result = classifier.classify(
+        current_price=current,
+        predicted_price=pred_14d,
+        volatility=abs(diff)
+    )
+
+    recommendation = result["recommendation"]
+    confidence = result["confidence"]
 
     insert_prediction(
         product["product_id"], pred_7d, pred_14d, pred_30d, recommendation, confidence
