@@ -281,27 +281,29 @@ def generate_demo_csv(run_result: RunResult) -> None:
     if 14 not in run_result.horizons or 7 not in run_result.horizons:
         log.warning("Need both 7d and 14d horizons")
         return
-        
+
     hr14 = run_result.horizons[14]
-    hr7 = run_result.horizons[7]
+    hr7  = run_result.horizons[7]
 
     df14 = hr14.test_df.copy()
-    df14['pred_14d'] = hr14.y_pred
+    df14['pred_14d']       = hr14.y_pred
     df14['recommendation'] = hr14.classifier.y_pred_cls if hr14.classifier else 0
 
     df7 = hr7.test_df.copy()
     df7['pred_7d'] = hr7.y_pred
 
-    # Use latest per ASIN
     latest_14 = df14.sort_values('date').groupby('asin').last().reset_index()
     latest_7  = df7.sort_values('date').groupby('asin').last().reset_index()
 
     merged = pd.merge(latest_14, latest_7[['asin', 'pred_7d']], on='asin')
 
-    def clamp(pred, curr, max_pct=0.4):
-        lower = curr * (1 - max_pct)
-        upper = curr * (1 + max_pct)
-        return float(np.clip(pred, lower, upper))
+    # ── Price-aware cap: 10% for items ≥$100, 20% otherwise ──────────────
+    def max_pct(curr: float) -> float:
+        return 0.10 if curr >= 100.0 else 0.20
+
+    def clamp(pred: float, curr: float) -> float:
+        cap = max_pct(curr)
+        return float(np.clip(pred, curr * (1 - cap), curr * (1 + cap)))
 
     records = []
 
@@ -309,34 +311,33 @@ def generate_demo_csv(run_result: RunResult) -> None:
         asin = row['asin']
         curr = float(row['price'])
 
-        pred7 = clamp(row['pred_7d'], curr)
+        # Clamp both horizon predictions independently
+        pred7  = clamp(row['pred_7d'],  curr)
         pred14 = clamp(row['pred_14d'], curr)
 
-        # 🔥 enforce directional consistency
+        # Enforce directional consistency: if 7d and 14d disagree on direction,
+        # pin 14d to match 7d so the curve never reverses mid-way
         if (pred7 - curr) * (pred14 - curr) < 0:
             pred14 = pred7
 
-        # 🔥 smooth but trend-aware interpolation
+        # Re-clamp 14d after the directional fix (safety net)
+        pred14 = clamp(pred14, curr)
+
         trend = (pred14 - curr) / 14.0
 
-        record = {
-            "ASIN": asin,
-            "Current_Price": round(curr, 2)
-        }
+        record = {"ASIN": asin, "Current_Price": round(curr, 2)}
 
         for d in range(1, 15):
-            # weighted blend: linear trend + anchor pull toward 7d
             if d <= 7:
                 val = curr + trend * d * 0.8 + (pred7 - curr) * (d / 7.0) * 0.2
             else:
                 val = pred7 + (pred14 - pred7) * ((d - 7) / 7.0)
 
-            # final safety clamp
-            val = clamp(val, curr, max_pct=0.5)
-
+            # Final per-day safety clamp vs current price
+            val = clamp(val, curr)
             record[f"Day_{d}"] = round(val, 2)
 
-        # 🔥 smarter recommendation (uses actual predicted drop)
+        # Recommendation from clamped 14d prediction
         expected_drop = (curr - pred14) / curr
 
         if expected_drop >= 0.10:
@@ -351,9 +352,7 @@ def generate_demo_csv(run_result: RunResult) -> None:
 
     demo_df = pd.DataFrame(records)
     demo_df.to_csv(_HERE / "demo.csv", index=False)
-
     log.info("Saved %d items to demo.csv", len(demo_df))
-
 
 # ── Latency benchmark ─────────────────────────────────────────────────────────
 LATENCY_WARMUP = 10
