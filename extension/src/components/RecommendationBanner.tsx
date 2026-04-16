@@ -91,12 +91,14 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
             </div>
           </div>
 
-          <span className="animate-savings" style={{ display: 'inline-flex' }}>
-            <div className="buywise-savings-pill">
-              <span className="buywise-savings-pill__label">Projected peak savings</span>
-              <span className="buywise-savings-pill__value">${expectedSavings.toFixed(0)}</span>
-            </div>
-          </span>
+          {expectedSavings > 0 && (
+            <span className="animate-savings" style={{ display: 'inline-flex' }}>
+              <div className="buywise-savings-pill">
+                <span className="buywise-savings-pill__label">Projected savings</span>
+                <span className="buywise-savings-pill__value">${expectedSavings.toFixed(0)}</span>
+              </div>
+            </span>
+          )}
         </div>
 
         <div className="buywise-action-wrapper">

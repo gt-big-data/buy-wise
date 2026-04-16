@@ -76,7 +76,6 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
             <section className="buywise-product-summary" aria-label="Product">
               <div className="buywise-header-row">
                 <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-panel-logo-img" />
-                <div className="buywise-header-divider" />
                 <div className="buywise-header-product-info">
                   {data.imageUrl && (
                     <img

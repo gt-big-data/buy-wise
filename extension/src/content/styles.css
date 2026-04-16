@@ -117,15 +117,10 @@
 }
 
 .buywise-panel-logo-img {
-  height: 44px;
-  width: auto;
-  flex-shrink: 0;
-}
-
-.buywise-header-divider {
-  width: 1px;
-  height: 40px;
-  background: #e0d8cc;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  object-position: center 20%;
   flex-shrink: 0;
 }
 
