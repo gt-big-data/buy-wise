@@ -333,18 +333,20 @@ def get_recent_user_activity(limit=20, user_id=None):
         cursor = conn.cursor(dictionary=True)
         if user_id:
             query = """
-                SELECT *
-                FROM user_activity
-                WHERE user_id = %s
-                ORDER BY timestamp DESC, activity_id DESC
+                SELECT ua.*, p.title AS product_title
+                FROM user_activity ua
+                LEFT JOIN products p ON ua.asin = p.asin
+                WHERE ua.user_id = %s
+                ORDER BY ua.timestamp DESC, ua.activity_id DESC
                 LIMIT %s
             """
             cursor.execute(query, (user_id, limit))
         else:
             query = """
-                SELECT *
-                FROM user_activity
-                ORDER BY timestamp DESC, activity_id DESC
+                SELECT ua.*, p.title AS product_title
+                FROM user_activity ua
+                LEFT JOIN products p ON ua.asin = p.asin
+                ORDER BY ua.timestamp DESC, ua.activity_id DESC
                 LIMIT %s
             """
             cursor.execute(query, (limit,))

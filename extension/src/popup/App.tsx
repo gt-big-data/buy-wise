@@ -26,6 +26,7 @@ type WatchlistItem = {
 type ActivityItem = {
   activity_id: number;
   asin: string;
+  product_title: string | null;
   recommendation_shown: string;
   action: string;
 };
@@ -159,48 +160,6 @@ const App: React.FC = () => {
           </div>
 
           <div className="buywise-dashboard-grid">
-            <div className="buywise-dashboard-col">
-              <div className="buywise-popup-card buywise-dashboard-section-card">
-                <div className="buywise-popup-helper-title">Alerts</div>
-                {dashboardLoading ? (
-                  <p className="buywise-popup-muted buywise-popup-muted--tight">Loading…</p>
-                ) : alerts.length === 0 ? (
-                  <p className="buywise-popup-muted buywise-popup-muted--tight">No alerts</p>
-                ) : (
-                  alerts.map((item) => (
-                    <div key={item.asin} className="buywise-popup-helper">
-                      <div className="buywise-popup-badge buywise-popup-badge--alert">
-                        {item.current_recommendation ?? "Changed"}
-                      </div>
-                      <p className="buywise-popup-muted buywise-popup-muted--tight">
-                        {item.title}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="buywise-popup-card buywise-dashboard-section-card">
-                <div className="buywise-popup-helper-title">Recent</div>
-                {dashboardLoading ? (
-                  <p className="buywise-popup-muted buywise-popup-muted--tight">Loading…</p>
-                ) : recent.length === 0 ? (
-                  <p className="buywise-popup-muted buywise-popup-muted--tight">No recent activity</p>
-                ) : (
-                  recent.slice(0, 4).map((item) => (
-                    <div key={item.activity_id} className="buywise-popup-helper">
-                      <div className={`buywise-popup-badge buywise-popup-badge--${item.recommendation_shown.toLowerCase()}`}>
-                        {item.recommendation_shown}
-                      </div>
-                      <p className="buywise-popup-muted buywise-popup-muted--tight">
-                        {item.asin}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
             <div className="buywise-popup-card buywise-dashboard-section-card">
               <div className="buywise-popup-helper-title">Watchlist</div>
               {dashboardLoading ? (
@@ -215,6 +174,42 @@ const App: React.FC = () => {
                     </div>
                     <p className="buywise-popup-muted buywise-popup-muted--tight">
                       {item.title}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {alerts.length > 0 && (
+              <div className="buywise-popup-card buywise-dashboard-section-card">
+                <div className="buywise-popup-helper-title">Alerts</div>
+                {alerts.map((item) => (
+                  <div key={item.asin} className="buywise-popup-helper">
+                    <div className="buywise-popup-badge buywise-popup-badge--alert">
+                      Rec changed → {item.current_recommendation}
+                    </div>
+                    <p className="buywise-popup-muted buywise-popup-muted--tight">
+                      {item.title}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="buywise-popup-card buywise-dashboard-section-card">
+              <div className="buywise-popup-helper-title">Recent</div>
+              {dashboardLoading ? (
+                <p className="buywise-popup-muted buywise-popup-muted--tight">Loading…</p>
+              ) : recent.length === 0 ? (
+                <p className="buywise-popup-muted buywise-popup-muted--tight">No recent activity</p>
+              ) : (
+                recent.slice(0, 4).map((item) => (
+                  <div key={item.activity_id} className="buywise-popup-helper">
+                    <div className={`buywise-popup-badge buywise-popup-badge--${item.recommendation_shown.toLowerCase()}`}>
+                      {item.recommendation_shown}
+                    </div>
+                    <p className="buywise-popup-muted buywise-popup-muted--tight">
+                      {item.product_title ?? item.asin}
                     </p>
                   </div>
                 ))

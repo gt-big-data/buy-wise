@@ -39,6 +39,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       body: JSON.stringify({
         asin: message.asin,
         action: message.action,
+        user_id: "1",
         timestamp: new Date().toISOString(),
       }),
     }).catch(() => {});
