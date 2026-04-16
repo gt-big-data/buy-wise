@@ -110,10 +110,23 @@
   padding-right: 36px;
 }
 
-.buywise-header {
+.buywise-header-row {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.buywise-panel-logo-img {
+  height: 44px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.buywise-header-divider {
+  width: 1px;
+  height: 40px;
+  background: #e0d8cc;
+  flex-shrink: 0;
 }
 
 .buywise-product-summary {

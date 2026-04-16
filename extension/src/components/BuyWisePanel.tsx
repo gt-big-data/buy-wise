@@ -73,24 +73,22 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
 
         <div className="buywise-panel-body">
           <header className="buywise-panel-top">
-            <div className="buywise-header">
-              <div className="buywise-logo buywise-logo-no-underline">
-                <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-logo-img" />
-              </div>
-            </div>
-
             <section className="buywise-product-summary" aria-label="Product">
-              <div className="buywise-header-product-info">
-                {data.imageUrl && (
-                  <img
-                    src={data.imageUrl}
-                    alt="Product"
-                    className="buywise-product-image"
-                  />
-                )}
-                <h2 className="buywise-product-summary-title">
-                  {data.productTitle || "This product"}
-                </h2>
+              <div className="buywise-header-row">
+                <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-panel-logo-img" />
+                <div className="buywise-header-divider" />
+                <div className="buywise-header-product-info">
+                  {data.imageUrl && (
+                    <img
+                      src={data.imageUrl}
+                      alt="Product"
+                      className="buywise-product-image"
+                    />
+                  )}
+                  <h2 className="buywise-product-summary-title">
+                    {data.productTitle || "This product"}
+                  </h2>
+                </div>
               </div>
             </section>
           </header>
