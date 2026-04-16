@@ -112,7 +112,12 @@ async function mountFloatingPanel(): Promise<boolean> {
   };
 
   const handleWatchlistClick = () => {
-    postActivity(data.asin, "watchlisted");
+    postActivity(data.asin, "added_to_watchlist");
+
+    // Persist to backend
+    chrome.runtime.sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin: data.asin }).catch(() => {});
+
+    // Mirror to local storage for instant isWatched state
     chrome.storage.local.get(["buywise_watchlist"], (res) => {
       const currentList = Array.isArray(res.buywise_watchlist) ? res.buywise_watchlist : [];
       if (!currentList.some((w: any) => w.asin === data.asin)) {
@@ -124,15 +129,6 @@ async function mountFloatingPanel(): Promise<boolean> {
          });
          chrome.storage.local.set({ buywise_watchlist: currentList });
       }
-    });
-    
-    chrome.storage.local.set({
-      lastBuyWiseAction: {
-        asin: data.asin,
-        action: "watchlisted",
-        timestamp: new Date().toISOString(),
-        source: "page-floating-popup-watchlist",
-      },
     });
   };
 

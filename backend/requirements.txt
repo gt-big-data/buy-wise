@@ -25,3 +25,6 @@ urllib3==2.6.2
 uvicorn==0.40.0
 mysql-connector-python
 python-dotenv
+xgboost
+scikit-learn
+joblib

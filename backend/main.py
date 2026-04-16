@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 try:
     from db.connection import (
         get_product,
-        get_product_by_id,
         get_latest_prediction,
         get_price_history as db_get_price_history,
         insert_prediction,
@@ -127,7 +126,7 @@ class ActivityResponse(BaseModel):
 
 class WatchlistAddRequest(BaseModel):
     user_id: int
-    product_id: int
+    asin: str
     target_price: Optional[float] = None
 
 class ActivityRecord(BaseModel):
@@ -332,24 +331,32 @@ def _fetch_and_seed(asin: str) -> None:
     if not prices:
         return
 
-    current = float(prices[0]["price"])
-    avg = sum(float(p["price"]) for p in prices) / len(prices)
-    diff = (current - avg) / avg if avg else 0
-
-    if diff > 0.05:
-        # Price is elevated — likely to come down
-        recommendation = "WAIT"
-        confidence = min(0.90, 0.55 + abs(diff))
-        pred_7d  = round(avg + (current - avg) * 0.6, 2)
-        pred_14d = round(avg + (current - avg) * 0.3, 2)
-        pred_30d = round(avg, 2)
-    else:
-        # Price is at or below average — good time to buy
-        recommendation = "BUY"
-        confidence = min(0.90, 0.55 + abs(diff))
-        pred_7d  = round(current * 1.02, 2)
-        pred_14d = round(current * 1.04, 2)
-        pred_30d = round(current * 1.06, 2)
+    try:
+        from ml import inference as _ml
+        result = _ml.predict_for_asin(prices)
+        pred_7d        = result["pred_7d"]
+        pred_14d       = result["pred_14d"]
+        pred_30d       = result["pred_30d"]
+        recommendation = result["recommendation"]
+        confidence     = result["confidence"]
+        logger.info("ML prediction for %s: %s %.0f%%", asin, recommendation, confidence * 100)
+    except Exception as ml_exc:
+        logger.warning("ML inference failed for %s (%s); falling back to heuristic", asin, ml_exc)
+        current = float(prices[0]["price"])
+        avg = sum(float(p["price"]) for p in prices) / len(prices)
+        diff = (current - avg) / avg if avg else 0
+        if diff > 0.05:
+            recommendation = "WAIT"
+            confidence = min(0.90, 0.55 + abs(diff))
+            pred_7d  = round(avg + (current - avg) * 0.6, 2)
+            pred_14d = round(avg + (current - avg) * 0.3, 2)
+            pred_30d = round(avg, 2)
+        else:
+            recommendation = "BUY"
+            confidence = min(0.90, 0.55 + abs(diff))
+            pred_7d  = round(current * 1.02, 2)
+            pred_14d = round(current * 1.04, 2)
+            pred_30d = round(current * 1.06, 2)
 
     insert_prediction(
         product["product_id"], pred_7d, pred_14d, pred_30d, recommendation, confidence
@@ -475,21 +482,21 @@ def log_activity(request: ActivityRequest) -> ActivityResponse:
 def add_watchlist_item(req: WatchlistAddRequest):
     _require_db()
     try:
-        product = get_product_by_id(req.product_id)
+        product = get_product(req.asin)
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail=f"Product {req.asin} not found")
 
-        latest = get_latest_prediction(req.product_id)
+        latest = get_latest_prediction(product["product_id"])
         if not latest:
-            raise HTTPException(status_code=404, detail="No prediction found for product")
+            raise HTTPException(status_code=404, detail=f"No prediction found for {req.asin}")
 
         add_to_watchlist(
             user_id=req.user_id,
-            product_id=req.product_id,
+            product_id=product["product_id"],
             recommendation_at_add=latest["recommendation"],
             target_price=req.target_price,
         )
-        return {"status": "added", "product_id": req.product_id, "user_id": req.user_id}
+        return {"status": "added", "asin": req.asin, "user_id": req.user_id}
     except HTTPException:
         raise
     except Exception as e:
