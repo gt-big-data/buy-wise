@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "BuyWise",
+  "version": "1.0.0",
+  "description": "Smart shopping assistant",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://*.amazon.com/*", "http://localhost:8000/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "BuyWise"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.amazon.com/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

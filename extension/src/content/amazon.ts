@@ -35,3 +35,14 @@ export function extractASINFromUrl(url: string): string | null {
     return null;
   }
 }
+
+export function extractProductImage(): string | null {
+  try {
+    const img = document.querySelector<HTMLImageElement>(
+      "#landingImage, #imgBlkFront, #imgTagWrapperId img"
+    );
+    return img ? img.src : null;
+  } catch {
+    return null;
+  }
+}

@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+from typing import Optional
+
 from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import pooling
@@ -10,6 +12,7 @@ dbconfig = {
     "host": os.getenv("DB_HOST", "localhost"),
     "user": os.getenv("DB_USER"),
     "password": os.getenv("DB_PASSWORD"),
+    "port": int(os.getenv("DB_PORT", 3306)),
     "database": os.getenv("DB_NAME", "buywise")
 }
 
@@ -31,6 +34,21 @@ def get_product(asin):
         cursor = conn.cursor(dictionary=True)
         query = "SELECT * FROM products WHERE asin = %s"
         cursor.execute(query, (asin,))
+        return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+def get_product_by_id(product_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT * FROM products WHERE product_id = %s"
+        cursor.execute(query, (product_id,))
         return cursor.fetchone()
     finally:
         if cursor:
@@ -71,9 +89,18 @@ def insert_product(asin, title, brand, category):
 
 
 
-def insert_price(product_id, price, availability=True, deal_flag=False):
+def insert_price(
+    product_id,
+    price,
+    availability=True,
+    deal_flag=False,
+    *,
+    recorded_at: Optional[datetime] = None,
+):
+    """Insert a price row. Pass ``recorded_at`` for historical samples (e.g. Keepa); else UTC now."""
     conn = None
     cursor = None
+    ts = recorded_at if recorded_at is not None else datetime.utcnow()
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -81,7 +108,7 @@ def insert_price(product_id, price, availability=True, deal_flag=False):
             INSERT INTO prices (product_id, price, timestamp, availability, deal_flag)
             VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (product_id, price, datetime.now(), availability, deal_flag))
+        cursor.execute(query, (product_id, price, ts, availability, deal_flag))
         conn.commit()
     except Exception as e:
         if conn:
@@ -161,6 +188,169 @@ def get_latest_prediction(product_id):
         """
         cursor.execute(query, (product_id,))
         return cursor.fetchone()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=None):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            INSERT INTO watchlist (
+                user_id,
+                product_id,
+                recommendation_at_add,
+                target_price
+            )
+            VALUES (%s, %s, %s, %s)
+        """
+
+        cursor.execute(query, (user_id, product_id, recommendation_at_add, target_price))
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def remove_from_watchlist(user_id, product_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = """
+            DELETE FROM watchlist
+            WHERE user_id = %s AND product_id = %s
+        """
+        cursor.execute(query, (user_id, product_id))
+        conn.commit()
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def get_watchlist(user_id):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT
+                w.product_id, recommendation_at_add, w.target_price, w.added_at,
+                p.asin, p.title, p.brand, p.category,
+                pred.recommendation AS current_recommendation, pred.confidence_score, pred.pred_7d, pred.pred_14d, pred.pred_30d
+            FROM watchlist w
+            JOIN products p ON w.product_id = p.product_id
+            LEFT JOIN predictions pred ON pred.prediction_id = (
+                SELECT prediction_id FROM predictions
+                WHERE product_id = w.product_id
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+            WHERE w.user_id = %s
+            ORDER BY w.added_at DESC
+        """
+        cursor.execute(query, (user_id,))
+        rows = cursor.fetchall()
+        for row in rows:
+            row['recommendation_changed'] = (
+                row['current_recommendation'] is not None and
+                row['current_recommendation'] != row['recommendation_at_add']
+            )
+        return rows
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def insert_user_activity(
+    asin,
+    recommendation_shown,
+    action,
+    timestamp,
+    user_id=None,
+):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        query = """
+            INSERT INTO user_activity (
+                asin,
+                recommendation_shown,
+                action,
+                user_id,
+                timestamp
+            )
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(
+            query,
+            (asin, recommendation_shown, action, user_id, timestamp),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def get_recent_user_activity(limit=20, user_id=None):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        if user_id:
+            query = """
+                SELECT ua.*, p.title AS product_title
+                FROM user_activity ua
+                LEFT JOIN products p ON ua.asin = p.asin
+                WHERE ua.user_id = %s
+                ORDER BY ua.timestamp DESC, ua.activity_id DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (user_id, limit))
+        else:
+            query = """
+                SELECT ua.*, p.title AS product_title
+                FROM user_activity ua
+                LEFT JOIN products p ON ua.asin = p.asin
+                ORDER BY ua.timestamp DESC, ua.activity_id DESC
+                LIMIT %s
+            """
+            cursor.execute(query, (limit,))
+        return cursor.fetchall()
     finally:
         if cursor:
             cursor.close()
