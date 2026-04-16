@@ -238,12 +238,12 @@
   letter-spacing: -0.04em;
   transform-origin: left center;
   animation: buywise-pop-in 620ms cubic-bezier(0.2, 0.9, 0.2, 1), buywise-pulse-glow 2.5s ease-in-out infinite alternate;
-  text-shadow: 0 0 14px rgba(29, 107, 37, 0.2);
+  text-shadow: none;
 }
 
 .buywise-banner--wait .buywise-recommendation-word {
   color: #7b5b00;
-  text-shadow: 0 0 14px rgba(123, 91, 0, 0.2);
+  text-shadow: none;
 }
 
 .buywise-banner--buy .buywise-recommendation-word {

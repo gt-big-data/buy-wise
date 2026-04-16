@@ -152,20 +152,28 @@ def _require_db() -> None:
 
 
 def _generate_why(
-    recommendation: str, confidence: float, potential_savings: float, horizon_days: int
+    recommendation: str, confidence: float, potential_savings: float,
+    current_price: float, pred_7d: Optional[float], pred_14d: Optional[float],
 ) -> str:
     pct = int(round(confidence))
     if recommendation == "WAIT":
-        return (
-            f"Our model is {pct}% confident this item will drop in price within "
-            f"{horizon_days} days, suggesting potential savings of ${potential_savings:.0f}. "
-            f"Recent price movement and historical trends support waiting."
-        )
-    return (
-        f"Our model is {pct}% confident this is a good time to buy. "
-        f"Based on recent price history, the current price is competitive "
-        f"and unlikely to drop significantly in the next {horizon_days} days."
-    )
+        lines = [f"The model is {pct}% confident the price will fall in the next 1–2 weeks."]
+        if pred_14d and pred_14d < current_price:
+            drop_pct = round((current_price - pred_14d) / current_price * 100, 1)
+            lines.append(f"The 14-day forecast is ${pred_14d:.2f} — a {drop_pct}% drop from today's ${current_price:.2f}.")
+        if potential_savings > 0:
+            lines.append(f"Waiting could save you approximately ${potential_savings:.0f}.")
+        lines.append("Price momentum and recent history both support holding off.")
+        return " ".join(lines)
+    else:
+        lines = [f"The model is {pct}% confident now is a good time to buy."]
+        if pred_7d and pred_7d > current_price:
+            rise_pct = round((pred_7d - current_price) / current_price * 100, 1)
+            lines.append(f"The 7-day forecast is ${pred_7d:.2f}, suggesting prices may rise {rise_pct}% — buying now locks in today's rate.")
+        else:
+            lines.append(f"At ${current_price:.2f}, the price is competitive relative to recent history.")
+        lines.append("No significant drop is expected in the near term.")
+        return " ".join(lines)
 
 
 def _resolve_activity_recommendation(request: ActivityRequest) -> RecommendationDirection:
@@ -392,14 +400,13 @@ def get_prediction(asin: str) -> PredictResponse:
     recommendation = prediction["recommendation"]  # "BUY" or "WAIT" from DB enum
     confidence = round(float(prediction["confidence_score"]) * 100, 1)
 
-    pred_values = [
-        float(prediction[k])
-        for k in ("pred_7d", "pred_14d", "pred_30d")
-        if prediction.get(k) is not None
-    ]
-    best_pred = min(pred_values) if pred_values else current_price
-    potential_savings = max(0.0, round(current_price - best_pred, 2))
-    horizon_days = 30
+    pred_7d  = float(prediction["pred_7d"])  if prediction.get("pred_7d")  is not None else None
+    pred_14d = float(prediction["pred_14d"]) if prediction.get("pred_14d") is not None else None
+    pred_30d = float(prediction["pred_30d"]) if prediction.get("pred_30d") is not None else None
+
+    future_preds = [p for p in [pred_7d, pred_14d, pred_30d] if p is not None]
+    best_pred = min(future_preds) if future_preds else current_price
+    potential_savings = max(0.0, round(current_price - best_pred, 2)) if recommendation == "WAIT" else 0.0
 
     return PredictResponse(
         asin=asin,
@@ -407,8 +414,8 @@ def get_prediction(asin: str) -> PredictResponse:
         confidence=confidence,
         predicted_price=round(best_pred, 2),
         potential_savings=potential_savings,
-        horizon_days=horizon_days,
-        why=_generate_why(recommendation, confidence, potential_savings, horizon_days),
+        horizon_days=14,
+        why=_generate_why(recommendation, confidence, potential_savings, current_price, pred_7d, pred_14d),
     )
 
 
