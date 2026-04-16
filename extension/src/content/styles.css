@@ -178,6 +178,19 @@
   text-decoration: none;
 }
 
+.buywise-logo-img {
+  height: 36px;
+  width: auto;
+  display: block;
+}
+
+.buywise-popup-logo-img {
+  height: 48px;
+  width: auto;
+  display: block;
+  margin-bottom: 14px;
+}
+
 .buywise-animate-in-up {
   animation: buywise-fade-up 560ms cubic-bezier(0.22, 1, 0.36, 1);
 }

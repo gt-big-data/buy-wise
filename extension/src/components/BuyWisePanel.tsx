@@ -75,7 +75,7 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
           <header className="buywise-panel-top">
             <div className="buywise-header">
               <div className="buywise-logo buywise-logo-no-underline">
-                {title}
+                <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-logo-img" />
               </div>
             </div>
 

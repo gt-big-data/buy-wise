@@ -5,9 +5,21 @@
   "description": "Smart shopping assistant",
   "permissions": ["activeTab", "storage"],
   "host_permissions": ["https://*.amazon.com/*", "http://localhost:8000/*"],
+  "icons": {
+    "16": "logo.png",
+    "32": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "BuyWise"
+    "default_title": "BuyWise",
+    "default_icon": {
+      "16": "logo.png",
+      "32": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
+    }
   },
   "content_scripts": [
     {

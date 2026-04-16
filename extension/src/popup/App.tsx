@@ -126,7 +126,7 @@ const App: React.FC = () => {
     return (
       <div className="buywise-popup-root">
         <div className="buywise-popup-inner">
-          <div className="buywise-popup-title">BuyWise</div>
+          <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-popup-logo-img" />
           <LoadingState />
         </div>
       </div>
@@ -141,7 +141,7 @@ const App: React.FC = () => {
     return (
       <div className="buywise-popup-root">
         <div className="buywise-popup-inner buywise-dashboard-inner">
-          <div className="buywise-popup-title">BuyWise</div>
+          <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-popup-logo-img" />
 
           <div className="buywise-dashboard-summary-row">
             <div className="buywise-popup-card buywise-dashboard-summary-card">
@@ -225,7 +225,7 @@ const App: React.FC = () => {
     return (
       <div className="buywise-popup-root">
         <div className="buywise-popup-inner">
-          <div className="buywise-popup-title">BuyWise</div>
+          <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-popup-logo-img" />
           <div className="buywise-popup-card">
             <div className="buywise-popup-badge">Recommendation opened</div>
             <p className="buywise-popup-muted">
@@ -247,7 +247,7 @@ const App: React.FC = () => {
     return (
       <div className="buywise-popup-root">
         <div className="buywise-popup-inner">
-          <div className="buywise-popup-title">BuyWise</div>
+          <img src={chrome.runtime.getURL("logo.png")} alt="BuyWise" className="buywise-popup-logo-img" />
           <ErrorState />
           {popupState.message ? (
             <p className="buywise-popup-error-detail">{popupState.message}</p>
