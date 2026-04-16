@@ -10,7 +10,30 @@ import pandas as pd
 log = logging.getLogger(__name__)
 _ML_DIR = Path(__file__).parent
 
-_MODEL_FEATS:  list[str] | None = None
+# Exact feature order the models were trained with (reconstructed from training pipeline).
+# The models were saved with numpy arrays so feature_names_in_ is not stored — this list
+# encodes the column order that was passed to XGBRegressor/XGBClassifier.fit().
+_TRAINING_FEATURE_ORDER: list[str] = [
+    "price",
+    "new_price", "used_price", "list_price",
+    "count_new", "count_used", "sales_score",
+    "amazon_ma_7d", "amazon_ma_14d", "amazon_delta_7d", "amazon_pct_change_7d",
+    "day_of_week", "month",
+    "rsi_14d", "rsi_7d",
+    "dist_from_30d_high", "dist_from_30d_low",
+    "velocity_3d",
+    "day_of_year_sin", "day_of_year_cos",
+    "price_z_asin", "price_minmax_asin",
+    "roll7_mean", "roll7_std", "roll7_min", "roll7_max",
+    "price_vs_roll7_z",
+    "price_lag1", "price_lag30",
+    "pct_change_1d", "pct_change_14d",
+    "week_of_year",
+    "global_min", "global_max", "global_norm_sd", "log_mean_price",
+    "global_mean",
+    "price_vs_global_min", "price_vs_global_max", "price_vs_global_mean",
+]  # 40 features
+
 _SCALER_FEATS: list[str] | None = None
 
 try:
@@ -19,13 +42,9 @@ try:
     _cls_14d = joblib.load(_ML_DIR / "xgb_cls_14d.joblib")
     _scaler  = joblib.load(_ML_DIR / "scaler.joblib")
     _MODELS_LOADED = True
-    # Capture exact feature lists from the fitted objects so we never mismatch
-    if hasattr(_reg_7d, "feature_names_in_"):
-        _MODEL_FEATS = list(_reg_7d.feature_names_in_)
     if hasattr(_scaler, "feature_names_in_"):
         _SCALER_FEATS = list(_scaler.feature_names_in_)
-    log.info("ML models loaded from %s  (features=%s)", _ML_DIR,
-             len(_MODEL_FEATS) if _MODEL_FEATS else "unknown")
+    log.info("ML models loaded from %s  (%d features)", _ML_DIR, len(_TRAINING_FEATURE_ORDER))
 except Exception as _exc:
     _MODELS_LOADED = False
     log.warning("ML models not loaded: %s", _exc)
@@ -51,12 +70,7 @@ def predict_for_asin(price_records: list[dict]) -> dict:
         raise RuntimeError(f"Need ≥30 price records for ML inference, got {len(price_records)}")
 
     # Import here to avoid circular issues if dataset.py is imported at server startup
-    from ml.dataset import (
-        FEATURE_COLS,
-        SCALE_COLS,
-        engineer_features,
-        merge_product_features,
-    )
+    from ml.dataset import engineer_features, merge_product_features
 
     DUMMY_ASIN = "INFERENCE"
 
@@ -82,8 +96,9 @@ def predict_for_asin(price_records: list[dict]) -> dict:
     ]:
         df[col] = np.nan
 
-    df["day_of_week"] = df["date"].dt.dayofweek
-    df["month"]       = df["date"].dt.month
+    df["day_of_week"]  = df["date"].dt.dayofweek
+    df["month"]        = df["date"].dt.month
+    df["week_of_year"] = df["date"].dt.isocalendar().week.astype(int)
 
     df = engineer_features(df)
 
@@ -103,37 +118,29 @@ def predict_for_asin(price_records: list[dict]) -> dict:
     # Use the most recent row
     row = df.iloc[-1:].copy()
 
-    # Determine which features each model expects — prefer the authoritative
-    # feature_names_in_ captured at load time; fall back to FEATURE_COLS.
-    if _MODEL_FEATS is not None:
-        model_feats = _MODEL_FEATS
-    else:
-        model_feats = [c for c in FEATURE_COLS if c in row.columns]
-
-    # Ensure every expected feature exists (fill unknown features with 0)
-    for f in model_feats:
+    # Ensure every feature in the training order exists; fill unknowns with 0
+    for f in _TRAINING_FEATURE_ORDER:
         if f not in row.columns:
             row[f] = 0.0
 
     # Fill NaN with per-column medians from the inference window, then 0
-    for col in model_feats:
+    for col in _TRAINING_FEATURE_ORDER:
         if row[col].isna().any():
             med = float(df[col].median()) if col in df.columns else np.nan
             row[col] = row[col].fillna(med if not np.isnan(med) else 0.0)
 
-    # Scale — use scaler's own feature list when available so shapes always match
+    # Scale using the scaler's own feature list (stored in feature_names_in_)
     if _SCALER_FEATS is not None:
-        scale_cols = _SCALER_FEATS
-        # Ensure all scaler features exist in row
-        for f in scale_cols:
+        for f in _SCALER_FEATS:
             if f not in row.columns:
                 row[f] = 0.0
-        row[scale_cols] = _scaler.transform(row[scale_cols])
+        row[_SCALER_FEATS] = _scaler.transform(row[_SCALER_FEATS])
     else:
+        from ml.dataset import SCALE_COLS
         scale_cols = [c for c in SCALE_COLS if c in row.columns]
         row[scale_cols] = _scaler.transform(row[scale_cols])
 
-    X = row[model_feats].values
+    X = row[_TRAINING_FEATURE_ORDER].values
 
     pred_7d  = float(_reg_7d.predict(X)[0])
     pred_14d = float(_reg_14d.predict(X)[0])
