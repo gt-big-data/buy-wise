@@ -54,4 +54,4 @@ Open `amazon.com/dp/B08N5WRWNW` with the backend running. Panel appears top-righ
 ## 3. DM your lead
 
 - A screenshot of the panel on the Amazon page
-- Think of the last thing you bought on Amazon. One thing you'd have wanted the panel to tell you about it.
+- One well thought out feature you'd like to build in the app this semester
