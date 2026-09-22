@@ -26,7 +26,7 @@ Check it:
 
 ```bash
 curl localhost:8000/health
-curl localhost:8000/predict/B08N5WRWNW
+curl localhost:8000/predict/B0GR6BVYS5
 ```
 
 The second should return a recommendation, a confidence score and a predicted price.
@@ -34,7 +34,7 @@ The second should return a recommendation, a confidence score and a predicted pr
 **Use only these ASINs.** They're the seeded ones and the only products that work without a Keepa key. Anything else fails and falls back to a heuristic.
 
 ```
-B08N5WRWNW   B07FZ8S74R   B07PXGQC1Q   B08L5TNJHG   B09G9HD6PD
+B0GR6BVYS5   B08N5WRWNW   B07FZ8S74R   B07PXGQC1Q   B08L5TNJHG   B09G9HD6PD
 ```
 
 ## 2. Extension
@@ -49,7 +49,7 @@ npm run build
 
 `chrome://extensions` → Developer mode → Load unpacked → `extension/dist`.
 
-Open `amazon.com/dp/B08N5WRWNW` with the backend running. Panel appears top-right.
+Open `amazon.com/dp/B0GR6BVYS5` with the backend running. Panel appears top-right.
 
 ## 3. DM your lead
 
