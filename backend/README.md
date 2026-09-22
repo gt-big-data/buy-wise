@@ -71,7 +71,7 @@ docker stop buywise-mysql
 docker start buywise-mysql
 ```
 
-3. Copy `.env.example` to `.env` and fill in your values:
+3. Copy `.env.example` to `.env`. The Docker defaults above work as-is; leave `KEEPA_API_KEY` blank unless a lead has given you one.
 
 ```
 DB_HOST=localhost
