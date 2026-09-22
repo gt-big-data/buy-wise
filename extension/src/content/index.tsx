@@ -138,6 +138,27 @@ async function mountFloatingPanel(): Promise<boolean> {
     });
   };
 
+  const handleWatchlistClick = () => {
+    postActivity(data.asin, "added_to_watchlist");
+
+    // Persist to backend
+    chrome.runtime.sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin: data.asin }).catch(() => {});
+
+    // Mirror to local storage for instant isWatched state
+    chrome.storage.local.get(["buywise_watchlist"], (res) => {
+      const currentList = Array.isArray(res.buywise_watchlist) ? res.buywise_watchlist : [];
+      if (!currentList.some((w: any) => w.asin === data.asin)) {
+         currentList.push({
+            asin: data.asin,
+            productTitle: data.productTitle,
+            targetPrice: data.predictedBestPrice,
+            addedAt: new Date().toISOString()
+         });
+         chrome.storage.local.set({ buywise_watchlist: currentList });
+      }
+    });
+  };
+
   currentRoot.render(
     <BuyWisePanel
       data={data}

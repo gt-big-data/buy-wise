@@ -202,6 +202,32 @@ def _day_label_utc(d: datetime) -> str:
     return f"{d.strftime('%b')} {d.day}"
 
 
+def _resolve_activity_recommendation(request: ActivityRequest) -> RecommendationDirection:
+    if request.recommendation_shown:
+        return request.recommendation_shown
+
+    product = get_product(request.asin)
+    if not product:
+        raise HTTPException(
+            status_code=400,
+            detail="recommendation_shown is required when no product prediction exists",
+        )
+
+    prediction = get_latest_prediction(product["product_id"])
+    if not prediction:
+        raise HTTPException(
+            status_code=400,
+            detail="recommendation_shown is required when no product prediction exists",
+        )
+
+    return RecommendationDirection(prediction["recommendation"])
+
+
+def _day_label_utc(d: datetime) -> str:
+    """Chart x-axis: month abbreviation + day (UTC calendar day)."""
+    return f"{d.strftime('%b')} {d.day}"
+
+
 def _bucket_price_history(
     prices: list, prediction: Optional[dict], asin: str
 ) -> PriceHistoryResponse:
