@@ -109,6 +109,12 @@ async function mountFloatingPanel(): Promise<boolean> {
         source: "page-floating-popup",
       },
     });
+    if (data.recommendation === "BUY") {
+      window.open(
+        `https://www.amazon.com/gp/aws/cart/add.html?ASIN.1=${data.asin}&Quantity.1=1`,
+        "_blank"
+      );
+    }
   };
 
   const handleWatchlistClick = () => {

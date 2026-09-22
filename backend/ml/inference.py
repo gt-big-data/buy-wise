@@ -78,23 +78,29 @@ def predict_for_asin(price_records: list[dict]) -> dict:
     for rec in price_records:
         ts = rec.get("timestamp") or rec.get("date")
         rows.append({
-            "asin":  DUMMY_ASIN,
-            "date":  pd.Timestamp(ts),
-            "price": float(rec["price"]),
+            "asin":       DUMMY_ASIN,
+            "date":       pd.Timestamp(ts),
+            "price":      float(rec["price"]),
+            "used_price": rec.get("used_price"),
+            "list_price": rec.get("list_price"),
+            "sales_score": rec.get("sales_rank"),   # stored as sales_rank in DB
+            "count_new":  rec.get("count_new"),
+            "count_used": rec.get("count_used"),
         })
 
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"]).dt.normalize()
     df = df.sort_values("date").reset_index(drop=True)
 
-    # Keepa columns the model expects — not available at inference time, fill NaN
-    for col in [
-        "new_price", "used_price", "list_price",
-        "count_new", "count_used", "sales_score",
-        "amazon_ma_7d", "amazon_ma_14d",
-        "amazon_delta_7d", "amazon_pct_change_7d",
-    ]:
-        df[col] = np.nan
+    # new_price is not stored separately; approximate from marketplace (same as price when no used/list)
+    df["new_price"] = df["price"]
+
+    # Compute amazon_* features from the price series (same data the model trained on)
+    p = df["price"]
+    df["amazon_ma_7d"]        = p.rolling(7,  min_periods=1).mean()
+    df["amazon_ma_14d"]       = p.rolling(14, min_periods=1).mean()
+    df["amazon_delta_7d"]     = p - p.shift(7).fillna(p)
+    df["amazon_pct_change_7d"] = p.pct_change(7).fillna(0)
 
     df["day_of_week"]  = df["date"].dt.dayofweek
     df["month"]        = df["date"].dt.month
@@ -154,19 +160,23 @@ def predict_for_asin(price_records: list[dict]) -> dict:
 
     if expected_drop >= 0.10:
         recommendation = "WAIT"
-        confidence     = proba_wait
+        base_proba     = proba_wait
     elif expected_drop <= 0.03:
         recommendation = "BUY"
-        confidence     = 1.0 - proba_wait
+        base_proba     = 1.0 - proba_wait
     else:
         # Classifier tiebreaker in the ambiguous middle band
         if cls_label == 1:
             recommendation = "WAIT"
-            confidence     = proba_wait
+            base_proba     = proba_wait
         else:
             recommendation = "BUY"
-            confidence     = 1.0 - proba_wait
+            base_proba     = 1.0 - proba_wait
 
+    # Blend classifier probability with magnitude of expected price move.
+    # A 20%+ swing saturates the magnitude bonus; ambiguous ~0% moves get none.
+    magnitude = min(abs(expected_drop) / 0.20, 1.0)
+    confidence = 0.6 * base_proba + 0.4 * (0.50 + 0.47 * magnitude)
     confidence = float(np.clip(confidence, 0.50, 0.97))
 
     return {

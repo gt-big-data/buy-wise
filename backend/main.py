@@ -398,11 +398,22 @@ def get_prediction(asin: str) -> PredictResponse:
     current_price = float(prices[0]["price"]) if prices else 0.0
 
     recommendation = prediction["recommendation"]  # "BUY" or "WAIT" from DB enum
-    confidence = round(float(prediction["confidence_score"]) * 100, 1)
 
     pred_7d  = float(prediction["pred_7d"])  if prediction.get("pred_7d")  is not None else None
     pred_14d = float(prediction["pred_14d"]) if prediction.get("pred_14d") is not None else None
     pred_30d = float(prediction["pred_30d"]) if prediction.get("pred_30d") is not None else None
+
+    # Retroactively apply magnitude blend so stale DB predictions get the same
+    # confidence formula as fresh ones (avoids needing a migration).
+    base_proba = float(prediction["confidence_score"])
+    if pred_14d is not None and current_price > 0:
+        import numpy as _np
+        expected_drop = (current_price - pred_14d) / (current_price + 1e-6)
+        magnitude = min(abs(expected_drop) / 0.20, 1.0)
+        recalc = 0.6 * base_proba + 0.4 * (0.50 + 0.47 * magnitude)
+        confidence = round(float(_np.clip(recalc, 0.50, 0.97)) * 100, 1)
+    else:
+        confidence = round(base_proba * 100, 1)
 
     future_preds = [p for p in [pred_7d, pred_14d, pred_30d] if p is not None]
     best_pred = min(future_preds) if future_preds else current_price
