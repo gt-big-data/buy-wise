@@ -142,6 +142,12 @@ When the real model is ready, it should call `insert_prediction(...)` with its o
 
 **`schema.sql`** — Four tables: `products`, `prices`, `predictions`, `watchlist`. Run this from scratch to initialize. Safe to re-run (uses `DROP IF EXISTS`).
 
+**`migrations/`** — incremental changes for databases that already exist. `schema.sql` already includes them, so you only need these if you set up before the change landed. Run in order:
+
+```bash
+docker exec -i buywise-mysql mysql -uroot -proot buywise < db/migrations/001_prices_keepa_columns.sql
+```
+
 **`seed.sql`** — 5 fake products with price history and predictions. Useful for local development without real Keepa data.
 
 **`connection.py`** — The only file the rest of the backend should import for DB access. Uses a connection pool (size 5).

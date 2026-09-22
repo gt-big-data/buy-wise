@@ -29,7 +29,15 @@ CREATE TABLE prices (
     timestamp DATETIME NOT NULL,
     availability BOOLEAN DEFAULT TRUE,
     deal_flag BOOLEAN DEFAULT FALSE,
-    
+
+    -- Secondary Keepa series. Nullable: older rows and non-Keepa inserts
+    -- won't have them, and not every product has a used or list price.
+    used_price DECIMAL(10,2) NULL,
+    list_price DECIMAL(10,2) NULL,
+    sales_rank INT NULL,
+    count_new INT NULL,
+    count_used INT NULL,
+
     foreign key (product_id) references products(product_id)
 		ON DELETE CASCADE,
         

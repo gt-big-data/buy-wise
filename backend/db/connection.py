@@ -96,6 +96,11 @@ def insert_price(
     deal_flag=False,
     *,
     recorded_at: Optional[datetime] = None,
+    used_price: Optional[float] = None,
+    list_price: Optional[float] = None,
+    sales_rank: Optional[int] = None,
+    count_new: Optional[int] = None,
+    count_used: Optional[int] = None,
 ):
     """Insert a price row. Pass ``recorded_at`` for historical samples (e.g. Keepa); else UTC now."""
     conn = None
@@ -105,10 +110,15 @@ def insert_price(
         conn = get_connection()
         cursor = conn.cursor()
         query = """
-            INSERT INTO prices (product_id, price, timestamp, availability, deal_flag)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO prices
+              (product_id, price, timestamp, availability, deal_flag,
+               used_price, list_price, sales_rank, count_new, count_used)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(query, (product_id, price, ts, availability, deal_flag))
+        cursor.execute(query, (
+            product_id, price, ts, availability, deal_flag,
+            used_price, list_price, sales_rank, count_new, count_used,
+        ))
         conn.commit()
     except Exception as e:
         if conn:

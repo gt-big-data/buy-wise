@@ -10,13 +10,41 @@ import pandas as pd
 log = logging.getLogger(__name__)
 _ML_DIR = Path(__file__).parent
 
+# Exact feature order the models were trained with (reconstructed from training pipeline).
+# The models were saved with numpy arrays so feature_names_in_ is not stored — this list
+# encodes the column order that was passed to XGBRegressor/XGBClassifier.fit().
+_TRAINING_FEATURE_ORDER: list[str] = [
+    "price",
+    "new_price", "used_price", "list_price",
+    "count_new", "count_used", "sales_score",
+    "amazon_ma_7d", "amazon_ma_14d", "amazon_delta_7d", "amazon_pct_change_7d",
+    "day_of_week", "month",
+    "rsi_14d", "rsi_7d",
+    "dist_from_30d_high", "dist_from_30d_low",
+    "velocity_3d",
+    "day_of_year_sin", "day_of_year_cos",
+    "price_z_asin", "price_minmax_asin",
+    "roll7_mean", "roll7_std", "roll7_min", "roll7_max",
+    "price_vs_roll7_z",
+    "price_lag1", "price_lag30",
+    "pct_change_1d", "pct_change_14d",
+    "week_of_year",
+    "global_min", "global_max", "global_norm_sd", "log_mean_price",
+    "global_mean",
+    "price_vs_global_min", "price_vs_global_max", "price_vs_global_mean",
+]  # 40 features
+
+_SCALER_FEATS: list[str] | None = None
+
 try:
     _reg_7d  = joblib.load(_ML_DIR / "xgb_reg_7d.joblib")
     _reg_14d = joblib.load(_ML_DIR / "xgb_reg_14d.joblib")
     _cls_14d = joblib.load(_ML_DIR / "xgb_cls_14d.joblib")
     _scaler  = joblib.load(_ML_DIR / "scaler.joblib")
     _MODELS_LOADED = True
-    log.info("ML models loaded from %s", _ML_DIR)
+    if hasattr(_scaler, "feature_names_in_"):
+        _SCALER_FEATS = list(_scaler.feature_names_in_)
+    log.info("ML models loaded from %s  (%d features)", _ML_DIR, len(_TRAINING_FEATURE_ORDER))
 except Exception as _exc:
     _MODELS_LOADED = False
     log.warning("ML models not loaded: %s", _exc)
@@ -42,12 +70,7 @@ def predict_for_asin(price_records: list[dict]) -> dict:
         raise RuntimeError(f"Need ≥30 price records for ML inference, got {len(price_records)}")
 
     # Import here to avoid circular issues if dataset.py is imported at server startup
-    from ml.dataset import (
-        FEATURE_COLS,
-        SCALE_COLS,
-        engineer_features,
-        merge_product_features,
-    )
+    from ml.dataset import engineer_features, merge_product_features
 
     DUMMY_ASIN = "INFERENCE"
 
@@ -55,26 +78,33 @@ def predict_for_asin(price_records: list[dict]) -> dict:
     for rec in price_records:
         ts = rec.get("timestamp") or rec.get("date")
         rows.append({
-            "asin":  DUMMY_ASIN,
-            "date":  pd.Timestamp(ts),
-            "price": float(rec["price"]),
+            "asin":       DUMMY_ASIN,
+            "date":       pd.Timestamp(ts),
+            "price":      float(rec["price"]),
+            "used_price": rec.get("used_price"),
+            "list_price": rec.get("list_price"),
+            "sales_score": rec.get("sales_rank"),   # stored as sales_rank in DB
+            "count_new":  rec.get("count_new"),
+            "count_used": rec.get("count_used"),
         })
 
     df = pd.DataFrame(rows)
     df["date"] = pd.to_datetime(df["date"]).dt.normalize()
     df = df.sort_values("date").reset_index(drop=True)
 
-    # Keepa columns the model expects — not available at inference time, fill NaN
-    for col in [
-        "new_price", "used_price", "list_price",
-        "count_new", "count_used", "sales_score",
-        "amazon_ma_7d", "amazon_ma_14d",
-        "amazon_delta_7d", "amazon_pct_change_7d",
-    ]:
-        df[col] = np.nan
+    # new_price is not stored separately; approximate from marketplace (same as price when no used/list)
+    df["new_price"] = df["price"]
 
-    df["day_of_week"] = df["date"].dt.dayofweek
-    df["month"]       = df["date"].dt.month
+    # Compute amazon_* features from the price series (same data the model trained on)
+    p = df["price"]
+    df["amazon_ma_7d"]        = p.rolling(7,  min_periods=1).mean()
+    df["amazon_ma_14d"]       = p.rolling(14, min_periods=1).mean()
+    df["amazon_delta_7d"]     = p - p.shift(7).fillna(p)
+    df["amazon_pct_change_7d"] = p.pct_change(7).fillna(0)
+
+    df["day_of_week"]  = df["date"].dt.dayofweek
+    df["month"]        = df["date"].dt.month
+    df["week_of_year"] = df["date"].dt.isocalendar().week.astype(int)
 
     df = engineer_features(df)
 
@@ -94,18 +124,29 @@ def predict_for_asin(price_records: list[dict]) -> dict:
     # Use the most recent row
     row = df.iloc[-1:].copy()
 
-    feats      = [c for c in FEATURE_COLS if c in row.columns]
-    scale_cols = [c for c in SCALE_COLS   if c in row.columns]
+    # Ensure every feature in the training order exists; fill unknowns with 0
+    for f in _TRAINING_FEATURE_ORDER:
+        if f not in row.columns:
+            row[f] = 0.0
 
-    # Fill NaN with column medians derived from the inference window
-    for col in feats:
+    # Fill NaN with per-column medians from the inference window, then 0
+    for col in _TRAINING_FEATURE_ORDER:
         if row[col].isna().any():
-            med = float(df[col].median())
+            med = float(df[col].median()) if col in df.columns else np.nan
             row[col] = row[col].fillna(med if not np.isnan(med) else 0.0)
 
-    row[scale_cols] = _scaler.transform(row[scale_cols])
+    # Scale using the scaler's own feature list (stored in feature_names_in_)
+    if _SCALER_FEATS is not None:
+        for f in _SCALER_FEATS:
+            if f not in row.columns:
+                row[f] = 0.0
+        row[_SCALER_FEATS] = _scaler.transform(row[_SCALER_FEATS])
+    else:
+        from ml.dataset import SCALE_COLS
+        scale_cols = [c for c in SCALE_COLS if c in row.columns]
+        row[scale_cols] = _scaler.transform(row[scale_cols])
 
-    X = row[feats].values
+    X = row[_TRAINING_FEATURE_ORDER].values
 
     pred_7d  = float(_reg_7d.predict(X)[0])
     pred_14d = float(_reg_14d.predict(X)[0])
@@ -119,19 +160,23 @@ def predict_for_asin(price_records: list[dict]) -> dict:
 
     if expected_drop >= 0.10:
         recommendation = "WAIT"
-        confidence     = proba_wait
+        base_proba     = proba_wait
     elif expected_drop <= 0.03:
         recommendation = "BUY"
-        confidence     = 1.0 - proba_wait
+        base_proba     = 1.0 - proba_wait
     else:
         # Classifier tiebreaker in the ambiguous middle band
         if cls_label == 1:
             recommendation = "WAIT"
-            confidence     = proba_wait
+            base_proba     = proba_wait
         else:
             recommendation = "BUY"
-            confidence     = 1.0 - proba_wait
+            base_proba     = 1.0 - proba_wait
 
+    # Blend classifier probability with magnitude of expected price move.
+    # A 20%+ swing saturates the magnitude bonus; ambiguous ~0% moves get none.
+    magnitude = min(abs(expected_drop) / 0.20, 1.0)
+    confidence = 0.6 * base_proba + 0.4 * (0.50 + 0.47 * magnitude)
     confidence = float(np.clip(confidence, 0.50, 0.97))
 
     return {

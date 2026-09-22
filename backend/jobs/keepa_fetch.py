@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from db.connection import get_product, insert_product, insert_price
+from typing import Optional
 
 load_dotenv()
 API_KEY = os.getenv("KEEPA_API_KEY")
@@ -16,8 +17,14 @@ API_KEY = os.getenv("KEEPA_API_KEY")
 _KEEPA_EPOCH_OFFSET_MINUTES = 21564000
 
 # Keepa csv array indices for price types
-_CSV_AMAZON_PRICE = 0       # Amazon-fulfilled price (preferred)
-_CSV_MARKETPLACE_NEW = 1    # Third-party new (fallback when Amazon doesn't sell directly)
+_CSV_AMAZON_PRICE    = 0   # Amazon-fulfilled price (preferred)
+_CSV_MARKETPLACE_NEW = 1   # Third-party new (fallback when Amazon doesn't sell directly)
+_CSV_USED            = 2   # Used price
+_CSV_SALES_RANK      = 3   # Sales rank (not in cents)
+_CSV_LIST_PRICE      = 4   # List / MSRP price
+_CSV_FBA_NEW         = 7   # FBA third-party new (second fallback for FBA-only listings)
+_CSV_COUNT_NEW       = 12  # Offer count new
+_CSV_COUNT_USED      = 13  # Offer count used
 
 # Rate limit: max retries before giving up on a throttled request
 _MAX_RETRIES = 3
@@ -61,13 +68,28 @@ def fetch_price_history(asin: str, days: int = 30) -> list[dict]:
     product = _fetch_with_retry(url, params)
 
     csv_data = product.get("csv") or []
-    amazon_prices = csv_data[_CSV_AMAZON_PRICE] if len(csv_data) > _CSV_AMAZON_PRICE else []
-    marketplace_prices = csv_data[_CSV_MARKETPLACE_NEW] if len(csv_data) > _CSV_MARKETPLACE_NEW else []
-    # Prefer Amazon-fulfilled; fall back to marketplace new for third-party-only products
-    new_prices = amazon_prices if amazon_prices else marketplace_prices
+
+    def _csv(idx):
+        return csv_data[idx] if len(csv_data) > idx and csv_data[idx] else []
+
+    amazon_prices = _csv(_CSV_AMAZON_PRICE)
+    marketplace_prices = _csv(_CSV_MARKETPLACE_NEW)
+    fba_prices = _csv(_CSV_FBA_NEW)
+    # Prefer Amazon-fulfilled → marketplace new → FBA third-party
+    new_prices = amazon_prices or marketplace_prices or fba_prices
+
+    used_ts    = _parse_secondary(_csv(_CSV_USED),       cents=True)
+    list_ts    = _parse_secondary(_csv(_CSV_LIST_PRICE),  cents=True)
+    rank_ts    = _parse_secondary(_csv(_CSV_SALES_RANK),  cents=False)
+    cnt_new_ts = _parse_secondary(_csv(_CSV_COUNT_NEW),   cents=False)
+    cnt_used_ts= _parse_secondary(_csv(_CSV_COUNT_USED),  cents=False)
+
     name = product.get("title", "Unknown Product")
 
-    records = _parse_price_records(asin, name, new_prices)
+    records = _parse_price_records(
+        asin, name, new_prices,
+        used_ts, list_ts, rank_ts, cnt_new_ts, cnt_used_ts,
+    )
     _write_to_db(asin, name, records)
 
     return records
@@ -99,7 +121,37 @@ def _fetch_with_retry(url: str, params: dict) -> dict:
     raise RuntimeError(f"Failed to fetch from Keepa after {_MAX_RETRIES} attempts")
 
 
-def _parse_price_records(asin: str, name: str, raw: list) -> list[dict]:
+def _parse_secondary(raw: list, cents: bool) -> dict:
+    """Parse a secondary Keepa csv series into {unix_seconds: value}."""
+    result = {}
+    for i in range(0, len(raw) - 1, 2):
+        t, v = raw[i], raw[i + 1]
+        if v == -1:
+            continue
+        unix_seconds = (t + _KEEPA_EPOCH_OFFSET_MINUTES) * 60
+        result[unix_seconds] = v / 100.0 if cents else v
+    return result
+
+
+def _last_known(ts_dict: dict, ts: int) -> Optional[float]:
+    """Return the most recent value in ts_dict recorded at or before ts."""
+    candidates = [v for t, v in ts_dict.items() if t <= ts]
+    if not candidates:
+        return None
+    best_t = max(t for t in ts_dict if t <= ts)
+    return ts_dict[best_t]
+
+
+def _parse_price_records(
+    asin: str,
+    name: str,
+    raw: list,
+    used_ts: dict,
+    list_ts: dict,
+    rank_ts: dict,
+    cnt_new_ts: dict,
+    cnt_used_ts: dict,
+) -> list[dict]:
     """
     Parse Keepa's flat [timestamp, price, timestamp, price, ...] csv array.
 
@@ -116,10 +168,15 @@ def _parse_price_records(asin: str, name: str, raw: list) -> list[dict]:
 
         unix_seconds = (t + _KEEPA_EPOCH_OFFSET_MINUTES) * 60
         records.append({
-            "asin": asin,
-            "name": name,
-            "timestamp": unix_seconds,
-            "price": price_cents / 100.0,
+            "asin":       asin,
+            "name":       name,
+            "timestamp":  unix_seconds,
+            "price":      price_cents / 100.0,
+            "used_price": _last_known(used_ts,     unix_seconds),
+            "list_price": _last_known(list_ts,     unix_seconds),
+            "sales_rank": _last_known(rank_ts,     unix_seconds),
+            "count_new":  _last_known(cnt_new_ts,  unix_seconds),
+            "count_used": _last_known(cnt_used_ts, unix_seconds),
         })
     return records
 
@@ -143,4 +200,9 @@ def _write_to_db(asin: str, name: str, records: list[dict]) -> None:
             availability=True,
             deal_flag=False,
             recorded_at=ts,
+            used_price=record.get("used_price"),
+            list_price=record.get("list_price"),
+            sales_rank=record.get("sales_rank"),
+            count_new=record.get("count_new"),
+            count_used=record.get("count_used"),
         )
