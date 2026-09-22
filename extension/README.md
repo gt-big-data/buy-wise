@@ -8,6 +8,7 @@ BuyWise watches the Amazon product page you're on and tells you whether to buy n
 
 - Node.js and npm installed
 - The BuyWise backend running at `http://localhost:8000` (see `backend/README.md`)
+- New to the project? Start with [`ONBOARDING.md`](../ONBOARDING.md) instead of this file.
 
 The extension's content script (`src/content/index.tsx`) fetches data from `localhost:8000` — if the backend is not running, the panel will show an error state with a retry button.
 

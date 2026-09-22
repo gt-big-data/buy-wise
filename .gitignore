@@ -14,3 +14,9 @@ env/
 
 # Environment variables
 .env
+
+# Claude Code local settings (machine-specific). Skills in .claude/skills/ ARE shared.
+.claude/settings.local.json
+
+# Semester plan is a working proposal between the leads, kept out of the repo.
+PLAN.md
