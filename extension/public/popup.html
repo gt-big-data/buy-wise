@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BuyWise</title>
+    <!-- Chrome sizes a popup from its content. Without a fixed body width the
+         layout starts at a near-zero viewport and the 100vw / max-width rules
+         collapse everything into a narrow column. -->
+    <style>
+      html, body { margin: 0; width: 360px; min-width: 360px; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
