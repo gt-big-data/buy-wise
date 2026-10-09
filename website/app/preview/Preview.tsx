@@ -2,11 +2,77 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { boseHistory, garmin, trackRecord, watching, type Offer } from "./data";
+import {
+  LABEL,
+  OFFER_TAG,
+  PROFILE_LABEL,
+  SKIP,
+  STATUS,
+  WARRANTY,
+  bestOtherLine,
+  checked,
+  date,
+  dateRange,
+  deliveryDelta,
+  fulfillmentLine,
+  headline,
+  missLine,
+  money,
+  patternLine,
+  pct,
+  profileSummary,
+  ratingLine,
+  savingsVs,
+  sellerLine,
+  watchFacts,
+  watchingConfirm,
+  type OfferTag,
+  type Status,
+} from "./copy";
+import { PROFILE_OPTIONS, bose, boseHistory, garmin, profile, sony, trackRecord, watching, type Offer } from "./data";
 
-const money = (n: number) => `$${n.toFixed(2)}`;
+/* ───────────────────────── decisions derived from data ───────────────────────── */
+
+const featured = garmin.offers.find((o) => o.featured)!;
+const eligible = garmin.offers.filter((o) => !o.skip);
+const best = eligible.filter((o) => !o.featured).sort((a, b) => a.price - b.price)[0];
+const fullWarrantyAlt =
+  best.warranty === "full"
+    ? null
+    : eligible.filter((o) => o !== best && !o.featured && o.warranty === "full" && o.price < featured.price).sort((a, b) => a.price - b.price)[0] ?? null;
+
+const tagFor = (o: Offer): OfferTag => (o.skip ? "skipped" : o === best ? "best" : o.featured ? "featured" : "eligible");
+const offerNote = (o: Offer) => {
+  if (o.skip) return SKIP[o.skip];
+  if (o.featured) return WARRANTY[o.warranty];
+  return [savingsVs(featured.price, o.price), deliveryDelta(featured.arrives, o.arrives), WARRANTY[o.warranty]].join(" · ");
+};
+const rankedOffers = [...garmin.offers].sort((a, b) => {
+  const order: OfferTag[] = ["best", "featured", "eligible", "skipped"];
+  return order.indexOf(tagFor(a)) - order.indexOf(tagFor(b)) || a.price - b.price;
+});
 
 /* ───────────────────────── shared pieces ───────────────────────── */
+
+function StatusTag({ status }: { status: Status }) {
+  const cls: Record<Status, string> = {
+    better_offer: "bg-ink text-white",
+    buy_now: "bg-ink text-white",
+    wait: "border border-ink text-ink",
+    buy_here: "border border-line-strong text-ink-2",
+  };
+  return <span className={`inline-block whitespace-nowrap rounded-[4px] px-2 py-0.5 text-[11.5px] font-medium ${cls[status]}`}>{STATUS[status]}</span>;
+}
+
+function OfferTagChip({ tag }: { tag: OfferTag }) {
+  const cls: Record<OfferTag, string> = {
+    best: "bg-ink text-white",
+    featured: "border border-line-strong text-ink-2",
+    eligible: "border border-line text-muted",
+    skipped: "text-faint",
+  };
+  return <span className={`inline-block whitespace-nowrap rounded-[4px] px-2 py-0.5 text-[11.5px] ${cls[tag]}`}>{OFFER_TAG[tag]}</span>;
+}
 
 function Sparkline({ data, w = 120, h = 32, stroke = "var(--color-ink-2)" }: { data: number[]; w?: number; h?: number; stroke?: string }) {
   const min = Math.min(...data);
@@ -31,16 +97,16 @@ function PriceChart() {
   const pts = data.map((v, i) => `${((i / (data.length - 1)) * w).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   return (
     <svg viewBox={`0 0 ${w} ${h + 18}`} className="w-full" role="img" aria-label="Price over the last 120 days">
-      {[279, 349].map((v) => (
+      {[Math.min(...data), Math.max(...data)].map((v) => (
         <g key={v}>
           <line x1="0" x2={w} y1={y(v)} y2={y(v)} stroke="var(--color-line)" strokeDasharray="2 3" />
           <text x={w} y={y(v) - 4} textAnchor="end" className="fill-[var(--color-faint)] font-mono text-[9px]">
-            ${v}
+            {money(v)}
           </text>
         </g>
       ))}
       <polyline points={pts} fill="none" stroke="var(--color-ink)" strokeWidth="1.5" strokeLinejoin="round" />
-      <circle cx={w} cy={y(349)} r="3" fill="var(--color-ink)" />
+      <circle cx={w} cy={y(data[data.length - 1])} r="3" fill="var(--color-ink)" />
       <text x="0" y={h + 14} className="fill-[var(--color-faint)] font-mono text-[9px]">
         120 days ago
       </text>
@@ -64,18 +130,29 @@ function Btn({ children, kind = "primary", onClick }: { children: React.ReactNod
   );
 }
 
-function PanelShell({ children, meta }: { children: React.ReactNode; meta: string }) {
+function PanelShell({ children, meta, profileLine = true }: { children: React.ReactNode; meta: string; profileLine?: boolean }) {
   return (
     <div className="rounded-ui border border-line-strong bg-card text-ink">
       <div className="flex items-center gap-2 border-b border-line px-3.5 py-2.5 text-[12.5px] text-muted">
         <Image src="/mark.png" alt="" width={14} height={16} />
         <span className="font-semibold text-ink">BuyWise</span>
         <span>{meta}</span>
-        <span className="ml-auto text-faint" aria-hidden="true">
-          ⌄
-        </span>
       </div>
       {children}
+      {profileLine && (
+        <p className="border-t border-line px-3.5 py-2.5 text-[12px] text-faint">
+          For you: {profileSummary(profile)} · <span className="text-muted underline underline-offset-2">Edit</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Verdict({ status, text }: { status: Status; text: string }) {
+  return (
+    <div>
+      <StatusTag status={status} />
+      <p className="mt-2 text-[16px] font-semibold leading-snug tracking-tight">{text}</p>
     </div>
   );
 }
@@ -84,50 +161,43 @@ function Row({ label, value, tone }: { label: string; value: React.ReactNode; to
   const color = tone === "caution" ? "text-caution" : tone === "good" ? "text-brand-ink" : "text-ink-2";
   return (
     <div className="flex justify-between gap-4 border-t border-line py-2 text-[13px]">
-      <span className="text-muted">{label}</span>
+      <span className="flex-none text-muted">{label}</span>
       <span className={`text-right ${color}`}>{value}</span>
     </div>
   );
 }
 
-function ProfileLine() {
-  return (
-    <p className="border-t border-line px-3.5 py-2.5 text-[12px] text-faint">
-      For you: new only · can wait a few days · Prime.{" "}
-      <span className="text-muted underline underline-offset-2">Edit</span>
-    </p>
-  );
-}
-
-/* ───────────────────────── the three panel states ───────────────────────── */
+/* ───────────────────────── the panel states ───────────────────────── */
 
 function BetterOfferPanel({ onCompare }: { onCompare?: () => void }) {
-  const best = garmin.offers[0];
   return (
-    <PanelShell meta="checked 28 offers">
+    <PanelShell meta={checked(garmin.offersChecked)}>
       <div className="px-3.5 pb-3.5 pt-3">
-        <p className="text-[17px] font-semibold leading-snug tracking-tight">
-          Same watch, new, <span className="text-brand">$80.99 less</span>.
-        </p>
+        <Verdict status="better_offer" text={headline.better_offer(featured.price - best.price, best.condition)} />
         <p className="mt-1 text-[13px] text-muted">
-          {money(best.price)} from {best.seller} · {best.rating} · {best.years} years selling
+          {best.seller} · {sellerLine(best.rating)}
         </p>
         <div className="mt-3">
-          <Row label="Arrives" value="Sun, Oct 18 (2 days later)" />
-          <Row label="Returns" value="Free 30-day returns through Amazon" tone="good" />
-          <Row label="Warranty" value="Seller isn't an authorized Garmin dealer" tone="caution" />
+          <Row label={LABEL.price} value={money(best.price)} />
+          <Row label={LABEL.arrives} value={`${date(best.arrives)} · ${deliveryDelta(featured.arrives, best.arrives)}`} />
+          <Row label={LABEL.returns} value={fulfillmentLine(best)} />
+          <Row label={LABEL.warranty} value={WARRANTY[best.warranty]} tone={best.warranty === "full" ? undefined : "caution"} />
         </div>
-        <p className="mt-2 rounded-ui bg-paper px-3 py-2 text-[12.5px] text-ink-2">
-          Want the warranty? Runner&apos;s Depot is authorized and $20 less than Amazon.
-        </p>
+        {fullWarrantyAlt && (
+          <div className="mt-2 rounded-ui bg-paper px-3 py-2 text-[12.5px]">
+            <p className="text-muted">With full warranty</p>
+            <p className="text-ink-2">
+              {fullWarrantyAlt.seller} · {money(fullWarrantyAlt.price)} · {savingsVs(featured.price, fullWarrantyAlt.price)}
+            </p>
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2">
           <Btn>View offer</Btn>
           <Btn kind="secondary" onClick={onCompare}>
-            Compare all 28
+            Compare all {garmin.offersChecked}
           </Btn>
         </div>
       </div>
-      <ProfileLine />
     </PanelShell>
   );
 }
@@ -136,23 +206,21 @@ function WaitPanel() {
   const [mode, setMode] = useState<"target" | "signal">("target");
   const [target, setTarget] = useState("290");
   const [watched, setWatched] = useState(false);
+  const p = bose.pattern;
   return (
-    <PanelShell meta="14-day outlook">
+    <PanelShell meta={checked(bose.offersChecked)}>
       <div className="px-3.5 pb-3.5 pt-3">
-        <p className="text-[17px] font-semibold leading-snug tracking-tight">Likely to drop. Worth waiting.</p>
-        <p className="mt-1 text-[13px] text-muted">
-          <span className="font-mono text-ink">74%</span> chance it falls 8% or more in the next 14 days. Expected low
-          around <span className="font-mono text-ink">$285</span>.
-        </p>
+        <Verdict status="wait" text={headline.wait(bose.dropChance)} />
         <div className="mt-3">
           <PriceChart />
         </div>
-        <Row label="Pattern" value="Steady: 4 drops in 4 months, each lasted 5–8 days" tone="good" />
-        <Row label="Other sellers" value="None cheaper right now" />
+        <Row label={LABEL.expectedLow} value={money(bose.expectedLow)} />
+        <Row label={LABEL.pattern} value={patternLine(p.drops, p.months, p.minDays, p.maxDays)} />
+        <Row label={LABEL.bestOther} value={bestOtherLine(null)} />
 
         {!watched ? (
           <div className="mt-3 rounded-ui border border-line p-3">
-            <p className="text-[13px] font-medium">Watch it for me</p>
+            <p className="text-[13px] font-medium">Watch this product</p>
             <div className="mt-2 flex gap-1 rounded-ui bg-paper p-0.5 text-[12.5px]">
               {(
                 [
@@ -170,9 +238,9 @@ function WaitPanel() {
                 </button>
               ))}
             </div>
-            {mode === "target" ? (
+            {mode === "target" && (
               <label className="mt-2.5 flex items-center gap-2 text-[13px] text-muted">
-                Notify me at or below
+                {LABEL.target}
                 <span className="flex items-center rounded-ui border border-line-strong bg-card px-2">
                   $
                   <input
@@ -183,8 +251,6 @@ function WaitPanel() {
                   />
                 </span>
               </label>
-            ) : (
-              <p className="mt-2.5 text-[13px] text-muted">We&apos;ll notify you when a drop starts, or if waiting stops being worth it.</p>
             )}
             <div className="mt-3 flex items-center gap-3">
               <Btn onClick={() => setWatched(true)}>Watch</Btn>
@@ -193,36 +259,32 @@ function WaitPanel() {
           </div>
         ) : (
           <div className="mt-3 rounded-ui border border-line bg-paper p-3 text-[13px]">
-            <p className="font-medium">Watching.</p>
-            <p className="mt-0.5 text-muted">
-              {mode === "target" ? `We'll notify you at $${target || "—"} or lower.` : "We'll notify you when it's a good time to buy."} You can close
-              this tab.
-            </p>
+            <p>{watchingConfirm(mode === "target" ? Number(target) || null : null)}</p>
             <button type="button" onClick={() => setWatched(false)} className="mt-1.5 text-[12.5px] text-muted underline underline-offset-2">
               Change
             </button>
           </div>
         )}
       </div>
-      <ProfileLine />
     </PanelShell>
   );
 }
 
 function QuietPanel() {
   const [open, setOpen] = useState(false);
+  const s = sony.skippedCheaper;
   return (
-    <PanelShell meta="checked 14 offers">
+    <PanelShell meta={checked(sony.offersChecked)} profileLine={open}>
       <div className="px-3.5 py-3">
-        <p className="text-[14.5px] font-medium">This is the best deal for you.</p>
-        <button type="button" onClick={() => setOpen(!open)} className="mt-0.5 text-[12.5px] text-muted underline underline-offset-2">
-          {open ? "Hide details" : "What we checked"}
+        <Verdict status="buy_here" text={headline.buy_here()} />
+        <button type="button" onClick={() => setOpen(!open)} className="mt-1 text-[12.5px] text-muted underline underline-offset-2">
+          {open ? "Hide details" : "Details"}
         </button>
         {open && (
           <div className="mt-2">
-            <Row label="Cheapest new elsewhere" value="$254.00, arrives in 9 days" />
-            <Row label="Used, Very Good" value="$211.00, skipped (new only)" />
-            <Row label="Chance of a drop" value="4% in the next 14 days" />
+            <Row label={LABEL.bestOther} value={bestOtherLine(sony.bestOther)} />
+            <Row label={LABEL.dropChance} value={pct(sony.dropChance)} />
+            <Row label={OFFER_TAG.skipped} value={`${money(s.price)}, ${s.condition.toLowerCase()} · ${SKIP[s.reason]}`} />
           </div>
         )}
       </div>
@@ -237,15 +299,15 @@ function ProductPage({
   price,
   arrives,
   rating,
-  children,
   imageLabel,
+  children,
 }: {
   title: string;
   price: number;
   arrives: string;
-  rating: string;
-  children: React.ReactNode;
+  rating: { stars: number; count: number };
   imageLabel: string;
+  children: React.ReactNode;
 }) {
   return (
     <div className="overflow-hidden rounded-ui border border-line bg-white">
@@ -258,7 +320,7 @@ function ProductPage({
         <div className="min-w-0">
           <div className="grid h-44 place-items-center rounded-ui bg-[#eceeea] text-[12px] text-faint">{imageLabel}</div>
           <p className="mt-4 text-[17px] font-medium leading-snug">{title}</p>
-          <p className="mt-1 text-[12.5px] text-muted">{rating}</p>
+          <p className="mt-1 text-[12.5px] text-muted">{ratingLine(rating)}</p>
           <p className="mt-3 font-mono text-2xl">{money(price)}</p>
           <div className="mt-4 space-y-1.5">
             {[90, 75, 82, 60].map((w, i) => (
@@ -269,7 +331,7 @@ function ProductPage({
         <div className="min-w-0 space-y-3">
           <div className="rounded-ui border border-line p-3.5 text-[13px]">
             <p className="font-mono text-lg">{money(price)}</p>
-            <p className="mt-1 text-muted">Delivery {arrives}</p>
+            <p className="mt-1 text-muted">Delivery {date(arrives)}</p>
             <p className="mt-1 text-brand-ink">In stock</p>
             <div className="mt-3 space-y-1.5">
               <div className="rounded-full bg-[#f7ca00] py-1.5 text-center text-[13px]">Add to Cart</div>
@@ -286,20 +348,13 @@ function ProductPage({
 
 /* ───────────────────────── other screens ───────────────────────── */
 
-const verdictLabel: Record<Offer["verdict"], { text: string; cls: string }> = {
-  best: { text: "Best for you", cls: "bg-ink text-white" },
-  featured: { text: "Amazon's pick", cls: "border border-line-strong text-ink-2" },
-  ok: { text: "Good option", cls: "border border-line text-muted" },
-  skipped: { text: "Skipped", cls: "text-faint" },
-};
-
 function AllOffers() {
   return (
     <div className="rounded-ui border border-line-strong bg-card">
-      <div className="flex items-center gap-2 border-b border-line px-4 py-3 text-[13px] text-muted">
+      <div className="flex flex-wrap items-center gap-2 border-b border-line px-4 py-3 text-[13px] text-muted">
         <Image src="/mark.png" alt="" width={14} height={16} />
         <span className="font-semibold text-ink">All offers</span>
-        <span>· Garmin Forerunner 265, 46mm · 28 checked, 5 shown</span>
+        <span>· Garmin Forerunner 265, 46mm · {checked(garmin.offersChecked)}</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-[13px]">
@@ -313,30 +368,28 @@ function AllOffers() {
             </tr>
           </thead>
           <tbody>
-            {garmin.offers.map((o) => (
-              <tr key={o.seller + o.condition} className={`border-b border-line align-top ${o.verdict === "skipped" ? "text-faint" : ""}`}>
-                <td className="px-4 py-3">
-                  <p className={o.verdict === "skipped" ? "" : "font-medium text-ink"}>{o.seller}</p>
-                  <p className="text-[12px] text-faint">
-                    {o.rating ? `${o.rating} · ${o.years} yrs` : "Sold by Amazon"}
-                  </p>
-                </td>
-                <td className="px-4 py-3">{o.condition}</td>
-                <td className="px-4 py-3 font-mono">{money(o.price)}</td>
-                <td className="px-4 py-3">
-                  {o.arrives}
-                  <p className="text-[12px] text-faint">
-                    {o.fulfilled === "Amazon" ? "Fulfilled by Amazon" : "Ships from seller"} · {o.returns}
-                  </p>
-                </td>
-                <td className="w-[220px] px-4 py-3">
-                  <span className={`inline-block whitespace-nowrap rounded-[4px] px-2 py-0.5 text-[12px] ${verdictLabel[o.verdict].cls}`}>
-                    {verdictLabel[o.verdict].text}
-                  </span>
-                  {o.note && <p className={`mt-1.5 text-[12px] ${o.verdict === "best" ? "text-caution" : "text-muted"}`}>{o.note}</p>}
-                </td>
-              </tr>
-            ))}
+            {rankedOffers.map((o) => {
+              const tag = tagFor(o);
+              const dim = tag === "skipped";
+              return (
+                <tr key={o.seller + o.condition} className={`border-b border-line align-top ${dim ? "text-faint" : ""}`}>
+                  <td className="px-4 py-3">
+                    <p className={dim ? "" : "font-medium text-ink"}>{o.seller}</p>
+                    <p className="text-[12px] text-faint">{sellerLine(o.rating)}</p>
+                  </td>
+                  <td className="px-4 py-3">{o.condition}</td>
+                  <td className="px-4 py-3 font-mono">{money(o.price)}</td>
+                  <td className="px-4 py-3">
+                    {dateRange(o.arrives, o.arrivesBy)}
+                    <p className="text-[12px] text-faint">{fulfillmentLine(o)}</p>
+                  </td>
+                  <td className="w-[230px] px-4 py-3">
+                    <OfferTagChip tag={tag} />
+                    <p className={`mt-1.5 text-[12px] ${!dim && o.warranty === "may_not_apply" ? "text-caution" : "text-muted"}`}>{offerNote(o)}</p>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -349,10 +402,13 @@ function AllOffers() {
                 <span className="font-medium">{v.name}</span>
                 <span className="font-mono">{money(v.price)}</span>
               </div>
-              <p className="mt-1 text-[12.5px] text-muted">{v.current ? "You're viewing this one." : v.reviews}</p>
+              <p className="mt-1 text-[12.5px] text-muted">
+                {v.current ? "This version" : `${savingsVs(featured.price, v.price)} · ${v.differs.join(" · ")}`}
+              </p>
             </li>
           ))}
         </ul>
+        <p className="mt-2 text-[12px] text-faint">Differences come from the listing and recurring points in reviews.</p>
       </div>
     </div>
   );
@@ -361,19 +417,22 @@ function AllOffers() {
 function BeforeYouBuy() {
   const [answer, setAnswer] = useState<null | "soon" | "norush">(null);
   return (
-    <div className="max-w-[340px] rounded-ui border border-line-strong bg-card">
+    <div className="w-full max-w-[340px] rounded-ui border border-line-strong bg-card">
       <div className="flex items-center gap-2 border-b border-line px-3.5 py-2.5 text-[12.5px] text-muted">
         <Image src="/mark.png" alt="" width={14} height={16} />
         <span className="font-semibold text-ink">BuyWise</span>
-        <span>quick check</span>
+        <span>One question</span>
       </div>
       <div className="p-3.5">
         <p className="text-[15px] font-medium">When do you need it?</p>
-        <p className="mt-0.5 text-[12.5px] text-muted">The cheaper offer arrives two days later. This is the only thing we&apos;ll ask.</p>
+        <p className="mt-0.5 text-[12.5px] text-muted">
+          {OFFER_TAG.best}: {money(best.price)}, arrives {date(best.arrives)} · {OFFER_TAG.featured}: {money(featured.price)}, arrives{" "}
+          {date(featured.arrives)}
+        </p>
         <div className="mt-3 grid grid-cols-2 gap-2">
           {(
             [
-              ["soon", "By Friday"],
+              ["soon", `By ${date(featured.arrives)}`],
               ["norush", "No rush"],
             ] as const
           ).map(([k, l]) => (
@@ -381,51 +440,49 @@ function BeforeYouBuy() {
               key={k}
               type="button"
               onClick={() => setAnswer(k)}
-              className={`h-9 rounded-ui border text-[13.5px] ${answer === k ? "border-ink bg-ink text-white" : "border-line-strong hover:border-ink"}`}
+              className={`h-9 rounded-ui border text-[13px] ${answer === k ? "border-ink bg-ink text-white" : "border-line-strong hover:border-ink"}`}
             >
               {l}
             </button>
           ))}
         </div>
-        {answer === "soon" && (
-          <p className="mt-3 border-t border-line pt-3 text-[13px]">
-            Then Amazon&apos;s pick is right for you. <span className="text-muted">Arrives Friday, full warranty.</span>
-          </p>
-        )}
-        {answer === "norush" && (
-          <div className="mt-3 border-t border-line pt-3 text-[13px]">
-            <p>
-              Save <span className="font-medium text-brand">$80.99</span> with TrailTech Outfitters. <span className="text-muted">Arrives Sunday.</span>
-            </p>
-            <div className="mt-2.5">
-              <Btn>Switch to this offer</Btn>
-            </div>
+        {answer && (
+          <div className="mt-3 border-t border-line pt-3">
+            {answer === "soon" ? (
+              <Verdict status="buy_here" text={headline.buy_here()} />
+            ) : (
+              <>
+                <Verdict status="better_offer" text={headline.better_offer(featured.price - best.price, best.condition)} />
+                <div className="mt-2.5">
+                  <Btn>View offer</Btn>
+                </div>
+              </>
+            )}
           </div>
         )}
         <label className="mt-3 flex items-center gap-2 text-[12px] text-faint">
-          <input type="checkbox" className="accent-[var(--color-ink)]" /> Remember for this kind of purchase
+          <input type="checkbox" className="accent-[var(--color-ink)]" /> Remember for similar purchases
         </label>
       </div>
     </div>
   );
 }
 
-function Choice({ q, options, hint, initial = 0 }: { q: string; options: string[]; hint?: string; initial?: number }) {
-  const [sel, setSel] = useState(initial);
+function Choice({ q, options, selected }: { q: string; options: readonly string[]; selected: string }) {
+  const [sel, setSel] = useState(selected);
   return (
     <div className="border-t border-line py-4">
       <p className="text-[14px] font-medium">{q}</p>
-      {hint && <p className="mt-0.5 text-[12.5px] text-muted">{hint}</p>}
       <div className="mt-2.5 flex flex-col gap-1.5">
-        {options.map((o, i) => (
+        {options.map((o) => (
           <button
             key={o}
             type="button"
-            onClick={() => setSel(i)}
-            className={`flex items-center gap-2.5 rounded-ui border px-3 py-2 text-left text-[13.5px] ${sel === i ? "border-ink" : "border-line hover:border-line-strong"}`}
+            onClick={() => setSel(o)}
+            className={`flex items-center gap-2.5 rounded-ui border px-3 py-2 text-left text-[13.5px] ${sel === o ? "border-ink" : "border-line hover:border-line-strong"}`}
           >
-            <span className={`grid size-3.5 place-items-center rounded-full border ${sel === i ? "border-ink" : "border-line-strong"}`}>
-              {sel === i && <span className="size-1.5 rounded-full bg-ink" />}
+            <span className={`grid size-3.5 place-items-center rounded-full border ${sel === o ? "border-ink" : "border-line-strong"}`}>
+              {sel === o && <span className="size-1.5 rounded-full bg-ink" />}
             </span>
             {o}
           </button>
@@ -442,21 +499,17 @@ function FirstRun() {
         <Image src="/mark.png" alt="" width={20} height={22} />
         <span className="font-semibold">Welcome to BuyWise</span>
       </div>
-      <p className="mt-2 text-[13.5px] text-muted">Three questions so we only speak up when it matters to you. Takes 20 seconds, and you can change them anytime.</p>
+      <p className="mt-2 text-[13.5px] text-muted">Three questions so BuyWise only speaks up when it matters to you. You can change them anytime.</p>
       <div className="mt-4">
-        <Choice q="Would you buy used or open-box?" options={["Yes, if it's like new", "Yes, any good condition", "New only"]} initial={2} />
-        <Choice
-          q="How patient are you with purchases?"
-          options={["I usually need things soon", "I can wait a week or two", "I'll wait for a real deal"]}
-          initial={1}
-        />
-        <Choice q="Should we watch prices for you?" options={["Yes, notify me", "Only when I ask", "No notifications"]} />
+        <Choice q="What condition would you buy?" options={PROFILE_OPTIONS.condition} selected={profile.condition} />
+        <Choice q="How patient are you?" options={PROFILE_OPTIONS.patience} selected={profile.patience} />
+        <Choice q="Price alerts" options={PROFILE_OPTIONS.alerts} selected={profile.alerts} />
       </div>
-      <div className="mt-1 border-t border-line pt-4 text-[12.5px] text-muted">
+      <div className="border-t border-line pt-4 text-[12.5px] text-muted">
         <p>
-          <span className="text-ink">Detected:</span> Prime member. We use it for delivery estimates.
+          {PROFILE_LABEL.prime}: {profile.prime ? "Yes" : "No"} (detected)
         </p>
-        <p className="mt-1">Your answers stay on this device.</p>
+        <p className="mt-1">Stored on this device only.</p>
       </div>
       <div className="mt-4 flex items-center gap-3">
         <Btn>Done</Btn>
@@ -468,18 +521,15 @@ function FirstRun() {
 
 function Dashboard() {
   const [tab, setTab] = useState<"watching" | "record" | "profile">("watching");
-  const statusCls = {
-    target: "bg-ink text-white",
-    buy: "border border-ink text-ink",
-    waiting: "border border-line text-muted",
-  };
-  const statusText = { target: "Target hit", buy: "Good time to buy", waiting: "Waiting" };
+  const ready = watching.filter((w) => w.status === "buy_now").length;
   return (
     <div className="w-full max-w-[400px] overflow-hidden rounded-ui border border-line-strong bg-card">
       <div className="flex items-center gap-2 border-b border-line px-4 py-3">
         <Image src="/mark.png" alt="" width={18} height={20} />
         <span className="font-semibold">BuyWise</span>
-        <span className="ml-auto text-[12px] text-faint">1 alert</span>
+        <span className="ml-auto text-[12px] text-muted">
+          {ready} of {watching.length} ready to buy
+        </span>
       </div>
       <div className="flex border-b border-line text-[13px]">
         {(
@@ -509,16 +559,14 @@ function Dashboard() {
                   <p className="truncate text-[13.5px] font-medium">{w.title}</p>
                   <p className="mt-0.5 font-mono text-[13px]">
                     {money(w.price)}
-                    {w.was > w.price && <span className="ml-2 text-faint line-through">{money(w.was)}</span>}
+                    {w.startPrice > w.price && <span className="ml-2 text-faint line-through">{money(w.startPrice)}</span>}
                   </p>
                 </div>
-                <span className={`whitespace-nowrap rounded-[4px] px-2 py-0.5 text-[11.5px] ${statusCls[w.status]}`}>{statusText[w.status]}</span>
+                <StatusTag status={w.status} />
               </div>
               <div className="mt-2 flex items-end justify-between gap-3">
-                <p className="text-[12px] text-muted">
-                  {w.status === "target" ? `Below your $${w.target} target. Lowest in 90 days.` : w.note}
-                </p>
-                <Sparkline data={w.history} w={88} h={24} stroke={w.status === "target" ? "var(--color-brand)" : "var(--color-ink-2)"} />
+                <p className="text-[12px] text-muted">{watchFacts(w)}</p>
+                <Sparkline data={w.history} w={72} h={22} stroke={w.status === "buy_now" ? "var(--color-brand)" : "var(--color-ink-2)"} />
               </div>
             </li>
           ))}
@@ -527,25 +575,25 @@ function Dashboard() {
 
       {tab === "record" && (
         <div className="px-4 py-4">
-          <p className="text-[12.5px] text-muted">Since {trackRecord.since}, scored against what actually happened.</p>
+          <p className="text-[12.5px] text-muted">Since {date(trackRecord.since)}, scored against what happened next.</p>
           <div className="mt-3 grid grid-cols-3 border-y border-line">
             {[
-              [`${trackRecord.played}/${trackRecord.shown}`, "played out"],
-              [`$${trackRecord.saved}`, "saved"],
-              [`${trackRecord.quietPct}%`, "pages we stayed quiet"],
+              [`${trackRecord.correct}/${trackRecord.shown}`, "Recommendations right"],
+              [money(trackRecord.saved), "Saved by following"],
+              [pct(trackRecord.quietShare), "Pages marked Buy here"],
             ].map(([v, l], i) => (
               <div key={l} className={`py-3 ${i ? "border-l border-line pl-3" : ""}`}>
-                <p className="font-mono text-lg">{v}</p>
+                <p className="font-mono text-[15px]">{v}</p>
                 <p className="text-[11.5px] text-muted">{l}</p>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-[13px] font-medium">Where we were wrong</p>
+          <p className="mt-4 text-[13px] font-medium">Misses</p>
           <ul className="mt-1">
             {trackRecord.misses.map((m) => (
               <li key={m.title} className="border-b border-line py-2.5 text-[12.5px] last:border-b-0">
                 <p className="font-medium text-ink">{m.title}</p>
-                <p className="text-muted">{m.what}</p>
+                <p className="text-muted">{missLine(m.said, m.outcome)}</p>
               </li>
             ))}
           </ul>
@@ -554,13 +602,15 @@ function Dashboard() {
 
       {tab === "profile" && (
         <div className="px-4 py-2">
-          {[
-            ["Used or open-box", "New only"],
-            ["Patience", "Can wait a week or two"],
-            ["Notifications", "On"],
-            ["Prime", "Yes (detected)"],
-            ["Minimum saving to show", "$10 or 5%"],
-          ].map(([k, v]) => (
+          {(
+            [
+              [PROFILE_LABEL.condition, profile.condition],
+              [PROFILE_LABEL.patience, profile.patience],
+              [PROFILE_LABEL.alerts, profile.alerts],
+              [PROFILE_LABEL.prime, profile.prime ? "Yes (detected)" : "No (detected)"],
+              [PROFILE_LABEL.minSaving, `${money(profile.minSaving.dollars)} or ${pct(profile.minSaving.share)}`],
+            ] as const
+          ).map(([k, v]) => (
             <div key={k} className="flex justify-between border-b border-line py-2.5 text-[13px] last:border-b-0">
               <span className="text-muted">{k}</span>
               <span>{v}</span>
@@ -574,6 +624,8 @@ function Dashboard() {
 }
 
 function AlertScreen() {
+  const w = watching[0];
+  const p = bose.pattern;
   return (
     <div className="flex w-full flex-col gap-6">
       <div className="w-full max-w-[360px] rounded-[10px] border border-line bg-white/95 p-3 shadow-[0_8px_24px_rgb(17_19_17/0.12)]">
@@ -581,23 +633,23 @@ function AlertScreen() {
           <Image src="/mark.png" alt="" width={14} height={16} />
           BuyWise · now
         </div>
-        <p className="mt-1 text-[13.5px] font-medium">Bose QuietComfort Headphones: $279.00</p>
-        <p className="text-[13px] text-ink-2">Below your $290 target and the lowest in 90 days. Drops like this usually last 5–8 days.</p>
+        <p className="mt-1 text-[13.5px] font-medium">
+          {STATUS.buy_now}: {w.title}
+        </p>
+        <p className="text-[13px] text-ink-2">{headline.buy_now_target(w.price, w.target!)}</p>
       </div>
       <div className="w-full max-w-[340px]">
-        <p className="mb-2 text-[12px] text-faint">When they open the page from the alert:</p>
-        <PanelShell meta="you're watching this">
+        <p className="mb-2 text-[12px] text-faint">Opening the product page from the alert:</p>
+        <PanelShell meta={checked(bose.offersChecked)}>
           <div className="px-3.5 pb-3.5 pt-3">
-            <p className="text-[17px] font-semibold leading-snug tracking-tight">
-              Good time to buy. <span className="text-brand">$70 less</span> than when you started watching.
-            </p>
+            <Verdict status="buy_now" text={headline.buy_now_target(w.price, w.target!)} />
             <div className="mt-3">
-              <Row label="Price now" value="$279.00" tone="good" />
-              <Row label="Your target" value="$290.00" />
-              <Row label="Other sellers" value="None cheaper" />
+              <Row label={LABEL.sinceWatching} value={savingsVs(w.startPrice, w.price)} tone="good" />
+              <Row label={LABEL.pattern} value={patternLine(p.drops, p.months, p.minDays, p.maxDays)} />
+              <Row label={LABEL.bestOther} value={bestOtherLine(null)} />
             </div>
             <div className="mt-3 flex items-center gap-3">
-              <Btn>Add to Cart at $279</Btn>
+              <Btn>Add to Cart</Btn>
               <Btn kind="link">Keep watching</Btn>
             </div>
           </div>
@@ -618,19 +670,21 @@ type Screen = {
   render: (go: (id: string) => void) => React.ReactNode;
 };
 
+const centered = (bg: string, node: React.ReactNode) => <div className={`grid w-full place-items-center rounded-ui border border-line p-8 ${bg}`}>{node}</div>;
+
 const screens: Screen[] = [
   {
     id: "better",
     name: "Better offer",
-    summary: "A cheaper sensible offer exists on the page. The panel sits right under the buy box.",
+    summary: "A cheaper offer fits this shopper's profile. The panel sits under the buy box.",
     decided: [
-      "One headline with the dollar difference, then the trade-offs in plain rows.",
-      "Warranty and seller risks are shown, never hidden.",
-      "A safer alternative is offered when the best price carries a risk.",
+      "Every panel starts with a status and one sentence built from numbers.",
+      "Trade-offs use the same row labels on every screen.",
+      "When the best price carries a warranty risk, the cheapest full-warranty option is shown too.",
     ],
-    open: ["How to show an offer whose price is hidden until checkout.", "Whether to show the seller's name or a trust grade first."],
+    open: ["How to show an offer whose price is hidden until checkout.", "Whether to lead with the seller's name or a trust grade."],
     render: (go) => (
-      <ProductPage title={garmin.title} price={449.99} arrives="Friday, Oct 16" rating={garmin.rating} imageLabel="Watch photo">
+      <ProductPage title={garmin.title} price={featured.price} arrives={featured.arrives} rating={garmin.rating} imageLabel="Product photo">
         <BetterOfferPanel onCompare={() => go("offers")} />
       </ProductPage>
     ),
@@ -641,24 +695,24 @@ const screens: Screen[] = [
     summary: "No better offer today, and a drop is likely. The shopper can hand off the waiting.",
     decided: [
       "Chance of a drop, never 'confidence'.",
-      "A stability line tells you if this is a steady pattern or a volatile dip.",
-      "Watch at a target price, or when it's a good time. One tap either way.",
+      "The pattern row says whether drops on this product are regular or rare.",
+      "Watch at a target price, or when it's a good time.",
     ],
-    open: ["Where fresh prices come from after the Keepa month.", "Whether to show the expected low as a single number or a range."],
+    open: ["Where fresh prices come from after the Keepa month.", "Whether the expected low should be a range."],
     render: () => (
-      <ProductPage title="Bose QuietComfort Wireless Noise Cancelling Headphones" price={349} arrives="Thursday, Oct 15" rating="4.5 out of 5 · 14,388 ratings" imageLabel="Headphones photo">
+      <ProductPage title={bose.title} price={bose.price} arrives={bose.arrives} rating={bose.rating} imageLabel="Product photo">
         <WaitPanel />
       </ProductPage>
     ),
   },
   {
     id: "quiet",
-    name: "You're good",
-    summary: "The most common state. Amazon's pick is already the best sensible deal for this shopper.",
-    decided: ["One line. Details only on tap.", "It still says what was checked, so silence reads as a result."],
-    open: ["Whether the quiet state should collapse to just the logo after a few seconds."],
+    name: "Buy here",
+    summary: "The most common result. Amazon's pick is already the best offer for this shopper.",
+    decided: ["One line, details on tap.", "Details list what was checked, so a quiet panel still reads as a result."],
+    open: ["Whether the panel should shrink to just the logo after a few seconds."],
     render: () => (
-      <ProductPage title="Sony WH-1000XM5 Wireless Noise Canceling Headphones" price={248} arrives="Wednesday, Oct 14" rating="4.4 out of 5 · 22,105 ratings" imageLabel="Headphones photo">
+      <ProductPage title={sony.title} price={sony.price} arrives={sony.arrives} rating={sony.rating} imageLabel="Product photo">
         <QuietPanel />
       </ProductPage>
     ),
@@ -666,58 +720,42 @@ const screens: Screen[] = [
   {
     id: "offers",
     name: "All offers",
-    summary: "Every offer on the page, ranked for this shopper, with the reason each one was picked or skipped. Other versions underneath.",
-    decided: ["Skipped offers stay visible with a reason.", "Versions show price and what reviews say about the difference."],
-    open: ["How to summarize reviews across versions in one line.", "Whether shoppers want to sort this themselves."],
+    summary: "Every offer, ranked for this shopper. Each note is the same three facts: price difference, delivery difference, warranty.",
+    decided: ["Skipped offers stay visible with a reason from a fixed list.", "Versions show price difference and listed differences."],
+    open: ["Which review points count as a real difference between versions.", "Whether shoppers want to re-sort this list."],
     render: () => <AllOffers />,
   },
   {
     id: "check",
     name: "Before you buy",
-    summary: "Shown only when the answer changes the recommendation, here because the cheaper offer is slower.",
-    decided: ["At most one question per purchase.", "Answers can be remembered for similar purchases."],
-    open: ["Which other questions ever flip an answer (gift, returns)."],
-    render: () => (
-      <div className="grid w-full place-items-center rounded-ui border border-line bg-white p-8">
-        <BeforeYouBuy />
-      </div>
-    ),
+    summary: "Asked only when the answer changes the result. Here the cheaper offer arrives later.",
+    decided: ["At most one question per purchase.", "The answer leads straight to a status."],
+    open: ["Which other questions ever change a result, such as gifts or returns."],
+    render: () => centered("bg-white", <BeforeYouBuy />),
   },
   {
     id: "first",
     name: "First run",
-    summary: "Three questions at install. Everything else is inferred or asked in the moment.",
-    decided: ["Skippable, editable later, stored on the device.", "Prime is detected, not asked."],
-    open: ["Whether a fourth question earns its place. Analysis tells us which answers change outcomes."],
-    render: () => (
-      <div className="grid w-full place-items-center rounded-ui border border-line bg-white p-8">
-        <FirstRun />
-      </div>
-    ),
+    summary: "Three questions at install. The answers are the exact values the panel and dashboard show.",
+    decided: ["Skippable, editable, stored on the device.", "Prime is detected, not asked."],
+    open: ["Whether a fourth question earns its place. Analysis tells us which answers change results."],
+    render: () => centered("bg-white", <FirstRun />),
   },
   {
     id: "dashboard",
     name: "Dashboard",
-    summary: "The extension popup: what you're watching, how BuyWise has done, and your profile.",
-    decided: ["Track record includes the misses.", "Watched items lead with status, not just price."],
-    open: ["A full-page version for people watching many items.", "Sharing a watched item with a friend."],
-    render: () => (
-      <div className="grid w-full place-items-center rounded-ui border border-line bg-white p-8">
-        <Dashboard />
-      </div>
-    ),
+    summary: "The extension popup. Every watched product shows its status and the same three facts.",
+    decided: ["Statuses match the panel exactly.", "The track record lists misses."],
+    open: ["A full-page view for people watching many products.", "Sharing a watched product."],
+    render: () => centered("bg-white", <Dashboard />),
   },
   {
     id: "alert",
     name: "Alert",
-    summary: "A watched product hits its target. The notification says why now; the page confirms it.",
-    decided: ["Price, target and how long drops usually last, in one notification.", "Opening the page shows the change since you started watching."],
-    open: ["Email or phone alerts in addition to the browser.", "How often is too often."],
-    render: () => (
-      <div className="grid w-full place-items-center rounded-ui border border-line bg-[#e9ebe7] p-8">
-        <AlertScreen />
-      </div>
-    ),
+    summary: "A watched product hits its target. The notification and the page say the same thing.",
+    decided: ["The notification uses the same status and headline as the panel."],
+    open: ["Email or phone alerts.", "How many alerts per week is too many."],
+    render: () => centered("bg-[#e9ebe7]", <AlertScreen />),
   },
 ];
 
