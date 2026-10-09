@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
 import logging
+import threading
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -358,7 +359,25 @@ def _bucket_price_history(
     )
 
 
+_seed_locks: dict[str, threading.Lock] = {}
+_seed_locks_guard = threading.Lock()
+
+
 def _fetch_and_seed(asin: str) -> None:
+    """Fetch and score an unseen ASIN once, even when several endpoints ask at the same time.
+
+    Opening a product page calls /predict and /price-history together; without the
+    lock each would spend a Keepa token and insert the same prices twice.
+    """
+    with _seed_locks_guard:
+        lock = _seed_locks.setdefault(asin, threading.Lock())
+    with lock:
+        if get_product(asin):
+            return
+        _fetch_and_seed_unlocked(asin)
+
+
+def _fetch_and_seed_unlocked(asin: str) -> None:
     """Pull price history from Keepa for an unseen ASIN and score it.
 
     Called the first time any endpoint is hit for an ASIN not yet in the DB.

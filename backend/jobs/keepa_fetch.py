@@ -30,7 +30,7 @@ _CSV_COUNT_USED      = 13  # Offer count used
 _MAX_RETRIES = 3
 
 
-def fetch_price_history(asin: str, days: int = 30) -> list[dict]:
+def fetch_price_history(asin: str, days: int = 365) -> list[dict]:
     """
     Fetch price history for an ASIN from Keepa and write records to the DB.
 
@@ -47,7 +47,8 @@ def fetch_price_history(asin: str, days: int = 30) -> list[dict]:
 
     Args:
         asin: 10-character Amazon ASIN.
-        days: How many days of history to request (default 30).
+        days: How many days of history to request (default 365). The model needs
+              about 90 days to compute its features, so don't go much lower.
 
     Returns:
         List of dicts with keys: asin, name, timestamp (Unix seconds), price (USD float).
@@ -98,8 +99,14 @@ def fetch_price_history(asin: str, days: int = 30) -> list[dict]:
 def _fetch_with_retry(url: str, params: dict) -> dict:
     """Call Keepa API, sleeping and retrying on rate-limit responses."""
     for attempt in range(_MAX_RETRIES):
-        res = requests.get(url, params=params)
-        res.raise_for_status()
+        # Errors are re-raised without the request URL, which contains the API key.
+        try:
+            res = requests.get(url, params=params, timeout=30)
+        except requests.RequestException as exc:
+            raise RuntimeError(f"Keepa request failed: {type(exc).__name__}") from None
+        if not res.ok:
+            hint = " (no active plan or out of tokens)" if res.status_code == 402 else ""
+            raise RuntimeError(f"Keepa returned HTTP {res.status_code}{hint}")
         data = res.json()
 
         if "products" in data:
