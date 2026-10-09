@@ -2,14 +2,6 @@
 
 export const GITHUB_URL = "https://github.com/gt-big-data/buy-wise";
 
-// Measured in studies/ (FINDINGS.md, s009) and on the live Garmin listing, Oct 2026.
-export const stats = [
-  { value: "28", label: "offers on one product page we checked" },
-  { value: "~$80", label: "gap between sellers, same new watch" },
-  { value: "3 in 10", label: "products had a cheaper new seller" },
-  { value: "~$20", label: "average gap when they did" },
-];
-
 export const steps: { title: string; body: string; factors?: string }[] = [
   {
     title: "Amazon is a marketplace",
@@ -83,7 +75,8 @@ const placeholder = (role: string, n: number): Member[] =>
 
 export const team: { group: string; members: Member[] }[] = [
   { group: "Project leads", members: placeholder("Project Lead", 3) },
-  { group: "Analysis", members: placeholder("Analysis", 4) },
-  { group: "Platform", members: placeholder("Platform", 4) },
-  { group: "Data visualization", members: placeholder("Data Viz", 2) },
+  {
+    group: "Members",
+    members: [...placeholder("Analysis", 4), ...placeholder("Platform", 4), ...placeholder("Data Viz", 2)],
+  },
 ];
