@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { GITHUB_URL, building, built, done, stats, steps, team } from "@/content/site";
+import { GITHUB_URL, PLACEHOLDER, building, built, done, stats, steps, team, type Member } from "@/content/site";
 
 const wrap = "mx-auto w-full max-w-[1080px] px-4 sm:px-6";
 const label = "text-[13px] font-medium text-muted";
@@ -257,7 +257,52 @@ function Progress() {
 }
 
 function initials(name: string) {
-  return name === "Name Surname" ? "" : name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+  return name === PLACEHOLDER ? "" : name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+}
+
+function ProfileLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return href ? (
+    <a href={href} target="_blank" rel="noopener" className="text-ink underline-offset-2 hover:underline">
+      {children}
+    </a>
+  ) : (
+    <span className="text-faint">{children}</span>
+  );
+}
+
+function MemberCard({ m }: { m: Member }) {
+  const isPlaceholder = m.name === PLACEHOLDER;
+  return (
+    <li className="flex flex-col rounded-ui border border-line bg-card p-5">
+      <div className="flex items-center gap-3">
+        {m.photo ? (
+          <Image src={m.photo} alt="" width={48} height={48} className="size-12 rounded-full object-cover" />
+        ) : (
+          <div className="grid size-12 flex-none place-items-center rounded-full bg-[#e8eae6] font-medium text-muted">
+            {initials(m.name)}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className={`font-semibold ${isPlaceholder ? "text-faint" : ""}`}>{m.name}</p>
+          <p className="text-[13px] text-muted">{m.role}</p>
+        </div>
+      </div>
+      <p className={`mt-4 font-mono text-[13px] ${isPlaceholder ? "text-faint" : "text-ink-2"}`}>
+        {m.major}, &apos;{m.gradYear}
+      </p>
+      <ul className="mb-4 mt-2 list-disc space-y-1 pl-4 text-[14px] marker:text-line-strong">
+        {m.interests.map((it, i) => (
+          <li key={i} className={isPlaceholder ? "text-faint" : "text-ink-2"}>
+            {it}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-auto flex gap-4 border-t border-line pt-3 text-[13px]">
+        <ProfileLink href={m.linkedin}>LinkedIn</ProfileLink>
+        <ProfileLink href={m.github}>GitHub</ProfileLink>
+      </p>
+    </li>
+  );
 }
 
 function Team() {
@@ -266,39 +311,13 @@ function Team() {
       <div className={wrap}>
         <p className={label}>Team</p>
         <h2 className={`${h2} mt-3`}>The people building BuyWise.</h2>
-        <div className="mt-12 flex flex-col gap-10">
+        <div className="mt-12 flex flex-col gap-12">
           {team.map((g) => (
             <div key={g.group}>
-              <h3 className="border-b border-ink pb-3 text-[15px] font-semibold">{g.group}</h3>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-x-6">
+              <h3 className="mb-5 border-b border-ink pb-3 text-[15px] font-semibold">{g.group}</h3>
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-4">
                 {g.members.map((m, i) => (
-                  <li key={`${m.name}-${i}`} className="flex items-center gap-3 border-b border-line py-4">
-                    {m.photo ? (
-                      <Image src={m.photo} alt="" width={40} height={40} className="size-10 rounded-full object-cover" />
-                    ) : (
-                      <div className="grid size-10 flex-none place-items-center rounded-full bg-[#e8eae6] text-sm font-medium text-muted">
-                        {initials(m.name)}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-medium">{m.name}</p>
-                      <p className="text-[13px] text-muted">
-                        {m.role}
-                        {m.linkedin && (
-                          <>
-                            {" · "}
-                            <a href={m.linkedin} className="underline-offset-2 hover:underline">LinkedIn</a>
-                          </>
-                        )}
-                        {m.github && (
-                          <>
-                            {" · "}
-                            <a href={m.github} className="underline-offset-2 hover:underline">GitHub</a>
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </li>
+                  <MemberCard key={`${m.name}-${i}`} m={m} />
                 ))}
               </ul>
             </div>

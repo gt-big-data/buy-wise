@@ -55,11 +55,31 @@ export const building = [
   { title: "A redesigned extension", detail: "A cleaner panel on this design system, with a real track record" },
 ];
 
-// Fill in names as the roster is confirmed. Leave linkedin/github empty to hide them.
-export type Member = { name: string; role: string; linkedin?: string; github?: string; photo?: string };
+// Fill in each person as the roster is confirmed. Every field shows on their card;
+// placeholders render in grey until replaced.
+export type Member = {
+  name: string;
+  role: string;
+  major: string; // short form, e.g. "CS"
+  gradYear: string; // two digits, e.g. "28"
+  interests: [string, string, string];
+  linkedin: string; // full URL
+  github: string; // full URL
+  photo?: string; // path under public/, e.g. "/team/jane.jpg"
+};
+
+export const PLACEHOLDER = "Name Surname";
 
 const placeholder = (role: string, n: number): Member[] =>
-  Array.from({ length: n }, () => ({ name: "Name Surname", role }));
+  Array.from({ length: n }, () => ({
+    name: PLACEHOLDER,
+    role,
+    major: "Major",
+    gradYear: "YY",
+    interests: ["Interest", "Interest", "Interest"],
+    linkedin: "",
+    github: "",
+  }));
 
 export const team: { group: string; members: Member[] }[] = [
   { group: "Project leads", members: placeholder("Project Lead", 3) },
