@@ -5,6 +5,7 @@ import ActionButton from "./ActionButton";
 type RecommendationBannerProps = {
   recommendation: Recommendation;
   dropChance: number;
+  higherAfterWait?: number;
   expectedSavings: number;
   onActionClick: () => void;
   onWatchlistClick?: () => void;
@@ -15,6 +16,7 @@ type RecommendationBannerProps = {
 const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
   recommendation,
   dropChance,
+  higherAfterWait,
   expectedSavings,
   onActionClick,
   onWatchlistClick,
@@ -100,6 +102,12 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
             </span>
           )}
         </div>
+
+        {recommendation === "WAIT" && higherAfterWait !== undefined && (
+          <p className="buywise-wait-downside">
+            If it doesn&apos;t drop, it&apos;s usually about the same price. Only {Math.round(higherAfterWait)}% of past waits ended higher.
+          </p>
+        )}
 
         <div className="buywise-action-wrapper">
           <ActionButton

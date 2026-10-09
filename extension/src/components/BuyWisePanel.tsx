@@ -99,6 +99,7 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
             <RecommendationBanner
               recommendation={data.recommendation}
               dropChance={data.dropChance}
+              higherAfterWait={data.higherAfterWait}
               expectedSavings={data.expectedSavings}
               onActionClick={onActionClick}
               onWatchlistClick={handleWatchlist}

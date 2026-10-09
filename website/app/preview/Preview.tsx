@@ -16,7 +16,9 @@ import {
   deliveryDelta,
   fulfillmentLine,
   headline,
+  ifNoDropLine,
   missLine,
+  MIN_WAIT_CHANCE,
   money,
   patternLine,
   pct,
@@ -215,6 +217,7 @@ function WaitPanel() {
           <PriceChart />
         </div>
         <Row label={LABEL.expectedLow} value={money(bose.expectedLow)} />
+        <Row label={LABEL.ifNoDrop} value={ifNoDropLine(bose.higherAfterWait)} />
         <Row label={LABEL.pattern} value={patternLine(p.drops, p.months, p.minDays, p.maxDays)} />
         <Row label={LABEL.bestOther} value={bestOtherLine(null)} />
 
@@ -695,6 +698,7 @@ const screens: Screen[] = [
     summary: "No better offer today, and a drop is likely. The shopper can hand off the waiting.",
     decided: [
       "Chance of a drop, never 'confidence'.",
+      `WAIT appears only at a ${pct(MIN_WAIT_CHANCE)}+ chance, and always says what happens if the drop doesn't come.`,
       "The pattern row says whether drops on this product are regular or rare.",
       "Watch at a target price, or when it's a good time.",
     ],

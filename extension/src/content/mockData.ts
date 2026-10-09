@@ -8,6 +8,7 @@ export function getMockBuyWiseData(asin: string): BuyWiseData {
     predictedBestPrice: 49.99,
     expectedSavings: 10.0,
     dropChance: 64,
+    higherAfterWait: 13.7,
     recommendation: "WAIT",
     why: "Recent price movement suggests this item may dip over the next 7 days. Similar grocery and household listings have shown short-term promotional price drops, so waiting could save you around $10.",
     chartTitle: "Predicted Price Graph (next 21 days)",

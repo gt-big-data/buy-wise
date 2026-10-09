@@ -4,8 +4,11 @@
 
 Three chronological periods (see evaluate.chronological_split):
   train       fits the models
-  validation  early stopping, the WAIT threshold, and probability calibration
+  validation  early stopping and probability calibration
   test        touched once, at the end, for the report. Nothing is tuned on it.
+
+WAIT is shown only when the calibrated chance of an 8%+ drop is at least
+MIN_DROP_CHANCE. Fewer WAITs, but each one is worth acting on.
 
 The model is saved only if it beats the best simple rule on validation at the
 same wait rate. That gate is the reason evaluate.py exists.
@@ -24,7 +27,7 @@ from ml.evaluate import (baseline_scores, build_dataset, chronological_split, le
 from ml.features import FEATURES
 from ml.inference import MODEL_PATH
 
-TARGET_WAIT_RATE = 0.20  # say WAIT on about 1 in 5 decisions; stay quiet otherwise
+MIN_DROP_CHANCE = 0.40  # highest threshold where the model still beats the simple rules on validation
 
 
 def main() -> None:
@@ -47,14 +50,14 @@ def main() -> None:
             verbose=False)
 
     va["proba"] = clf.predict_proba(va[FEATURES])[:, 1]
-    threshold = float(np.quantile(va.proba, 1 - TARGET_WAIT_RATE))
     calibrator = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(va.proba, va.y)
+    wait_rate = float((calibrator.predict(va.proba) >= MIN_DROP_CHANCE).mean())
 
-    # Gate: beat every rule on validation at the target wait rate.
-    gate = score_policies(va, {"model": va.proba.values, **baseline_scores(va)}, (TARGET_WAIT_RATE,))
+    # Gate: beat every rule on validation at the wait rate this threshold produces.
+    gate = score_policies(va, {"model": va.proba.values, **baseline_scores(va)}, (wait_rate,))
     best_rule = gate[gate.policy != "model"]["$ caught"].max()
     model_val = gate[gate.policy == "model"]["$ caught"].iloc[0]
-    print(f"\nvalidation gate @ {TARGET_WAIT_RATE:.0%} wait: model ${model_val:.2f} vs best rule ${best_rule:.2f}")
+    print(f"\nvalidation gate @ {wait_rate:.0%} wait: model ${model_val:.2f} vs best rule ${best_rule:.2f}")
     if model_val <= best_rule:
         raise SystemExit("Model does not beat the best rule on validation. Not saving.")
 
@@ -62,9 +65,21 @@ def main() -> None:
     te["pred_drop"] = reg.predict(te[FEATURES]).clip(min=0)
     print("\n" + leaderboard(te, {"clean model": te.proba.values, **baseline_scores(te)}))
 
-    own = score_decision(te, "clean model, validation threshold", te.proba.values >= threshold)
-    print("\n=== at the threshold actually served (picked on validation) ===")
+    te["p_drop"] = calibrator.predict(te.proba)
+    served = te[te.p_drop >= MIN_DROP_CHANCE]
+    own = score_decision(te, f"clean model, WAIT at {MIN_DROP_CHANCE:.0%}+", te.p_drop.values >= MIN_DROP_CHANCE)
+    print(f"\n=== as served: WAIT when chance of a drop >= {MIN_DROP_CHANCE:.0%} ===")
     print(own.round(3).to_string(index=False))
+
+    # What happens after a WAIT when the drop doesn't come. The panel quotes these.
+    change = (served.fwd_last - served.price) / served.price
+    wait_outcomes = {
+        "higher_share": round(float((change > 0).mean()), 3),
+        "about_same_share": round(float((change.abs() <= 0.02).mean()), 3),
+        "avg_higher_pct": round(float(change[change > 0].mean()), 3),
+    }
+    print(f"after a WAIT, price on day 14: higher {wait_outcomes['higher_share']:.1%} of the time "
+          f"(by {wait_outcomes['avg_higher_pct']:.1%} on average), within 2% {wait_outcomes['about_same_share']:.1%}")
 
     pred_low = te.price * (1 - te.pred_drop)
     mae_model = float(np.abs(pred_low - te.fwd_min).mean())
@@ -81,12 +96,14 @@ def main() -> None:
         "rows": {"train": len(tr), "val": len(va), "test": len(te)},
         "products": int(data.asin.nunique()),
         "test_period": [str(te.date.min().date()), str(te.date.max().date())],
-        "threshold": threshold,
+        "min_drop_chance": MIN_DROP_CHANCE,
+        "wait_outcomes": wait_outcomes,
         "test": own.iloc[0].drop("policy").astype(float).round(4).to_dict(),
         "low_forecast_mae": {"model": round(mae_model, 2), "flat": round(mae_flat, 2)},
     }
     joblib.dump({"classifier": clf, "regressor": reg, "calibrator": calibrator,
-                 "threshold": threshold, "features": FEATURES, "meta": meta}, MODEL_PATH)
+                 "min_drop_chance": MIN_DROP_CHANCE, "wait_outcomes": wait_outcomes,
+                 "features": FEATURES, "meta": meta}, MODEL_PATH)
     print(f"\nsaved {MODEL_PATH.name}")
 
 

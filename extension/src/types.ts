@@ -14,6 +14,7 @@ export type BuyWiseData = {
   predictedBestPrice: number;
   expectedSavings: number;
   dropChance: number; // 0–100: chance the price falls 8%+ in the next 14 days
+  higherAfterWait?: number; // 0–100: share of past WAITs where the price ended higher; WAIT only
   recommendation: Recommendation;
   why: string;
   chartTitle: string;

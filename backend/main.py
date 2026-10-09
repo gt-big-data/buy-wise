@@ -75,6 +75,11 @@ class PredictResponse(BaseModel):
     recommendation: RecommendationDirection = Field(..., example="WAIT")
     confidence: float = Field(..., ge=0, le=100, description="0–100", example=87.0)
     drop_chance: float = Field(..., ge=0, le=100, description="0–100: chance the price falls 8%+ within horizon_days", example=41.0)
+    higher_after_wait: Optional[float] = Field(
+        None, ge=0, le=100,
+        description="0–100: share of past WAITs where the price was higher after horizon_days. Set only for WAIT.",
+        example=13.7,
+    )
     predicted_price: float = Field(..., example=169.99)
     potential_savings: float = Field(..., example=30.00)
     horizon_days: int = Field(..., ge=1, example=30)
@@ -152,6 +157,14 @@ def _require_db() -> None:
         raise HTTPException(status_code=503, detail="Database unavailable")
 
 
+def _higher_after_wait() -> Optional[float]:
+    """Share (0–100) of past WAITs where the price was higher 14 days later, from the model's test report."""
+    from ml import inference as _ml
+    if not _ml._MODELS_LOADED:
+        return None
+    return round(_ml._bundle["wait_outcomes"]["higher_share"] * 100, 1)
+
+
 def _generate_why(
     recommendation: str, confidence: float, potential_savings: float,
     current_price: float, pred_7d: Optional[float], pred_14d: Optional[float],
@@ -165,6 +178,9 @@ def _generate_why(
             lines.append(f"The expected low over that window is about ${pred_14d:.2f}, versus ${current_price:.2f} today.")
         if potential_savings > 0:
             lines.append(f"Waiting could save you approximately ${potential_savings:.0f}.")
+        higher = _higher_after_wait()
+        if higher is not None:
+            lines.append(f"If it doesn't drop, it's usually about the same price: only {higher:.0f}% of past waits ended higher.")
         return " ".join(lines)
     else:
         lines = [f"There's only {article} {drop}% chance of a drop of 8% or more in the next 14 days, so buying now is reasonable."]
@@ -451,6 +467,7 @@ def get_prediction(asin: str) -> PredictResponse:
         recommendation=RecommendationDirection(recommendation),
         confidence=confidence,
         drop_chance=confidence if recommendation == "WAIT" else round(100 - confidence, 1),
+        higher_after_wait=_higher_after_wait() if recommendation == "WAIT" else None,
         predicted_price=round(best_pred, 2),
         potential_savings=potential_savings,
         horizon_days=14,

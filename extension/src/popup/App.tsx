@@ -33,16 +33,9 @@ type ActivityItem = {
   action: string;
 };
 
-type SummaryData = {
-  accuracy_when_followed_pct: number;
-  estimated_savings_usd: number;
-  watchlist_count: number;
-};
-
 type DashboardData = {
   watchlist: WatchlistItem[];
   recent: ActivityItem[];
-  summary: SummaryData | null;
 };
 
 const ACTION_LABEL: Record<string, string> = {
@@ -68,21 +61,18 @@ const App: React.FC = () => {
           setPopupState({ status: "non-product" });
           setDashboardLoading(true);
           try {
-            const [watchlistRes, activityRes, summaryRes] = await Promise.all([
+            const [watchlistRes, activityRes] = await Promise.all([
               fetch(`${BACKEND_URL}/watchlist/${USER_ID}`),
               fetch(`${BACKEND_URL}/activity/recent?user_id=${USER_ID}&limit=10`),
-              fetch(`${BACKEND_URL}/dashboard/summary`),
             ]);
             const watchlistData = watchlistRes.ok ? await watchlistRes.json() : { watchlist: [] };
             const activityData = activityRes.ok ? await activityRes.json() : { items: [] };
-            const summaryData = summaryRes.ok ? await summaryRes.json() : null;
             setDashboard({
               watchlist: watchlistData.watchlist ?? [],
               recent: activityData.items ?? [],
-              summary: summaryData,
             });
           } catch {
-            setDashboard({ watchlist: [], recent: [], summary: null });
+            setDashboard({ watchlist: [], recent: [] });
           } finally {
             setDashboardLoading(false);
           }
@@ -127,11 +117,7 @@ const App: React.FC = () => {
   if (popupState.status === "non-product") {
     const watchlist = dashboard?.watchlist ?? [];
     const recent = dashboard?.recent ?? [];
-    const summary = dashboard?.summary ?? null;
     const alerts = watchlist.filter((w) => w.recommendation_changed);
-
-    const accuracy = summary?.accuracy_when_followed_pct ?? null;
-    const savings = summary?.estimated_savings_usd ?? null;
 
     return (
       <div className="buywise-popup-root">
@@ -144,20 +130,6 @@ const App: React.FC = () => {
                 {dashboardLoading ? "—" : watchlist.length}
               </span>
               <span className="buywise-db-stat__label">Tracked</span>
-            </div>
-            <div className="buywise-db-stat-divider" />
-            <div className="buywise-db-stat buywise-db-stat--green">
-              <span className="buywise-db-stat__num">
-                {dashboardLoading ? "—" : accuracy !== null ? `${Math.round(accuracy)}%` : "—"}
-              </span>
-              <span className="buywise-db-stat__label">Accuracy</span>
-            </div>
-            <div className="buywise-db-stat-divider" />
-            <div className="buywise-db-stat">
-              <span className="buywise-db-stat__num">
-                {dashboardLoading ? "—" : savings !== null ? `$${Math.round(savings)}` : "—"}
-              </span>
-              <span className="buywise-db-stat__label">Saved</span>
             </div>
           </div>
         </div>

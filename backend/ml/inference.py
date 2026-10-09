@@ -40,6 +40,7 @@ def predict_for_asin(price_records: list[dict], today: datetime | None = None) -
             'recommendation': 'BUY' | 'WAIT',
             'confidence': float,        # calibrated, in [0, 1]
             'p_drop': float,            # calibrated P(price falls >= 8% within 14 days)
+            'higher_after_wait': float, # share of past WAITs where the price was higher 14 days later
         }
     Raises RuntimeError if the model isn't loaded or the history is too short.
     """
@@ -68,7 +69,7 @@ def predict_for_asin(price_records: list[dict], today: datetime | None = None) -
     X = row[_bundle["features"]].astype(float)
     raw = float(_bundle["classifier"].predict_proba(X)[0, 1])
     p_drop = float(_bundle["calibrator"].predict([raw])[0])
-    wait = raw >= _bundle["threshold"]
+    wait = p_drop >= _bundle["min_drop_chance"]
 
     price = float(row.price.iloc[0])
     expected_drop = max(float(_bundle["regressor"].predict(X)[0]), 0.0)
@@ -80,4 +81,5 @@ def predict_for_asin(price_records: list[dict], today: datetime | None = None) -
         "recommendation": "WAIT" if wait else "BUY",
         "confidence": p_drop if wait else 1.0 - p_drop,
         "p_drop": p_drop,
+        "higher_after_wait": _bundle["wait_outcomes"]["higher_share"],
     }
