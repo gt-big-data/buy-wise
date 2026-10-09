@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* BuyWise design tokens. The extension redesign should use these same values. */
+@theme {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #0b0f0c;
+  --color-ink-2: #2b322d;
+  --color-muted: #5d665f;
+  --color-faint: #8a938c;
+  --color-line: #e3e7e2;
+  --color-surface: #f6f7f5;
+  --color-surface-2: #eef1ed;
+
+  --color-brand: #16a34a;
+  --color-brand-ink: #0f7a35;
+  --color-brand-tint: #eaf6ec;
+  --color-brand-line: #cfe9d5;
+  --color-lime: #a3d65c;
+
+  --color-caution: #7a5a00;
+  --color-caution-tint: #fff8e6;
+  --color-caution-line: #f3e2b3;
+
+  --shadow-card: 0 1px 2px rgb(11 15 12 / 0.04), 0 8px 24px rgb(11 15 12 / 0.06);
+  --shadow-float: 0 2px 4px rgb(11 15 12 / 0.04), 0 24px 60px rgb(11 15 12 / 0.1);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-white font-sans text-ink antialiased;
+}
