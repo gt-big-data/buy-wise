@@ -46,13 +46,17 @@ def predict_for_asin(price_records: list[dict], today: datetime | None = None) -
     if not _MODELS_LOADED:
         raise RuntimeError("ML model not loaded")
 
+    # MySQL returns DECIMAL columns as decimal.Decimal; the features need floats.
+    def num(v):
+        return None if v is None else float(v)
+
     rows = [{
         "asin": "INFERENCE",
         "date": pd.Timestamp(r.get("timestamp") or r.get("date")),
         "price": float(r["price"]),
-        "used_price": r.get("used_price"),
-        "count_new": r.get("count_new"),
-        "count_used": r.get("count_used"),
+        "used_price": num(r.get("used_price")),
+        "count_new": num(r.get("count_new")),
+        "count_used": num(r.get("count_used")),
     } for r in price_records]
     today = pd.Timestamp(today or datetime.now(timezone.utc)).tz_localize(None).normalize()
     # Keepa records price *changes*, so the last price still holds today.

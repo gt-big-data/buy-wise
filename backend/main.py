@@ -74,6 +74,7 @@ class PredictResponse(BaseModel):
     asin: str = Field(..., example="B08N5WRWNW")
     recommendation: RecommendationDirection = Field(..., example="WAIT")
     confidence: float = Field(..., ge=0, le=100, description="0–100", example=87.0)
+    drop_chance: float = Field(..., ge=0, le=100, description="0–100: chance the price falls 8%+ within horizon_days", example=41.0)
     predicted_price: float = Field(..., example=169.99)
     potential_savings: float = Field(..., example=30.00)
     horizon_days: int = Field(..., ge=1, example=30)
@@ -156,15 +157,17 @@ def _generate_why(
     current_price: float, pred_7d: Optional[float], pred_14d: Optional[float],
 ) -> str:
     pct = int(round(confidence))
+    drop = pct if recommendation == "WAIT" else 100 - pct
+    article = "an" if str(drop).startswith("8") or drop in (11, 18) else "a"
     if recommendation == "WAIT":
-        lines = [f"Based on this product's price history, there's a {pct}% chance it drops 8% or more in the next 14 days."]
+        lines = [f"Based on this product's price history, there's {article} {drop}% chance it drops 8% or more in the next 14 days."]
         if pred_14d and pred_14d < current_price:
             lines.append(f"The expected low over that window is about ${pred_14d:.2f}, versus ${current_price:.2f} today.")
         if potential_savings > 0:
             lines.append(f"Waiting could save you approximately ${potential_savings:.0f}.")
         return " ".join(lines)
     else:
-        lines = [f"There's a {100 - pct}% chance of a drop of 8% or more in the next 14 days, so buying now is reasonable."]
+        lines = [f"There's only {article} {drop}% chance of a drop of 8% or more in the next 14 days, so buying now is reasonable."]
         if pred_7d and pred_7d > current_price:
             rise_pct = round((pred_7d - current_price) / current_price * 100, 1)
             lines.append(f"The 7-day forecast is ${pred_7d:.2f}, suggesting prices may rise {rise_pct}% — buying now locks in today's rate.")
@@ -340,12 +343,10 @@ def _bucket_price_history(
 
 
 def _fetch_and_seed(asin: str) -> None:
-    """Pull price history from Keepa for an unseen ASIN and generate a stub prediction.
+    """Pull price history from Keepa for an unseen ASIN and score it.
 
     Called the first time any endpoint is hit for an ASIN not yet in the DB.
-    Keepa populates products + prices. We then compute a simple trend-based
-    prediction so the extension has something to show immediately. The real ML
-    model will overwrite this row once it runs.
+    Keepa populates products + prices, then the model produces a prediction.
     """
     try:
         records = keepa_fetch(asin)
@@ -358,6 +359,14 @@ def _fetch_and_seed(asin: str) -> None:
     if not product:
         return
 
+    _score_and_store(product, asin)
+
+
+def _score_and_store(product: dict, asin: str) -> None:
+    """Run the model on the product's stored price history and save a prediction.
+
+    Falls back to a simple trend heuristic when the history is too short.
+    """
     prices = db_get_price_history(product["product_id"], limit=1000)
     if not prices:
         return
@@ -415,6 +424,10 @@ def get_prediction(asin: str) -> PredictResponse:
 
     prediction = get_latest_prediction(product["product_id"])
     if not prediction:
+        # Seeded products arrive with prices but no prediction; score them now.
+        _score_and_store(product, asin)
+        prediction = get_latest_prediction(product["product_id"])
+    if not prediction:
         raise HTTPException(status_code=404, detail=f"No prediction found for {asin}")
 
     prices = db_get_price_history(product["product_id"], limit=1)
@@ -437,6 +450,7 @@ def get_prediction(asin: str) -> PredictResponse:
         asin=asin,
         recommendation=RecommendationDirection(recommendation),
         confidence=confidence,
+        drop_chance=confidence if recommendation == "WAIT" else round(100 - confidence, 1),
         predicted_price=round(best_pred, 2),
         potential_savings=potential_savings,
         horizon_days=14,

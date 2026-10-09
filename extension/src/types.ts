@@ -13,7 +13,7 @@ export type BuyWiseData = {
   currentPrice: number;
   predictedBestPrice: number;
   expectedSavings: number;
-  confidence: number;
+  dropChance: number; // 0–100: chance the price falls 8%+ in the next 14 days
   recommendation: Recommendation;
   why: string;
   chartTitle: string;

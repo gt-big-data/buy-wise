@@ -45,7 +45,7 @@ async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
     currentPrice: history.current_price,
     predictedBestPrice: history.predicted_best_price,
     expectedSavings: predict.potential_savings,
-    confidence: Math.round(predict.confidence),
+    dropChance: Math.round(predict.drop_chance),
     recommendation: predict.recommendation as "BUY" | "WAIT",
     why: predict.why,
     chartTitle: history.chart_title,
