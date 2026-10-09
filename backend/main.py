@@ -157,22 +157,19 @@ def _generate_why(
 ) -> str:
     pct = int(round(confidence))
     if recommendation == "WAIT":
-        lines = [f"The model is {pct}% confident the price will fall in the next 1–2 weeks."]
+        lines = [f"Based on this product's price history, there's a {pct}% chance it drops 8% or more in the next 14 days."]
         if pred_14d and pred_14d < current_price:
-            drop_pct = round((current_price - pred_14d) / current_price * 100, 1)
-            lines.append(f"The 14-day forecast is ${pred_14d:.2f} — a {drop_pct}% drop from today's ${current_price:.2f}.")
+            lines.append(f"The expected low over that window is about ${pred_14d:.2f}, versus ${current_price:.2f} today.")
         if potential_savings > 0:
             lines.append(f"Waiting could save you approximately ${potential_savings:.0f}.")
-        lines.append("Price momentum and recent history both support holding off.")
         return " ".join(lines)
     else:
-        lines = [f"The model is {pct}% confident now is a good time to buy."]
+        lines = [f"There's a {100 - pct}% chance of a drop of 8% or more in the next 14 days, so buying now is reasonable."]
         if pred_7d and pred_7d > current_price:
             rise_pct = round((pred_7d - current_price) / current_price * 100, 1)
             lines.append(f"The 7-day forecast is ${pred_7d:.2f}, suggesting prices may rise {rise_pct}% — buying now locks in today's rate.")
         else:
-            lines.append(f"At ${current_price:.2f}, the price is competitive relative to recent history.")
-        lines.append("No significant drop is expected in the near term.")
+            lines.append(f"At ${current_price:.2f}, the price is in line with its recent history.")
         return " ".join(lines)
 
 
@@ -429,17 +426,8 @@ def get_prediction(asin: str) -> PredictResponse:
     pred_14d = float(prediction["pred_14d"]) if prediction.get("pred_14d") is not None else None
     pred_30d = float(prediction["pred_30d"]) if prediction.get("pred_30d") is not None else None
 
-    # Retroactively apply magnitude blend so stale DB predictions get the same
-    # confidence formula as fresh ones (avoids needing a migration).
-    base_proba = float(prediction["confidence_score"])
-    if pred_14d is not None and current_price > 0:
-        import numpy as _np
-        expected_drop = (current_price - pred_14d) / (current_price + 1e-6)
-        magnitude = min(abs(expected_drop) / 0.20, 1.0)
-        recalc = 0.6 * base_proba + 0.4 * (0.50 + 0.47 * magnitude)
-        confidence = round(float(_np.clip(recalc, 0.50, 0.97)) * 100, 1)
-    else:
-        confidence = round(base_proba * 100, 1)
+    # Stored confidence is already a calibrated probability; show it as-is.
+    confidence = round(float(prediction["confidence_score"]) * 100, 1)
 
     future_preds = [p for p in [pred_7d, pred_14d, pred_30d] if p is not None]
     best_pred = min(future_preds) if future_preds else current_price
