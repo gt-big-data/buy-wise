@@ -4,7 +4,7 @@ import ActionButton from "./ActionButton";
 
 type RecommendationBannerProps = {
   recommendation: Recommendation;
-  confidence: number;
+  dropChance: number;
   expectedSavings: number;
   onActionClick: () => void;
   onWatchlistClick?: () => void;
@@ -14,7 +14,7 @@ type RecommendationBannerProps = {
 
 const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
   recommendation,
-  confidence,
+  dropChance,
   expectedSavings,
   onActionClick,
   onWatchlistClick,
@@ -22,7 +22,7 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
   isWatched = false
 }) => {
   const themeClass = `buywise-banner--${recommendation.toLowerCase()}`;
-  const visualConfidence = Math.max(0, Math.min(100, confidence));
+  const visualChance = Math.max(0, Math.min(100, dropChance));
 
   const handleDynamicClick = () => {
     if (recommendation === "WAIT" && !isWatched && onWatchlistClick) {
@@ -59,7 +59,7 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
         onMouseLeave={handleMouseLeave}
       >
         <div className="buywise-banner-kicker">
-           7-day prediction 
+           14-day outlook
         </div>
         <div className="buywise-recommendation-word" aria-label={`Recommendation: ${recommendation}`}>
           {recommendation}
@@ -74,7 +74,7 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
         </div>
 
         <div className="buywise-banner-metrics">
-          <div className="buywise-confidence-meter" aria-label={`${visualConfidence}% confidence`}>
+          <div className="buywise-confidence-meter" aria-label={`${visualChance}% chance of a price drop`}>
             <svg viewBox="0 0 42 42" className="buywise-confidence-ring" aria-hidden="true">
               <circle className="buywise-confidence-ring__track" cx="21" cy="21" r="16" />
               <circle
@@ -82,12 +82,12 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
                 cx="21"
                 cy="21"
                 r="16"
-                strokeDasharray={`${visualConfidence} 100`}
+                strokeDasharray={`${visualChance} 100`}
               />
             </svg>
             <div className="buywise-confidence-ring__label">
-              <span className="buywise-confidence-value">{visualConfidence}%</span>
-              <span className="buywise-confidence-caption">confidence</span>
+              <span className="buywise-confidence-value">{visualChance}%</span>
+              <span className="buywise-confidence-caption">chance of a drop</span>
             </div>
           </div>
 
@@ -110,10 +110,7 @@ const RecommendationBanner: React.FC<RecommendationBannerProps> = ({
           />
         </div>
       </div>
-      
-      <div className="buywise-insight-strip animate-insight">
-          ✨ {recommendation === "WAIT" ? "Prices for similar tracked items actively dropped 10-15% this week." : "Price matches historical all-time lows for this category."}
-      </div>
+
     </div>
   );
 };
