@@ -6,11 +6,11 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: "BuyWise — Buy smarter on Amazon",
+  title: "BuyWise: buy smarter on Amazon",
   description:
-    "BuyWise is a Chrome extension that reads every offer on an Amazon product page and tells you, in one plain line, when there's a better way to buy, and why. A GT Big Data project at Georgia Tech.",
+    "BuyWise is a Chrome extension that reads every offer on an Amazon product page and tells you in one line when there's a better way to buy, and why. A GT Big Data project at Georgia Tech.",
   openGraph: {
-    title: "BuyWise — Buy smarter on Amazon",
+    title: "BuyWise: buy smarter on Amazon",
     description: "Every offer on the page, weighed for you. A GT Big Data project.",
     images: ["/mark.png"],
   },

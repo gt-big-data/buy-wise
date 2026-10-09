@@ -10,6 +10,22 @@ export const stats = [
   { value: "~$20", label: "average gap when they did" },
 ];
 
+export const steps: { title: string; body: string; factors?: string }[] = [
+  {
+    title: "Amazon is a marketplace",
+    body: "Amazon sells on the product page, and so do outside businesses: authorized dealers, liquidators and resellers. Each one sets its own price, and many reprice automatically several times a day.",
+  },
+  {
+    title: "Amazon picks one seller for the button",
+    body: "The featured offer is chosen for a typical shopper and for Amazon's business. It isn't always the best deal for you, and some of the lowest prices stay hidden until checkout.",
+    factors: "Weighed by: price with shipping, delivery speed, seller track record, stock.",
+  },
+  {
+    title: "BuyWise reads the rest and works for you",
+    body: "We look at every offer, weigh what makes a cheaper one worth it or not, and tell you plainly with the reason: seller trust, warranty, shipping, returns and condition.",
+  },
+];
+
 export const built = [
   { title: "Chrome extension", detail: "React panel injected on Amazon pages" },
   { title: "Backend API", detail: "FastAPI + MySQL, watchlist & activity" },
