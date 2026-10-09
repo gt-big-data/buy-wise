@@ -1373,3 +1373,11 @@
   color: #aaa;
   padding: 2px 0 4px;
 }
+
+.buywise-wait-downside {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #5c4a10;
+  text-align: center;
+}

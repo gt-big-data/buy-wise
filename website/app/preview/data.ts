@@ -121,6 +121,7 @@ export const bose = {
   offersChecked: 11,
   dropChance: 0.74,
   expectedLow: 285.0,
+  higherAfterWait: 0.137,
   pattern: { drops: 4, months: 4, minDays: 5, maxDays: 8 },
 };
 
