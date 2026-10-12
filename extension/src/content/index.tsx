@@ -64,7 +64,7 @@ async function mountFloatingPanel(): Promise<boolean> {
 
   const asin = extractASIN();
   if (!asin) return false;
-  console.log("BuyWise offers: ", extractOffers);
+  console.log("BuyWise offers: ", extractOffers());
 
   removeExistingUI();
   currentContainer = createContainer();
