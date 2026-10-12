@@ -19,7 +19,8 @@ export function extractOffers(): PageOffers {
     const prices = readOptionPrices();
     const tier = document.querySelector("#sns-tiered-price .apex-pricetopay-accessibility-label");
     return {
-      oneTimePrice: prices.NEW ?? null,
+      // One-time option is typed "NEW" on most pages, "BUNDLE" on some
+      oneTimePrice: prices.NEW ?? prices.BUNDLE ?? null,
       snsPrice: prices.SNS ?? null,
       snsTierText: tier?.textContent?.trim() || null,
     };
