@@ -4,6 +4,7 @@ import BuyWisePanel from "../components/BuyWisePanel";
 import LoadingState from "../components/LoadingState";
 import ErrorState from "../components/ErrorState";
 import { isAmazonProductPage, extractASIN, extractProductImage } from "./amazon";
+import { extractOffers } from "./offers";
 import { BuyWiseData } from "../types";
 import "./styles.css";
 
@@ -64,6 +65,7 @@ async function mountFloatingPanel(): Promise<boolean> {
 
   const asin = extractASIN();
   if (!asin) return false;
+  // console.log("BuyWise offers: ", extractOffers());
 
   removeExistingUI();
   currentContainer = createContainer();

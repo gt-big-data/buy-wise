@@ -9,7 +9,7 @@ export function isAmazonProductPageUrl(url: string): boolean {
     const path = parsed.pathname;
 
     const isAmazon = host.includes("amazon.com");
-    const isProductPath = /\/(dp|gp\/product)\//.test(path);
+    const isProductPath = /\/(dp|gp\/product|gp\/aw\/d)\//.test(path);
 
     return isAmazon && isProductPath;
   } catch {
@@ -24,7 +24,7 @@ export function extractASIN(): string | null {
 export function extractASINFromUrl(url: string): string | null {
   try {
     const parsed = new URL(url);
-    const match = parsed.pathname.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+    const match = parsed.pathname.match(/\/(?:dp|gp\/product|gp\/aw\/d)\/([A-Z0-9]{10})/i);
 
     if (match?.[1]) {
       return match[1].toUpperCase();
