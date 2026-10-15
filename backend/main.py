@@ -132,7 +132,7 @@ class ActivityResponse(BaseModel):
     details: Optional[str] = Field(None)
 
 class WatchlistAddRequest(BaseModel):
-    user_id: int
+    user_id: str
     asin: str
     target_price: Optional[float] = None
 
@@ -586,7 +586,7 @@ def add_watchlist_item(req: WatchlistAddRequest):
 
 
 @app.delete("/watchlist/{user_id}/{product_id}")
-def remove_watchlist_item(user_id: int, product_id: int):
+def remove_watchlist_item(user_id: str, product_id: int):
     _require_db()
     try:
         remove_from_watchlist(user_id=user_id, product_id=product_id)
@@ -596,7 +596,7 @@ def remove_watchlist_item(user_id: int, product_id: int):
 
 
 @app.get("/watchlist/{user_id}")
-def get_user_watchlist(user_id: int):
+def get_user_watchlist(user_id: str):
     _require_db()
     try:
         items = get_watchlist(user_id=user_id)

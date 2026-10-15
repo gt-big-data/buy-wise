@@ -6,9 +6,8 @@ import {
 } from "../content/amazon";
 import ErrorState from "../components/ErrorState";
 import LoadingState from "../components/LoadingState";
-
-const BACKEND_URL = "http://localhost:8000";
-const USER_ID = 1;
+import { BACKEND_URL } from "../config";
+import { getUserId } from "../userId";
 
 type PopupState =
   | { status: "loading" }
@@ -61,9 +60,10 @@ const App: React.FC = () => {
           setPopupState({ status: "non-product" });
           setDashboardLoading(true);
           try {
+            const userId = encodeURIComponent(await getUserId());
             const [watchlistRes, activityRes] = await Promise.all([
-              fetch(`${BACKEND_URL}/watchlist/${USER_ID}`),
-              fetch(`${BACKEND_URL}/activity/recent?user_id=${USER_ID}&limit=10`),
+              fetch(`${BACKEND_URL}/watchlist/${userId}`),
+              fetch(`${BACKEND_URL}/activity/recent?user_id=${userId}&limit=10`),
             ]);
             const watchlistData = watchlistRes.ok ? await watchlistRes.json() : { watchlist: [] };
             const activityData = activityRes.ok ? await activityRes.json() : { items: [] };
