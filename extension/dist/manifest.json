@@ -27,6 +27,7 @@
       "js": ["content.js"]
     }
   ],
+  "options_page": "profile.html",
   "background": {
     "service_worker": "background.js"
   },
