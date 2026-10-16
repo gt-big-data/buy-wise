@@ -20,13 +20,15 @@ Leads: Aashish (platform and data viz), Rithwik and Vansh (analysis).
 
 | Team | People | Owns by demo day | Issues |
 |---|---|---|---|
-| **UI** | Data viz | Everything the shopper sees: styling and the panel, the first-run profile, the watch flow and the dashboard | [#71](https://github.com/gt-big-data/buy-wise/issues/71), [#77](https://github.com/gt-big-data/buy-wise/issues/77), [#93](https://github.com/gt-big-data/buy-wise/issues/93) |
+| **Data Viz** | Data viz | Everything the shopper sees: styling and the panel, the first-run profile, the watch flow and the dashboard | [#71](https://github.com/gt-big-data/buy-wise/issues/71), [#77](https://github.com/gt-big-data/buy-wise/issues/77), [#93](https://github.com/gt-big-data/buy-wise/issues/93) |
 | **Offers** | Platform | Reading every seller and product version off the page, and price alerts | [#69](https://github.com/gt-big-data/buy-wise/issues/69), [#74](https://github.com/gt-big-data/buy-wise/issues/74) |
 | **Engine** | Platform | The Keepa data, the daily price job, and the decision endpoint that turns everything into one answer per page | [#70](https://github.com/gt-big-data/buy-wise/issues/70), [#90](https://github.com/gt-big-data/buy-wise/issues/90), [#92](https://github.com/gt-big-data/buy-wise/issues/92) |
 | **Research** | Risheet, Miguel, Siya | A benchmark every model plugs into, model comparisons, calibration and when to say nothing, and a workshop paper | [#78](https://github.com/gt-big-data/buy-wise/issues/78)–[#82](https://github.com/gt-big-data/buy-wise/issues/82) |
 | **Tooling** | Miles, Himank, Nirv | Shared data, whether cheaper versions are actually worse, the track record, seller ranking, and handing results to the Engine | [#83](https://github.com/gt-big-data/buy-wise/issues/83)–[#87](https://github.com/gt-big-data/buy-wise/issues/87) |
+| **Misc** | Anyone | Checks on every PR, one-command setup, and fixing pages where the extension doesn't load | [#72](https://github.com/gt-big-data/buy-wise/issues/72), [#73](https://github.com/gt-big-data/buy-wise/issues/73) |
+| **Demo** | Leads, with volunteers | The demo script, a backup, charts and the website | [#94](https://github.com/gt-big-data/buy-wise/issues/94) |
 
-Anyone can take [#72](https://github.com/gt-big-data/buy-wise/issues/72) (checks and setup) or [#73](https://github.com/gt-big-data/buy-wise/issues/73) (pages where the extension breaks). Leads own [#94](https://github.com/gt-big-data/buy-wise/issues/94) (demo day), with volunteers. People can move between teams. Who is working on what is whoever is assigned on GitHub. The analysis plan in more detail is in [#88](https://github.com/gt-big-data/buy-wise/issues/88).
+People can move between teams. Who is working on what is whoever is assigned on GitHub. The analysis plan in more detail is in [#88](https://github.com/gt-big-data/buy-wise/issues/88).
 
 ## How we work
 
@@ -61,9 +63,9 @@ Agree on the format of every handoff early, with a fake example, so both sides c
 - **Engine → Tooling:** the raw Keepa files ([#70](https://github.com/gt-big-data/buy-wise/issues/70) → [#83](https://github.com/gt-big-data/buy-wise/issues/83)).
 - **Engine → Tooling and Offers:** one daily price job ([#90](https://github.com/gt-big-data/buy-wise/issues/90)) feeds both the track record ([#85](https://github.com/gt-big-data/buy-wise/issues/85)) and price alerts ([#74](https://github.com/gt-big-data/buy-wise/issues/74)).
 - **Tooling and Research → Engine:** seller ranking ([#86](https://github.com/gt-big-data/buy-wise/issues/86)), when to say nothing ([#81](https://github.com/gt-big-data/buy-wise/issues/81)) and version verdicts ([#84](https://github.com/gt-big-data/buy-wise/issues/84)) go to the Engine through [#87](https://github.com/gt-big-data/buy-wise/issues/87). The Engine combines them in the decision endpoint ([#92](https://github.com/gt-big-data/buy-wise/issues/92)).
-- **Engine → UI:** the decision endpoint's answers ([#92](https://github.com/gt-big-data/buy-wise/issues/92) → [#71](https://github.com/gt-big-data/buy-wise/issues/71)). UI builds on fake data until it's live.
-- **Tooling → UI:** track-record numbers ([#85](https://github.com/gt-big-data/buy-wise/issues/85) → [#93](https://github.com/gt-big-data/buy-wise/issues/93)) and version verdicts ([#84](https://github.com/gt-big-data/buy-wise/issues/84) → [#71](https://github.com/gt-big-data/buy-wise/issues/71)).
-- **UI ↔ Tooling:** which profile questions change the recommendation ([#77](https://github.com/gt-big-data/buy-wise/issues/77), [#86](https://github.com/gt-big-data/buy-wise/issues/86)).
+- **Engine → Data Viz:** the decision endpoint's answers ([#92](https://github.com/gt-big-data/buy-wise/issues/92) → [#71](https://github.com/gt-big-data/buy-wise/issues/71)). Data Viz builds on fake data until it's live.
+- **Tooling → Data Viz:** track-record numbers ([#85](https://github.com/gt-big-data/buy-wise/issues/85) → [#93](https://github.com/gt-big-data/buy-wise/issues/93)) and version verdicts ([#84](https://github.com/gt-big-data/buy-wise/issues/84) → [#71](https://github.com/gt-big-data/buy-wise/issues/71)).
+- **Data Viz ↔ Tooling:** which profile questions change the recommendation ([#77](https://github.com/gt-big-data/buy-wise/issues/77), [#86](https://github.com/gt-big-data/buy-wise/issues/86)).
 
 ## Not this semester
 
