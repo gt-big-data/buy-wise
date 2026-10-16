@@ -2,6 +2,8 @@
 
 This is the plan for the semester: what we're building, who owns what, how we work, and what gets shown each Friday until demo day on **Nov 20**. Each issue has the details for its piece.
 
+The [project board](https://github.com/users/AashishAnanth/projects/1) shows every issue with its team, start and end dates, and next checkpoint.
+
 ## What we're building
 
 An Amazon product page often lists many sellers but has one Add to Cart button. Amazon chooses which seller gets that button, and cheaper offers from other sellers, used copies and other versions of the product sit on a separate list most shoppers never open. BuyWise reads every offer on the page, decides whether a cheaper one is worth it for this shopper (given price, condition, shipping speed, returns and seller), and shows a one-line recommendation with the reason. When Amazon's default is already the best option, BuyWise says so and shows nothing else.
