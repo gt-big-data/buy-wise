@@ -2,10 +2,12 @@
 // Content scripts can't fetch localhost directly from an HTTPS page (Chrome MV3
 // Private Network Access policy), so all backend calls go through here instead.
 
-const BACKEND_URL = "http://localhost:8000";
+import { BACKEND_URL } from "../config";
+import { getUserId } from "../userId";
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log("BuyWise extension installed");
+  getUserId();
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -33,26 +35,33 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === "BUYWISE_POST_ACTIVITY") {
-    fetch(`${BACKEND_URL}/activity`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        asin: message.asin,
-        action: message.action,
-        user_id: "1",
-        timestamp: new Date().toISOString(),
-      }),
-    }).catch(() => {});
+    getUserId()
+      .then((userId) =>
+        fetch(`${BACKEND_URL}/activity`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            asin: message.asin,
+            action: message.action,
+            user_id: userId,
+            timestamp: new Date().toISOString(),
+          }),
+        })
+      )
+      .catch(() => {});
     return false;
   }
 
   if (message?.type === "BUYWISE_WATCHLIST_ADD") {
     const { asin } = message;
-    fetch(`${BACKEND_URL}/watchlist`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_id: 1, asin }),
-    })
+    getUserId()
+      .then((userId) =>
+        fetch(`${BACKEND_URL}/watchlist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: userId, asin }),
+        })
+      )
       .then(async (r) => {
         if (!r.ok) {
           const body = await r.json().catch(() => ({}));
