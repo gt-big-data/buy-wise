@@ -30,7 +30,7 @@ function readOptionPrices(): Record<string, number> {
 }
 
 // "$1,160.58" -> 1160.58; anything without digits -> null
-function parsePrice(text: string | null | undefined): number | null {
+export function parsePrice(text: string | null | undefined): number | null {
   const cleaned = text?.replace(/[^0-9.]/g, "");
   if (!cleaned) return null;
   const n = Number(cleaned);

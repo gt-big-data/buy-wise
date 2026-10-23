@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "webpack --config webpack.config.js",
-    "watch": "webpack --config webpack.config.js --watch"
+    "watch": "webpack --config webpack.config.js --watch",
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -17,9 +18,11 @@
     "@types/react-dom": "^18.2.0",
     "copy-webpack-plugin": "^14.0.0",
     "css-loader": "^6.8.1",
+    "jsdom": "^25.0.1",
     "style-loader": "^3.3.3",
     "ts-loader": "^9.4.4",
     "typescript": "^5.2.2",
+    "vitest": "^2.1.9",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
   }
