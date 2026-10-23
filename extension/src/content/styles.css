@@ -1381,3 +1381,114 @@
   color: #5c4a10;
   text-align: center;
 }
+
+.buywise-modal-hidden {
+  display: none;
+}
+
+.buywise-minimized-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(231, 225, 213, 0.6);
+  background: rgba(247, 246, 244, 0.95);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px rgba(15, 23, 15, 0.18);
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d1d1d;
+  cursor: pointer;
+}
+
+.buywise-chip-logo {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.buywise-offers {
+  padding: 14px 16px;
+  border: 1px solid #e5e6df;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.buywise-offers-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.buywise-offers-button {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px solid #4f8b46;
+  border-radius: 999px;
+  background: transparent;
+  color: #3d6f36;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.buywise-offers-button:hover {
+  background: rgba(79, 139, 70, 0.08);
+}
+
+.buywise-offers-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.buywise-offers-row {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eeefe9;
+}
+
+.buywise-offers-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.buywise-offers-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.buywise-offers-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.buywise-offers-condition {
+  font-size: 13px;
+  color: #434343;
+}
+
+.buywise-offers-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: #5b6458;
+}
+
+.buywise-offers-row-detail {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #5b6458;
+}

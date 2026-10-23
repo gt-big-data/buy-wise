@@ -65,7 +65,6 @@ async function mountFloatingPanel(): Promise<boolean> {
 
   const asin = extractASIN();
   if (!asin) return false;
-  // console.log("BuyWise offers: ", extractOffers());
 
   removeExistingUI();
   currentContainer = createContainer();
@@ -145,6 +144,7 @@ async function mountFloatingPanel(): Promise<boolean> {
   currentRoot.render(
     <BuyWisePanel
       data={data}
+      offers={extractOffers()}
       onClose={handleClose}
       onActionClick={handleActionClick}
       onWatchlistClick={handleWatchlistClick}
