@@ -4,24 +4,17 @@ You don't need a Keepa API key. Leave it blank.
 
 ## 1. Backend
 
-Detail in [`backend/README.md`](backend/README.md).
+Detail in [`backend/README.md`](backend/README.md). You need [Docker Desktop](https://www.docker.com/products/docker-desktop) running.
+
+From the repo root:
 
 ```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env          # defaults work as-is
-
-docker run --name buywise-mysql \
-  -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=buywise \
-  -p 3306:3306 -d mysql:8
-
-docker exec -i buywise-mysql mysql -uroot -proot buywise < db/schema.sql
-docker exec -i buywise-mysql mysql -uroot -proot buywise < db/seed.sql
-docker exec -i buywise-mysql mysql -uroot -proot buywise < db/seed_real.sql
-
-uvicorn main:app --reload
+docker compose up
 ```
+
+That starts MySQL, loads the schema and both seed files, and runs the backend on port 8000. Code changes in `backend/` reload on their own. Stop it with Ctrl+C; your data stays for next time. `docker compose down -v` wipes the database so the next `up` reloads it from scratch.
+
+If you set up before this existed, run `docker stop buywise-mysql` first so the old container isn't holding port 3306.
 
 Check it:
 
