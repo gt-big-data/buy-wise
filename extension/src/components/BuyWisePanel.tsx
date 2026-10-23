@@ -1,11 +1,14 @@
 import React, { useCallback, useRef, useState } from "react";
 import { BuyWiseData } from "../types";
+import { PageOffers } from "../content/offers";
 import InfoBlurb from "./InfoBlurb";
+import OffersSection from "./OffersSection";
 import PriceChart from "./PriceChart";
 import RecommendationBanner from "./RecommendationBanner";
 
 type BuyWisePanelProps = {
   data: BuyWiseData;
+  offers?: PageOffers;
   onClose?: () => void;
   onActionClick: () => void;
   onWatchlistClick?: () => void;
@@ -18,6 +21,7 @@ const DISMISS_MS = 240;
 
 const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
   data,
+  offers,
   onClose,
   onActionClick,
   onWatchlistClick,
@@ -28,6 +32,7 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
   const [isDismissing, setIsDismissing] = useState(false);
   const [isWatched, setIsWatched] = useState(Boolean(data.isWatched));
   const [showToast, setShowToast] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const dismissStartedRef = useRef(false);
 
   const handleWatchlist = useCallback(() => {
@@ -55,9 +60,20 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
 
   return (
     <div className={shellClass}>
+      {isMinimized && (
+        <button
+          type="button"
+          className="buywise-minimized-chip"
+          onClick={() => setIsMinimized(false)}
+        >
+          <img src={chrome.runtime.getURL("logo.png")} alt="" className="buywise-chip-logo" />
+          BuyWise
+        </button>
+      )}
       <div
         className={
-          floating ? "buywise-floating-modal" : "buywise-embedded-modal"
+          (floating ? "buywise-floating-modal" : "buywise-embedded-modal") +
+          (isMinimized ? " buywise-modal-hidden" : "")
         }
       >
         {showCloseButton && onClose ? (
@@ -106,6 +122,8 @@ const BuyWisePanel: React.FC<BuyWisePanelProps> = ({
               isWatched={isWatched}
             />
           </section>
+
+          {offers && <OffersSection offers={offers} onCompareOpen={() => setIsMinimized(true)} />}
 
           <section className="buywise-panel-section buywise-panel-section--detail">
             <InfoBlurb text={data.why} />
