@@ -6,12 +6,12 @@ Follow [ONBOARDING.md](ONBOARDING.md) to get the backend and extension running l
 
 ## How work is organized
 
-Work happens in pods of 2–3 people, usually from different subteams. Each pod owns one feature from design to a working demo. A pod's feature is tracked as a GitHub issue, and every PR for it links back to that issue.
+Teams, issues and the weekly schedule are in [ROADMAP.md](ROADMAP.md). Pick an issue, get assigned to it on GitHub, and link every PR back to it.
 
 ## Branches
 
 - Never commit directly to `main`.
-- Branch from an up-to-date `main` and give the branch a short, descriptive name, prefixed with the area: `offers/variant-reader`, `watching/alert-schedule`, `viz/panel-tokens`.
+- Branch from an up-to-date `main` and name the branch `<issue number>-short-name`, e.g. `69-seller-list`, `77-first-run-profile`.
 - Keep a branch focused on one change. Big features land as a series of PRs, not one large one.
 
 ## Pull requests
@@ -26,7 +26,7 @@ Before opening a PR, run whatever applies to what you touched:
 
 ```bash
 # backend
-cd backend && .venv/bin/python -m pytest tests -q
+cd backend && .venv/bin/python -m pytest tests test_asin.py -q
 
 # extension
 cd extension && npm run build

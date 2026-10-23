@@ -1,107 +1,81 @@
 # BuyWise Fall 2026 Roadmap
 
-## Where we're going
+This is the plan for the semester: what we're building, who owns what, how we work, and what gets shown each Friday until demo day on **Nov 20**. Each issue has the details for its piece.
 
-An Amazon product page lists many sellers but has only one Add to Cart button. Amazon picks the seller behind that button for a typical shopper and for its own business, and the cheaper offers sit a click away where almost nobody looks. BuyWise reads every offer on the page, weighs what makes a cheaper one worth it or not *for this shopper*, and says so in one line. When Amazon's pick is already the best sensible deal, it says that instead and gets out of the way.
+The [project board](https://github.com/users/AashishAnanth/projects/1) shows every issue with its team, start and end dates, and next checkpoint.
 
-When waiting is the better move, BuyWise watches the product so the shopper doesn't have to. They pick a price they'd pay, or ask to be told when it's a good time to buy, and BuyWise notifies them.
+## What we're building
 
-Every shopper is different, so BuyWise learns a few things about them with as little friction as possible. It asks three questions once, infers what it can, and only asks something in the moment when the answer would change the recommendation.
+An Amazon product page often lists many sellers but has one Add to Cart button. Amazon chooses which seller gets that button, and cheaper offers from other sellers, used copies and other versions of the product sit on a separate list most shoppers never open. BuyWise reads every offer on the page, decides whether a cheaper one is worth it for this shopper (given price, condition, shipping speed, returns and seller), and shows a one-line recommendation with the reason. When Amazon's default is already the best option, BuyWise says so and shows nothing else.
 
-The price-drop model is one input to these decisions. It doesn't carry the whole product.
+When waiting is the better move, the shopper can watch the product. They set a target price, or ask to be notified when it's a good time to buy, and BuyWise sends an alert.
 
-By demo day we will have a working extension and dashboard that do all of this, along with a real track record of how often BuyWise was right.
+BuyWise keeps a small profile of each shopper: three questions asked once at setup, plus what it can infer from the page (such as Prime membership). It only asks a question at the moment of purchase when the answer would change the recommendation.
+
+The price-drop model is one input to these recommendations, not the core of the product.
+
+**At demo day:** a working extension and dashboard that do all of the above, and a measured hit rate and dollars saved for BuyWise's past recommendations.
+
+## Teams
+
+Leads: Aashish (platform and data viz), Rithwik and Vansh (analysis).
+
+| Team | People | Owns by demo day | Issues |
+|---|---|---|---|
+| **Data Viz** | Data viz | Everything the shopper sees: styling and the panel, the first-run profile, the watch flow and the dashboard | [#71](https://github.com/gt-big-data/buy-wise/issues/71), [#77](https://github.com/gt-big-data/buy-wise/issues/77), [#93](https://github.com/gt-big-data/buy-wise/issues/93) |
+| **Offers** | Platform | Reading every seller and product version off the page, and price alerts | [#69](https://github.com/gt-big-data/buy-wise/issues/69), [#74](https://github.com/gt-big-data/buy-wise/issues/74) |
+| **Engine** | Platform | The Keepa data, the daily price job, and the decision endpoint that turns everything into one answer per page | [#70](https://github.com/gt-big-data/buy-wise/issues/70), [#90](https://github.com/gt-big-data/buy-wise/issues/90), [#92](https://github.com/gt-big-data/buy-wise/issues/92) |
+| **Research** | Risheet, Miguel, Siya | A benchmark every model plugs into, model comparisons, calibration and when to say nothing, and a workshop paper | [#78](https://github.com/gt-big-data/buy-wise/issues/78)–[#82](https://github.com/gt-big-data/buy-wise/issues/82) |
+| **Tooling** | Miles, Himank, Nirv | Shared data, whether cheaper versions are actually worse, the track record, seller ranking, and handing results to the Engine | [#83](https://github.com/gt-big-data/buy-wise/issues/83)–[#87](https://github.com/gt-big-data/buy-wise/issues/87) |
+| **Misc** | Anyone | Checks on every PR, one-command setup, and fixing pages where the extension doesn't load | [#72](https://github.com/gt-big-data/buy-wise/issues/72), [#73](https://github.com/gt-big-data/buy-wise/issues/73) |
+| **Demo** | Leads, with volunteers | The demo script, a backup, charts and the website | [#94](https://github.com/gt-big-data/buy-wise/issues/94) |
+
+People can move between teams. Who is working on what is whoever is assigned on GitHub. The analysis plan in more detail is in [#88](https://github.com/gt-big-data/buy-wise/issues/88).
 
 ## How we work
 
-- **Every deliverable is a claim someone can check.** "The scraper works" can't be checked. "The offer reader works on these 100 pages, and here's the list I verified by hand" can.
-- **The person who builds something is not the person who signs off on it.** Every piece of work has an owner and a different reviewer.
-- **Main always builds.** Every PR passes the automatic checks before merging.
-- **Models ship only if they win.** A model or score goes live only if it beats the simple rules in `backend/ml/evaluate.py`.
-- **Shopper data stays on the shopper's device.** The profile and purchase history are kept locally. The backend never receives raw order history.
+- **Pick your own issue.** Each issue has one owner, assigned on GitHub, who answers for it on Friday. The rest of the team helps however they agree.
+- **Your issue is your plan.** It says what to build and what to show each Friday until demo day.
+- **Meetings are Fridays, 30 minutes,** and they're working time. Each team shows what's running, not slides. Analysis also meets separately during the week and posts a short update on each issue before the Friday meeting: what's done, the current number, what's blocking.
+- **Branches and PRs.** Name each branch `<issue number>-short-name`, push it, and open a PR into main. Someone other than the author reviews it. For analysis work, the reviewer re-runs it and gets the same numbers. Squash and merge.
+- **Main always builds.** A PR can't merge if the checks fail ([#72](https://github.com/gt-big-data/buy-wise/issues/72)).
+- **Every deliverable says how it was checked.** "The scraper works" isn't enough. "It's correct on these 30 pages, and here's how I checked" is.
+- **Use AI tools, but write your own issue and PR descriptions,** and be able to explain what you submitted.
+- **Numbers come from the benchmark.** Any number at the demo or in the paper comes from [#78](https://github.com/gt-big-data/buy-wise/issues/78), compared at the same wait rate, with an error bar. A model goes live only if it beats the simple rules. Tune on validation data, never on test data.
+- **Shopper data stays on the shopper's device.** The backend never stores the profile or order history, and no shopper data goes into any dataset or the paper.
+- **Have an idea?** Open an issue with a short description, or DM a lead.
 
-## Phase 1: Solid ground
+## Every Friday
 
-*Everyone can run the project, nothing breaks without anyone noticing, and the product's look and first-run experience are defined.*
+| Friday | What we show |
+|---|---|
+| **Oct 23** | Checks on every PR and one-command setup ([#72](https://github.com/gt-big-data/buy-wise/issues/72)) · Keepa plan signed off and access bought ([#70](https://github.com/gt-big-data/buy-wise/issues/70)) · daily price job running ([#90](https://github.com/gt-big-data/buy-wise/issues/90)) · seller list read on a live page ([#69](https://github.com/gt-big-data/buy-wise/issues/69)) · three panel states with fake data ([#71](https://github.com/gt-big-data/buy-wise/issues/71)) · first-run profile ([#77](https://github.com/gt-big-data/buy-wise/issues/77)) · list of pages where the extension breaks, with fixes ([#73](https://github.com/gt-big-data/buy-wise/issues/73)) · Tooling: shared data snapshot ([#83](https://github.com/gt-big-data/buy-wise/issues/83)) · Research: benchmark interface ([#78](https://github.com/gt-big-data/buy-wise/issues/78)) |
+| **Oct 30** | Offer reader correct across product types ([#69](https://github.com/gt-big-data/buy-wise/issues/69)) · Keepa data stored and daily prediction logging running ([#70](https://github.com/gt-big-data/buy-wise/issues/70), [#85](https://github.com/gt-big-data/buy-wise/issues/85)) · decision endpoint format agreed, with placeholder rules ([#92](https://github.com/gt-big-data/buy-wise/issues/92)) · panel in its final spot, with offer comparison ([#71](https://github.com/gt-big-data/buy-wise/issues/71)) · target prices and watch status ([#74](https://github.com/gt-big-data/buy-wise/issues/74)) · watch flow and dashboard designs ([#93](https://github.com/gt-big-data/buy-wise/issues/93)) · Research: first model leaderboard ([#78](https://github.com/gt-big-data/buy-wise/issues/78)–[#80](https://github.com/gt-big-data/buy-wise/issues/80)) · Tooling: first offer-ranking rule on real offers ([#86](https://github.com/gt-big-data/buy-wise/issues/86)) · advisor check-in 1 |
+| **Nov 6** | Live recommendations with reasons on real pages ([#92](https://github.com/gt-big-data/buy-wise/issues/92), [#71](https://github.com/gt-big-data/buy-wise/issues/71)) · alerts firing ([#74](https://github.com/gt-big-data/buy-wise/issues/74)) · product versions read ([#69](https://github.com/gt-big-data/buy-wise/issues/69)) · purchase-time question ([#77](https://github.com/gt-big-data/buy-wise/issues/77)) · watch flow on real data ([#93](https://github.com/gt-big-data/buy-wise/issues/93)) · demo script draft ([#94](https://github.com/gt-big-data/buy-wise/issues/94)) · Research: models re-run on Keepa data · Tooling: first predictions checked against real prices ([#85](https://github.com/gt-big-data/buy-wise/issues/85)) |
+| **Nov 13: freeze** | Final rules in the decision endpoint ([#92](https://github.com/gt-big-data/buy-wise/issues/92)) · dashboard with the real track record ([#93](https://github.com/gt-big-data/buy-wise/issues/93), [#85](https://github.com/gt-big-data/buy-wise/issues/85)) · usability test results ([#71](https://github.com/gt-big-data/buy-wise/issues/71)) · charts, website and a full demo run-through ([#94](https://github.com/gt-big-data/buy-wise/issues/94)) · Research: paper draft to the advisor before check-in 2 ([#82](https://github.com/gt-big-data/buy-wise/issues/82)). After this, only bug fixes, and every number shown at the demo is final. The paper keeps going. |
+| **Nov 20** | Demo day |
 
-**Platform**
-- Automatic checks on every PR: build the extension and run the backend tests.
-- One-command local setup that starts the database, loads both seed files and runs the backend.
-- Plan the Keepa data pull. Pick products across categories and price bands, store the raw responses, and include which seller held the Add to Cart button. Test-pull a small batch and check it by hand before spending the month of access.
-- Decide where fresh prices for watched products come from once the Keepa month ends: page reads when a shopper visits, a scheduled check, or a lighter paid tracking option. Alerts in Phase 3 depend on this decision.
-- Local storage for the shopper profile.
-
-**Data visualization**
-- Turn the website's look into the extension's design system: colors, type, spacing and base components. The tokens in `website/app/globals.css` are the starting point, and `website/app/preview` shows where the product is headed.
-- Rebuild the current panel in the new style using mock data.
-- Design the "checked, you're good" state. It is what users will see most often, so it gets the same care as everything else.
-- Design the first-run profile: three questions, skippable, and changeable later.
-
-**Phase 1 is done when:** a new member goes from clone to a running extension with one command, a broken PR can't merge, and the new panel and first-run designs are approved.
-
-## Phase 2: See every offer
-
-*The extension can read everything on a product page, and we have the real data.*
-
-**Platform**
-- The offer reader pulls every offer off a product page: seller, price, condition, shipping, returns, and prices hidden until checkout.
-- The offer reader also captures the product's other versions (sizes, colors, generations, pack counts) along with their prices and per-unit cost.
-- Real Amazon pages are saved as test fixtures. When Amazon changes its layout, the reader reports that it broke instead of silently returning nothing.
-- Run the Keepa pull, store everything raw, and point the backend at the local copy so development doesn't depend on the live API.
-- Infer what we can without asking, such as Prime membership from the page and repeat purchases.
-
-**Data visualization**
-- An offer comparison component: Amazon's pick next to the best alternative, with the reasons in plain words.
-- A version comparison view for products with meaningful variants.
-- Move the panel next to the Add to Cart button instead of floating in a corner.
-
-**Phase 2 is done when:** the offer reader is correct on a hand-checked set of pages across several categories, and the Keepa data is stored and validated.
-
-## Phase 3: Make the call
-
-*The extension tells each shopper something true and useful, or stays quiet, and keeps watching when waiting is the right move.*
-
-**Platform**
-- One decision endpoint. Given a page's offers, the product's price history and the shopper's profile, it returns the best sensible option, the reason, and whether the result is worth showing.
-- The moment-of-purchase check. When the cheaper option is slower or used, ask once whether the shopper needs it soon. Skip the question when the answer wouldn't change anything.
-- Watching and alerts. A shopper can watch any product with a target price, or ask to be told when it's a good time to buy. Notifications show the new price and why now.
-- Every recommendation the extension shows is logged so it can be scored later.
-
-**Data visualization**
-- The new panel connected to the decision endpoint, with all three outcomes designed: a better offer, wait, and you're good.
-- The watch flow, from tapping Watch to setting a target to receiving a notification.
-- A usability check with people outside the team. They should be able to tell what the panel is saying and why, without feeling interrogated.
-
-**Phase 3 is done when:** the panel runs on live product pages, shows a reason for every recommendation, stays quiet most of the time, and a watched product sends a correct alert.
-
-## Phase 4: Prove it and show it
-
-*A working extension and dashboard, and a real track record at demo day.*
-
-**Platform**
-- A job that scores past recommendations against what actually happened: how much money following BuyWise saved or cost.
-
-**Data visualization**
-- The dashboard in full: watched products and their status, recent alerts, the profile, and the track record with hit rate and dollars saved, including the misses.
-- Demo day materials: charts of our findings, a live demo path, and the website updated with the team and results.
-
-**Phase 4 is done when:** we can state our real hit rate out loud and show it running live.
-
-## Analysis
-
-Analysis drives the research questions the product depends on. The analysis leads set the specific projects within these areas:
-
-- **How often the button already points to the cheapest sensible seller.** The new data answers this, and the answer sets how large our opportunity really is.
-- **What condition is worth.** For example, how much cheaper a used "Very Good" item should be than new. There's no published answer to this.
-- **Seller trust.** Which sellers are safe to recommend. This is the highest-stakes question in the project, because a bad seller recommendation can hurt someone.
-- **How risky a wait is.** A price drop on a steadily declining product is very different from a brief dip on a volatile one. A score that captures stability, using measures like variance and drawdowns, tells the shopper how much to trust a WAIT and when an alert is worth sending.
-- **What reviews say across versions.** When versions differ in price, find out whether reviews show a real difference in quality, so the version comparison can say whether the cheaper one is worth it.
-- **When to stay quiet.** The smallest saving worth interrupting a shopper for, and how that changes with their profile.
-- **Model upkeep.** Retrain the price-drop model on the new data and score it with `evaluate.py`. The model is one input, and it gets a bounded amount of effort.
+If something slips, we cut scope, not move dates.
 
 ## How the teams connect
 
-- Platform's offer reader produces the data analysis needs for seller, condition and version work.
-- Analysis's answers become the rules inside the decision endpoint, and the risk score decides when a WAIT is shown and when an alert fires.
-- Data visualization builds against mock data throughout and switches to real data once the decision endpoint exists.
-- The profile is designed by data visualization, stored by platform, and used by the decision endpoint. Analysis tells us which questions actually change outcomes, so the profile stays at three questions.
+Agree on the format of every handoff early, with a fake example, so both sides can build at the same time.
+
+- **Offers → Tooling:** real offer lists from the page ([#69](https://github.com/gt-big-data/buy-wise/issues/69) → [#86](https://github.com/gt-big-data/buy-wise/issues/86)).
+- **Engine → Tooling:** the raw Keepa files ([#70](https://github.com/gt-big-data/buy-wise/issues/70) → [#83](https://github.com/gt-big-data/buy-wise/issues/83)).
+- **Engine → Tooling and Offers:** one daily price job ([#90](https://github.com/gt-big-data/buy-wise/issues/90)) feeds both the track record ([#85](https://github.com/gt-big-data/buy-wise/issues/85)) and price alerts ([#74](https://github.com/gt-big-data/buy-wise/issues/74)).
+- **Tooling and Research → Engine:** seller ranking ([#86](https://github.com/gt-big-data/buy-wise/issues/86)), when to say nothing ([#81](https://github.com/gt-big-data/buy-wise/issues/81)) and version verdicts ([#84](https://github.com/gt-big-data/buy-wise/issues/84)) go to the Engine through [#87](https://github.com/gt-big-data/buy-wise/issues/87). The Engine combines them in the decision endpoint ([#92](https://github.com/gt-big-data/buy-wise/issues/92)).
+- **Engine → Data Viz:** the decision endpoint's answers ([#92](https://github.com/gt-big-data/buy-wise/issues/92) → [#71](https://github.com/gt-big-data/buy-wise/issues/71)). Data Viz builds on fake data until it's live.
+- **Tooling → Data Viz:** track-record numbers ([#85](https://github.com/gt-big-data/buy-wise/issues/85) → [#93](https://github.com/gt-big-data/buy-wise/issues/93)) and version verdicts ([#84](https://github.com/gt-big-data/buy-wise/issues/84) → [#71](https://github.com/gt-big-data/buy-wise/issues/71)).
+- **Data Viz ↔ Tooling:** which profile questions change the recommendation ([#77](https://github.com/gt-big-data/buy-wise/issues/77), [#86](https://github.com/gt-big-data/buy-wise/issues/86)).
+
+## Not this semester
+
+- A full seller-trust model. Seller ranking uses simple signals from the page.
+- Scraping Amazon reviews. We use a public reviews dataset.
+- Inferring repeat purchases. It would need order history.
+- Real user accounts. Each install gets its own ID.
+
+## After demo day
+
+- Decide where fresh prices come from once Keepa access ends (around Nov 22): reading the page when a shopper visits, a scheduled check, or a cheaper paid tracking service.

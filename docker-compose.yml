@@ -1,0 +1,49 @@
+# One-command local setup: `docker compose up`
+#
+# Starts MySQL, loads the schema and both seed files, and runs the backend on
+# localhost:8000. The SQL only loads the first time, into an empty database.
+# To wipe the database and reload it from scratch: `docker compose down -v`.
+
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: buywise
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # Runs in filename order on first start
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql:ro
+      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql:ro
+      - ./backend/db/seed_real.sql:/docker-entrypoint-initdb.d/3-seed_real.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  backend:
+    build: ./backend
+    # Source is mounted, so code edits reload without a rebuild.
+    # Rebuild after changing requirements.txt: `docker compose up --build`
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude ".venv/*"
+    environment:
+      # Overrides DB_HOST from backend/.env, which points at localhost for running outside Docker
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: buywise
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
