@@ -1,0 +1,10 @@
+{
+  "status": "ok",
+  "totalCount": 12,
+  "offers": [
+    { "seller": "Direct Suppliers US", "sellerId": "A1DSUPPLIERS", "price": 73.49, "condition": "New", "shippingCost": 0, "deliveryDate": "Sunday, October 18", "fastestDelivery": null, "shipsFrom": "Amazon.com", "shipsFromAmazon": true, "returnPolicy": null, "pinned": true },
+    { "seller": "Amazon Resale", "sellerId": null, "price": 55.25, "condition": "Used - Very Good", "shippingCost": 0, "deliveryDate": "Sunday, October 18", "fastestDelivery": null, "shipsFrom": "Amazon.com", "shipsFromAmazon": true, "returnPolicy": null, "pinned": false },
+    { "seller": "Goodwillswpa", "sellerId": "A2GOODWILL", "price": 5.47, "condition": "Used - Acceptable", "shippingCost": 3.99, "deliveryDate": "Saturday, October 24", "fastestDelivery": null, "shipsFrom": "Goodwillswpa", "shipsFromAmazon": false, "returnPolicy": null, "pinned": false },
+    { "seller": "MobileMonster", "sellerId": "A3MOBILE", "price": 74, "condition": "New", "shippingCost": 0, "deliveryDate": "October 21 - 23", "fastestDelivery": "Tuesday, October 20", "shipsFrom": "MobileMonster", "shipsFromAmazon": false, "returnPolicy": null, "pinned": false }
+  ]
+}
