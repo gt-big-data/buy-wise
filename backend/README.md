@@ -14,87 +14,35 @@ The backend is a FastAPI server backed by MySQL. It has three layers:
 
 ## Setup
 
-1. Create and activate a virtual environment:
+From the repo root, with [Docker Desktop](https://www.docker.com/products/docker-desktop) running:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate       # Mac/Linux
-.venv\Scripts\activate          # Windows
+docker compose up
 ```
 
-2. Install dependencies:
+This starts MySQL, loads `db/schema.sql`, `db/seed.sql` and `db/seed_real.sql`, and runs the server on http://localhost:8000 (interactive docs at `/docs`). `backend/` is mounted into the container, so edits reload without a rebuild. After changing `requirements.txt`, run `docker compose up --build`.
+
+The SQL loads only into an empty database. `docker compose down -v` wipes it so the next `up` starts fresh.
+
+To use the Keepa key, copy `.env.example` to `.env` and fill in `KEEPA_API_KEY`. The container reads it from there. Leave it blank unless a lead has given you one.
+
+### Running tests
+
+Tests run on your machine against the MySQL from `docker compose up`:
 
 ```bash
+cd backend
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env          # defaults point at the compose database
+python -m pytest tests test_asin.py -q
 ```
 
-### Database Setup: Docker
+The same tests run on every pull request (`.github/workflows/ci.yml`).
 
-Run MySQL locally using Docker to avoid installation issues and ensure a consistent environment across all teammates.
+### Running the server outside Docker
 
-1. **Install Docker:** Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop)
-
-2. **Start MySQL container:**
-```bash
-docker run --name buywise-mysql \
-  -e MYSQL_ROOT_PASSWORD=root \
-  -e MYSQL_DATABASE=buywise \
-  -p 3306:3306 \
-  -d mysql:8
-```
-
-3. **Verify container is running:**
-```bash
-docker ps
-```
-*(You should see a container named `buywise-mysql`)*
-
-4. **Initialize the database:**
-```bash
-docker exec -i buywise-mysql mysql -uroot -proot buywise < db/schema.sql
-docker exec -i buywise-mysql mysql -uroot -proot buywise < db/seed.sql
-```
-
-5. **Update `.env`:**
-Copy `.env.example` to `.env` and use these local Docker credentials:
-```text
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=root
-DB_NAME=buywise
-KEEPA_API_KEY=your_keepa_key
-```
-
-*Optional: Stop / restart container*
-```bash
-docker stop buywise-mysql
-docker start buywise-mysql
-```
-
-3. Copy `.env.example` to `.env`. The Docker defaults above work as-is; leave `KEEPA_API_KEY` blank unless a lead has given you one.
-
-```
-DB_HOST=localhost
-DB_USER=your_mysql_user
-DB_PASSWORD=your_mysql_password
-DB_NAME=buywise
-KEEPA_API_KEY=your_keepa_key
-```
-
-4. Initialize the database:
-
-```bash
-mysql -u root -p < db/schema.sql
-mysql -u root -p buywise < db/seed.sql
-```
-
-5. Start the server:
-
-```bash
-uvicorn main:app --reload
-```
-
-Interactive docs available at http://127.0.0.1:8000/docs
+Keep `docker compose up mysql` running for the database, then from `backend/` with the venv active: `uvicorn main:app --reload`. Stop the `backend` container first so port 8000 is free.
 
 ---
 
@@ -145,7 +93,7 @@ When the real model is ready, it should call `insert_prediction(...)` with its o
 **`migrations/`** — incremental changes for databases that already exist. `schema.sql` already includes them, so you only need these if you set up before the change landed. Run in order:
 
 ```bash
-docker exec -i buywise-mysql mysql -uroot -proot buywise < db/migrations/001_prices_keepa_columns.sql
+docker compose exec -T mysql mysql -uroot -proot buywise < backend/db/migrations/001_prices_keepa_columns.sql
 ```
 
 **`seed.sql`** — 5 fake products with price history and predictions. Useful for local development without real Keepa data.

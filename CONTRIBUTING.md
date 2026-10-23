@@ -26,7 +26,7 @@ Before opening a PR, run whatever applies to what you touched:
 
 ```bash
 # backend
-cd backend && .venv/bin/python -m pytest tests -q
+cd backend && .venv/bin/python -m pytest tests test_asin.py -q
 
 # extension
 cd extension && npm run build
