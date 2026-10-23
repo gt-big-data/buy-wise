@@ -38,11 +38,18 @@ CREATE TABLE prices (
     count_new INT NULL,
     count_used INT NULL,
 
+    -- A daily Keepa refresh is an observation even if the underlying price did
+    -- not change.  Historical Keepa events leave this NULL; scheduled runs use
+    -- the UTC date so a re-run updates, rather than duplicates, that day's row.
+    observed_on DATE NULL,
+    source ENUM('keepa_history', 'keepa_daily') NOT NULL DEFAULT 'keepa_history',
+
     foreign key (product_id) references products(product_id)
 		ON DELETE CASCADE,
         
 	INDEX idx_product_time (product_id, timestamp),
-    INDEX idx_timestamp (timestamp)
+    INDEX idx_timestamp (timestamp),
+    UNIQUE KEY unique_daily_price (product_id, observed_on, source)
 );
 
 CREATE TABLE predictions (

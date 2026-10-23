@@ -30,9 +30,11 @@ _CSV_COUNT_USED      = 13  # Offer count used
 _MAX_RETRIES = 3
 
 
-def fetch_price_history(asin: str, days: int = 365) -> list[dict]:
+def fetch_price_history(asin: str, days: int = 365, *, persist: bool = True) -> list[dict]:
     """
-    Fetch price history for an ASIN from Keepa and write records to the DB.
+    Fetch price history for an ASIN from Keepa and optionally write records to
+    the DB.  Scheduled refreshes set ``persist=False`` and write exactly one
+    dated observation, preventing the same history from being inserted daily.
 
     Calls the Keepa /product endpoint, parses the Amazon price history from
     the csv array, converts timestamps to Unix seconds, and inserts each
@@ -91,7 +93,8 @@ def fetch_price_history(asin: str, days: int = 365) -> list[dict]:
         asin, name, new_prices,
         used_ts, list_ts, rank_ts, cnt_new_ts, cnt_used_ts,
     )
-    _write_to_db(asin, name, records)
+    if persist:
+        _write_to_db(asin, name, records)
 
     return records
 
@@ -123,7 +126,10 @@ def _fetch_with_retry(url: str, params: dict) -> dict:
                     f"refillIn={data['refillIn']}ms"
                 )
 
-        raise RuntimeError(f"Unexpected Keepa response: {data}")
+        # Do not include the response body in an exception: providers can echo
+        # request information, and this exception is written to job logs.
+        fields = ", ".join(sorted(str(key) for key in data.keys()))
+        raise RuntimeError(f"Unexpected Keepa response fields: {fields or 'none'}")
 
     raise RuntimeError(f"Failed to fetch from Keepa after {_MAX_RETRIES} attempts")
 

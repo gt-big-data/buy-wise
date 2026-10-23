@@ -146,6 +146,7 @@ When the real model is ready, it should call `insert_prediction(...)` with its o
 
 ```bash
 docker exec -i buywise-mysql mysql -uroot -proot buywise < db/migrations/001_prices_keepa_columns.sql
+docker exec -i buywise-mysql mysql -uroot -proot buywise < db/migrations/002_daily_price_snapshots.sql
 ```
 
 **`seed.sql`** — 5 fake products with price history and predictions. Useful for local development without real Keepa data.
@@ -190,6 +191,14 @@ Each record in the returned list has:
     "price": 29.99             # USD
 }
 ```
+
+## Scheduled production refresh
+
+The repository includes a daily GitHub Actions workflow that writes one
+idempotent UTC-day price snapshot and a fresh prediction for every tracked
+product. Production credentials are GitHub Actions secrets only. See
+[`docs/daily-operations.md`](../docs/daily-operations.md) for the one-time
+database, secret, notification, and handoff setup.
 
 **Rate limiting:** Keepa uses a token bucket. When the bucket is empty the API returns a `refillIn` field (milliseconds until refill). `fetch_price_history` will sleep and retry up to 3 times before raising a `RuntimeError`. The paid key refills fast enough that retries should rarely trigger under normal load. If they do, the caller should back off and reschedule rather than retrying in a tight loop.
 

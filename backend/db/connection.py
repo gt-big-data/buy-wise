@@ -129,6 +129,69 @@ def insert_price(
         if conn:
             conn.close()
 
+
+def upsert_daily_price_snapshot(
+    product_id,
+    price,
+    *,
+    recorded_at: Optional[datetime] = None,
+    used_price: Optional[float] = None,
+    list_price: Optional[float] = None,
+    sales_rank: Optional[int] = None,
+    count_new: Optional[int] = None,
+    count_used: Optional[int] = None,
+):
+    """Store one UTC-day Keepa observation, replacing a retry from that day."""
+    conn = None
+    cursor = None
+    ts = recorded_at if recorded_at is not None else datetime.utcnow()
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO prices
+              (product_id, price, timestamp, availability, deal_flag,
+               used_price, list_price, sales_rank, count_new, count_used,
+               observed_on, source)
+            VALUES (%s, %s, %s, TRUE, FALSE, %s, %s, %s, %s, %s, %s, 'keepa_daily')
+            ON DUPLICATE KEY UPDATE
+              price = VALUES(price), timestamp = VALUES(timestamp),
+              availability = VALUES(availability), deal_flag = VALUES(deal_flag),
+              used_price = VALUES(used_price), list_price = VALUES(list_price),
+              sales_rank = VALUES(sales_rank), count_new = VALUES(count_new),
+              count_used = VALUES(count_used)
+            """,
+            (product_id, price, ts, used_price, list_price, sales_rank,
+             count_new, count_used, ts.date()),
+        )
+        conn.commit()
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+def get_all_products():
+    """Return each tracked product once for the daily shared refresh."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT product_id, asin, title FROM products ORDER BY product_id")
+        return cursor.fetchall()
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 def get_price_history(product_id, limit=100):
     conn = None
     cursor = None
