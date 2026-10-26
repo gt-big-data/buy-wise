@@ -7,6 +7,10 @@ import { isAmazonProductPage, extractASIN, extractProductImage } from "./amazon"
 import { extractOffers } from "./offers";
 import { BuyWiseData } from "../types";
 import "./styles.css";
+import Panel from "./Panel";
+import { pickFakeData } from "./fakeData";
+import { openOffersPanel } from "./offerPanel";
+import "./panel.css";
 
 let currentRoot: Root | null = null;
 let currentContainer: HTMLDivElement | null = null;
@@ -29,6 +33,34 @@ function createContainer(): HTMLDivElement {
   container.id = "buywise-root";
   document.body.appendChild(container);
   return container;
+}
+
+function mountFakePanel(): boolean {
+  if (!isAmazonProductPage()) return false;
+  removeExistingUI();
+  document.getElementById("buywise-root")?.remove();
+
+  currentContainer = document.createElement("div");
+  currentContainer.id = "buywise-root";
+
+  const buybox = document.querySelector("#desktop_buybox, #buybox");
+  if (buybox) {
+    buybox.insertAdjacentElement("beforebegin", currentContainer);
+  } else {
+    currentContainer.classList.add("bw-floating");
+    document.body.appendChild(currentContainer);
+  }
+
+  currentRoot = createRoot(currentContainer);
+  currentRoot.render(
+    <Panel
+      data={pickFakeData(window.location.href)}
+      markUrl={chrome.runtime.getURL("mark.png")}
+      onClose={removeExistingUI}
+      onSeeOffers={() => openOffersPanel()}
+    />
+  );
+  return true;
 }
 
 async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
@@ -160,12 +192,12 @@ async function mountFloatingPanel(): Promise<boolean> {
 function init(): void {
   console.log("BuyWise content script loaded");
   if (!isAmazonProductPage()) return;
-  window.setTimeout(() => { mountFloatingPanel(); }, 500);
+  window.setTimeout(() => { mountFakePanel(); }, 500);
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "BUYWISE_OPEN_PANEL") {
-    mountFloatingPanel().then((opened) => sendResponse({ opened }));
+    sendResponse({ opened: mountFakePanel() });
     return true;
   }
   if (message?.type === "BUYWISE_CLOSE_PANEL") {

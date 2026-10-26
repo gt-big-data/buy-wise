@@ -1,0 +1,152 @@
+/* Panel styles. Colors match website/app/globals.css, keep them in sync. */
+
+#buywise-root {
+  all: initial;
+  display: block;
+  margin: 12px 0;
+
+  --bw-paper: #f7f7f4;
+  --bw-card: #ffffff;
+  --bw-ink: #111311;
+  --bw-ink-2: #2c302d;
+  --bw-muted: #5f665f;
+  --bw-line: #e2e4df;
+  --bw-line-strong: #c9ccc6;
+  --bw-brand: #13853d;
+  --bw-brand-ink: #0e6b31;
+  --bw-caution: #8a6100;
+  --bw-radius: 6px;
+}
+
+#buywise-root.bw-floating {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  width: 320px;
+  margin: 0;
+}
+
+#buywise-root * {
+  box-sizing: border-box;
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+#buywise-root .bw-panel {
+  background: var(--bw-card);
+  border: 1px solid var(--bw-line-strong);
+  border-radius: var(--bw-radius);
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--bw-line);
+  font-size: 13px;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-name {
+  font-weight: 500;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-close {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--bw-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#buywise-root .bw-close:hover {
+  background: var(--bw-paper);
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-body {
+  padding: 14px;
+}
+
+#buywise-root .bw-headline {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+#buywise-root .bw-rows {
+  margin-top: 12px;
+  border-top: 1px solid var(--bw-line);
+  border-bottom: 1px solid var(--bw-line);
+  font-size: 14px;
+}
+
+#buywise-root .bw-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+#buywise-root .bw-rows > div + div {
+  border-top: 1px solid var(--bw-line);
+}
+
+#buywise-root dt {
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-note {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+#buywise-root .bw-strong {
+  font-weight: 500;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-good {
+  color: var(--bw-brand);
+}
+
+#buywise-root .bw-good-ink {
+  color: var(--bw-brand-ink);
+}
+
+#buywise-root .bw-caution {
+  color: var(--bw-caution);
+}
+
+#buywise-root .bw-button {
+  margin-top: 12px;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--bw-radius);
+  background: var(--bw-ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#buywise-root .bw-button:hover {
+  background: var(--bw-ink-2);
+}
