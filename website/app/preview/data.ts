@@ -3,17 +3,17 @@
 // sellers, ratings and track-record numbers are made up. No sentences live here:
 // all text is generated from these fields by copy.ts.
 
-import type { SkipReason, Status, Warranty } from "./copy";
+import { PROFILE_CHOICES, type SkipReason, type Status, type Warranty } from "./copy";
 
 export const TODAY = "2026-10-14";
 
 // The one shopper profile every screen reads from. Option lists are what the
 // first-run screen offers; the selected values are what the panel and dashboard show.
 export const PROFILE_OPTIONS = {
-  condition: ["Like new or better", "Any good condition", "New only"],
-  patience: ["Need it soon", "Can wait a week or two", "Will wait for a deal"],
-  alerts: ["On", "Only when I ask", "Off"],
-} as const;
+  condition: Object.values(PROFILE_CHOICES.condition),
+  patience: Object.values(PROFILE_CHOICES.patience),
+  alerts: Object.values(PROFILE_CHOICES.alerts),
+};
 
 export const profile = {
   condition: "New only" as (typeof PROFILE_OPTIONS.condition)[number],

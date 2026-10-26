@@ -114,3 +114,33 @@ export const PROFILE_LABEL = {
   prime: "Prime",
   minSaving: "Minimum saving shown",
 } as const;
+
+// First-run profile. The keys are what the extension stores on the device, so
+// the wording can change without breaking anyone's saved answers.
+export const PROFILE_CHOICES = {
+  condition: { like_new: "Like new or better", any_good: "Any good condition", new_only: "New only" },
+  patience: { soon: "Need it soon", week_or_two: "Can wait a week or two", deal: "Will wait for a deal" },
+  alerts: { on: "On", when_asked: "Only when I ask", off: "Off" },
+} as const;
+export type ProfileQuestion = keyof typeof PROFILE_CHOICES;
+export const PROFILE_QUESTION: Record<ProfileQuestion, string> = {
+  condition: "What condition would you buy?",
+  patience: "How patient are you?",
+  alerts: "Price alerts",
+};
+export const PROFILE_TEXT = {
+  welcome: "Welcome to BuyWise",
+  intro: "Three questions so BuyWise only speaks up when it matters to you. You can change them anytime.",
+  editTitle: "Your profile",
+  onDevice: "Stored on this device only.",
+  done: "Done",
+  skip: "Skip for now",
+  save: "Save",
+  saved: "Saved.",
+  allSet: "You're set. Open any Amazon product page and BuyWise will use these answers.",
+  skipped: "No problem. BuyWise will use the defaults below until you answer.",
+  edit: "Edit",
+  setUp: "Answer 3 questions",
+  notSetUp: "Not set up yet",
+} as const;
+export const assumedLine = (choice: string) => `Not answered. Using "${choice}" for now.`;

@@ -6,6 +6,8 @@ import {
 } from "../content/amazon";
 import ErrorState from "../components/ErrorState";
 import LoadingState from "../components/LoadingState";
+import { PROFILE_TEXT, profileSummary } from "../../../website/app/preview/copy";
+import { choiceText, loadProfile, resolvedAnswers, type StoredProfile } from "../profile";
 
 const BACKEND_URL = "http://localhost:8000";
 const USER_ID = 1;
@@ -44,10 +46,24 @@ const ACTION_LABEL: Record<string, string> = {
   added_to_watchlist: "Watching",
 };
 
+function profileSummaryFor(profile: StoredProfile): string {
+  const a = resolvedAnswers(profile.answers);
+  return profileSummary({
+    condition: choiceText("condition", a.condition),
+    patience: choiceText("patience", a.patience),
+    prime: false, // Prime is read from the page later (#77, Oct 30)
+  });
+}
+
 const App: React.FC = () => {
   const [popupState, setPopupState] = useState<PopupState>({ status: "loading" });
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [profile, setProfile] = useState<StoredProfile | null>(null);
+
+  useEffect(() => {
+    loadProfile().then(setProfile).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const loadPopup = async (): Promise<void> => {
@@ -213,6 +229,21 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* ── Profile ── */}
+          {profile && (
+            <div className="buywise-db-section">
+              <div className="buywise-db-section-header">
+                <span className="buywise-db-section-title">{PROFILE_TEXT.editTitle}</span>
+                <button type="button" className="buywise-db-link" onClick={() => chrome.runtime.openOptionsPage()}>
+                  {profile.seenAt ? PROFILE_TEXT.edit : PROFILE_TEXT.setUp}
+                </button>
+              </div>
+              <div className="buywise-db-profile">
+                {profile.seenAt ? profileSummaryFor(profile) : PROFILE_TEXT.notSetUp}
+              </div>
+            </div>
+          )}
 
           {/* ── Footer nudge ── */}
           <div className="buywise-db-footer">
