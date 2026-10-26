@@ -32,7 +32,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["logo.png"],
+      "resources": ["logo.png", "mark.png"],
       "matches": ["https://*.amazon.com/*"]
     }
   ]
