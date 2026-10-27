@@ -4,8 +4,12 @@
 
 const BACKEND_URL = "http://localhost:8000";
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(({ reason }) => {
   console.log("BuyWise extension installed");
+  // Ask the three profile questions once, on a fresh install only (not on updates).
+  if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    chrome.tabs.create({ url: chrome.runtime.getURL("profile.html?welcome") });
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
