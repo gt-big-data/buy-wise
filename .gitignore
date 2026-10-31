@@ -23,3 +23,7 @@ env/
 
 # Semester plan is a working proposal between the leads, kept out of the repo.
 PLAN.md
+
+studies/review_counts.csv
+studies/reviews_pulled.*
+studies/sentiment_scores.csv
