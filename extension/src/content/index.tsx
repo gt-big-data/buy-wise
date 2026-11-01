@@ -45,13 +45,8 @@ function mountFakePanel(data: PanelData): boolean {
   currentContainer = document.createElement("div");
   currentContainer.id = "buywise-root";
 
-  const buybox = document.querySelector("#desktop_buybox, #buybox");
-  if (buybox) {
-    buybox.insertAdjacentElement("beforebegin", currentContainer);
-  } else {
-    currentContainer.classList.add("bw-floating");
-    document.body.appendChild(currentContainer);
-  }
+  currentContainer.classList.add("bw-floating");
+  document.body.appendChild(currentContainer);
 
   currentRoot = createRoot(currentContainer);
   currentRoot.render(
@@ -216,15 +211,11 @@ function followVariantChanges(): void {
 function init(): void {
   console.log("BuyWise content script loaded");
   if (!isAmazonProductPage()) return;
-  window.setTimeout(() => { mountFloatingPanel(); }, 500);
+  window.setTimeout(() => { showPanel(); }, 500);
   followVariantChanges();
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "BUYWISE_OPEN_PANEL") {
-    showPanel().then((opened) => sendResponse({ opened }));
-    return true;
-  }
   if (message?.type === "BUYWISE_OPEN_PANEL") {
     showPanel().then((opened) => sendResponse({ opened }));
     return true;

@@ -1,9 +1,11 @@
+type Offer = { seller: string; condition: string; price: number; arrives: string; daysOut: number };
+
 export type PanelData =
   | {
       state: "better_offer";
       offersChecked: number;
-      amazon: { price: number };
-      best: { seller: string; price: number; stars: number; years: number; freeReturns: boolean; fullWarranty: boolean };
+      amazon: Offer;
+      best: Offer & { stars: number; years: number; freeReturns: boolean; fullWarranty: boolean };
     }
   | {
       state: "wait";
@@ -24,8 +26,18 @@ export const FAKE: Record<PanelData["state"], PanelData> = {
   better_offer: {
     state: "better_offer",
     offersChecked: 28,
-    amazon: { price: 449.99 },
-    best: { seller: "TrailTech Outfitters", price: 369.0, stars: 4.8, years: 7, freeReturns: true, fullWarranty: false },
+    amazon: { seller: "Amazon.com", condition: "New", price: 449.99, arrives: "Tue, Nov 3", daysOut: 2 },
+    best: {
+      seller: "TrailTech Outfitters",
+      condition: "New",
+      price: 369.0,
+      arrives: "Thu, Nov 5",
+      daysOut: 4,
+      stars: 4.8,
+      years: 7,
+      freeReturns: true,
+      fullWarranty: false,
+    },
   },
   wait: {
     state: "wait",

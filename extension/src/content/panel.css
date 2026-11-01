@@ -23,8 +23,12 @@
   top: 16px;
   right: 16px;
   z-index: 2147483647;
-  width: 320px;
+  width: 340px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   margin: 0;
+  border-radius: var(--bw-radius);
+  box-shadow: 0 8px 24px rgb(17 19 17 / 0.16);
 }
 
 #buywise-root * {
@@ -154,4 +158,40 @@
 #buywise-root dt {
   color: var(--bw-muted);
   font-weight: 400;
+}
+
+#buywise-root .bw-compare {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#buywise-root .bw-offer {
+  padding: 10px;
+  border: 1px solid var(--bw-line);
+  border-radius: var(--bw-radius);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-offer--best {
+  border-color: var(--bw-ink);
+}
+
+#buywise-root .bw-offer-label {
+  font-weight: 500;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-offer-price {
+  margin-top: 4px;
+  font-size: 17px;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-offer-seller {
+  margin-top: 4px;
+  color: var(--bw-ink-2);
 }

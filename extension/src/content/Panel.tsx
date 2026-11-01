@@ -32,23 +32,38 @@ export default function Panel({ data, markUrl, onClose, onSeeOffers }: Props) {
 
 function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: "better_offer" }>; onSeeOffers: () => void }) {
   const { amazon, best } = data;
+  const daysLater = best.daysOut - amazon.daysOut;
+
+  let reason = `${best.condition}, ${money(amazon.price - best.price)} less. ${best.seller} has ${best.stars} stars over ${best.years} years`;
+  reason += best.freeReturns ? " and free returns." : ".";
+  if (daysLater > 0) reason += ` Arrives ${daysLater} day${daysLater > 1 ? "s" : ""} later.`;
+
   return (
     <>
       <p className="bw-headline">
-        Same item, new, <span className="bw-good">{money(amazon.price - best.price)} less</span> from another seller.
+        Same item, <span className="bw-good">{money(amazon.price - best.price)} less</span> from another seller.
       </p>
-      <dl className="bw-rows">
-        <div>
-          <dt>Amazon.com, new</dt>
-          <dd className="bw-mono">{money(amazon.price)}</dd>
+      <div className="bw-compare">
+        <div className="bw-offer">
+          <p className="bw-offer-label">Amazon's pick</p>
+          <p className="bw-offer-price bw-mono">{money(amazon.price)}</p>
+          <p className="bw-offer-seller">{amazon.seller}</p>
+          <p className="bw-offer-meta">
+            {amazon.condition}, arrives {amazon.arrives}
+          </p>
         </div>
-        <div>
-          <dt className="bw-strong">{best.seller}, new</dt>
-          <dd className="bw-mono bw-strong bw-good-ink">{money(best.price)}</dd>
+        <div className="bw-offer bw-offer--best">
+          <p className="bw-offer-label">Best for you</p>
+          <p className="bw-offer-price bw-mono bw-good-ink">{money(best.price)}</p>
+          <p className="bw-offer-seller">{best.seller}</p>
+          <p className="bw-offer-meta">
+            {best.condition}, arrives {best.arrives}
+          </p>
         </div>
-      </dl>
+      </div>
       <p className="bw-note">
-        {best.stars} stars, {best.years} years selling{best.freeReturns ? ", free returns" : ""}.{" "}
+        <span className="bw-strong">Why: </span>
+        {reason}{" "}
         {!best.fullWarranty && <span className="bw-caution">May not include the manufacturer warranty.</span>}
       </p>
       <button type="button" className="bw-button" onClick={onSeeOffers}>
