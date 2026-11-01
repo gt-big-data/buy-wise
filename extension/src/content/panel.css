@@ -195,3 +195,73 @@
   margin-top: 4px;
   color: var(--bw-ink-2);
 }
+
+#buywise-root .bw-watch {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bw-line);
+  font-size: 13px;
+}
+
+#buywise-root .bw-watch-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-watch-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#buywise-root .bw-money-input {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--bw-line-strong);
+  border-radius: var(--bw-radius);
+  font-size: 14px;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-money-input:focus-within {
+  border-color: var(--bw-ink);
+}
+
+#buywise-root .bw-money-input input {
+  width: 64px;
+  margin-left: 2px;
+  border: 0;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-button--inline {
+  margin-top: 0;
+}
+
+#buywise-root .bw-button:disabled {
+  background: var(--bw-line-strong);
+  cursor: default;
+}
+
+#buywise-root .bw-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--bw-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+#buywise-root .bw-link:hover {
+  color: var(--bw-ink);
+}

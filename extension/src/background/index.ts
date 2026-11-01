@@ -55,6 +55,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch(() => {});
     return false;
   }
+  if (message?.type === "BUYWISE_TEST_ALERT") {
+    const target = `$${Number(message.target).toFixed(2)}`;
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: "logo.png",
+      title: `Price drop: ${message.title.slice(0, 60)}`,
+      message: `Now ${target}, at your target. Open BuyWise to see it.`,
+    });
+    return false;
+  }
 
   if (message?.type === "BUYWISE_WATCHLIST_ADD") {
     const { asin } = message;
@@ -79,4 +89,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   return false;
+});
+
+chrome.notifications.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
 });
