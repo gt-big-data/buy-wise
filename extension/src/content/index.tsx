@@ -222,7 +222,7 @@ function init(): void {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "BUYWISE_OPEN_PANEL") {
-    sendResponse({ opened: mountFakePanel() });
+    showPanel().then((opened) => sendResponse({ opened }));
     return true;
   }
   if (message?.type === "BUYWISE_OPEN_PANEL") {
