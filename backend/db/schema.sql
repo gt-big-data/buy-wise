@@ -77,7 +77,7 @@ CREATE TABLE user_activity (
 
 CREATE TABLE watchlist (
     watchlist_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id VARCHAR(100) NOT NULL,
     product_id INT NOT NULL,
     recommendation_at_add ENUM('BUY', 'WAIT') NOT NULL,
     target_price DECIMAL(10,2),

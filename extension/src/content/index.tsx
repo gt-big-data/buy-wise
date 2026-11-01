@@ -8,12 +8,13 @@ import { extractOffers } from "./offers";
 import { BuyWiseData } from "../types";
 import "./styles.css";
 import Panel from "./Panel";
-import { pickFakeData } from "./fakeData";
 import { openOffersPanel } from "./offerPanel";
 import "./panel.css";
+import { pickFakeData, PanelData } from "./fakeData";
 
 let currentRoot: Root | null = null;
 let currentContainer: HTMLDivElement | null = null;
+let currentAsin: string | null = null;
 
 function removeExistingUI(): void {
   if (currentRoot) {
@@ -24,6 +25,7 @@ function removeExistingUI(): void {
     currentContainer.parentNode.removeChild(currentContainer);
   }
   currentContainer = null;
+  currentAsin = null;
 }
 
 function createContainer(): HTMLDivElement {
@@ -35,7 +37,7 @@ function createContainer(): HTMLDivElement {
   return container;
 }
 
-function mountFakePanel(): boolean {
+function mountFakePanel(data: PanelData): boolean {
   if (!isAmazonProductPage()) return false;
   removeExistingUI();
   document.getElementById("buywise-root")?.remove();
@@ -54,13 +56,19 @@ function mountFakePanel(): boolean {
   currentRoot = createRoot(currentContainer);
   currentRoot.render(
     <Panel
-      data={pickFakeData(window.location.href)}
+      data={data}
       markUrl={chrome.runtime.getURL("mark.png")}
       onClose={removeExistingUI}
       onSeeOffers={() => openOffersPanel()}
     />
   );
   return true;
+}
+
+async function showPanel(): Promise<boolean> {
+  const fake = pickFakeData(window.location.href);
+  if (fake) return mountFakePanel(fake);
+  return mountFloatingPanel();
 }
 
 async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
@@ -100,10 +108,12 @@ async function mountFloatingPanel(): Promise<boolean> {
   // console.log("BuyWise offers: ", extractOffers());
 
   removeExistingUI();
+  currentAsin = asin;
   currentContainer = createContainer();
-  currentRoot = createRoot(currentContainer);
+  const root = createRoot(currentContainer);
+  currentRoot = root;
 
-  currentRoot.render(
+  root.render(
     <div className="buywise-floating-shell">
       <LoadingState />
     </div>
@@ -113,9 +123,11 @@ async function mountFloatingPanel(): Promise<boolean> {
   try {
     data = await fetchBuyWiseData(asin);
   } catch (err) {
+    // The shopper picked another variant or closed the panel while this loaded
+    if (root !== currentRoot) return true;
     console.error("BuyWise: failed to fetch data", err);
     const isNotTracked = err instanceof Error && err.message === "not_tracked";
-    currentRoot.render(
+    root.render(
       <div className="buywise-floating-shell">
         <ErrorState
           title={isNotTracked ? "Product not tracked" : "Couldn't load recommendation"}
@@ -130,6 +142,8 @@ async function mountFloatingPanel(): Promise<boolean> {
     );
     return true;
   }
+
+  if (root !== currentRoot) return true;
 
   const handleClose = () => removeExistingUI();
 
@@ -173,8 +187,7 @@ async function mountFloatingPanel(): Promise<boolean> {
     });
   };
 
-  
-  currentRoot.render(
+  root.render(
     <BuyWisePanel
       data={data}
       onClose={handleClose}
@@ -189,15 +202,31 @@ async function mountFloatingPanel(): Promise<boolean> {
   return true;
 }
 
+// Picking a color or size swaps the product in place without reloading the
+// page, so the panel would keep showing the old variant (#73). Follow it while
+// the panel is open; a closed panel stays closed.
+function followVariantChanges(): void {
+  window.setInterval(() => {
+    if (!currentContainer || !currentAsin) return;
+    const asin = extractASIN();
+    if (asin && asin !== currentAsin) mountFloatingPanel();
+  }, 1000);
+}
+
 function init(): void {
   console.log("BuyWise content script loaded");
   if (!isAmazonProductPage()) return;
-  window.setTimeout(() => { mountFakePanel(); }, 500);
+  window.setTimeout(() => { mountFloatingPanel(); }, 500);
+  followVariantChanges();
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "BUYWISE_OPEN_PANEL") {
     sendResponse({ opened: mountFakePanel() });
+    return true;
+  }
+  if (message?.type === "BUYWISE_OPEN_PANEL") {
+    showPanel().then((opened) => sendResponse({ opened }));
     return true;
   }
   if (message?.type === "BUYWISE_CLOSE_PANEL") {

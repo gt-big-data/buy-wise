@@ -43,7 +43,7 @@ export const FAKE: Record<PanelData["state"], PanelData> = {
   },
 };
 
-export function pickFakeData(url: string): PanelData {
+export function pickFakeData(url: string): PanelData | null {
   const state = new URL(url).searchParams.get("bw_state");
-  return state && state in FAKE ? FAKE[state as PanelData["state"]] : FAKE.nothing_better;
+  return state && state in FAKE ? FAKE[state as PanelData["state"]] : null;
 }

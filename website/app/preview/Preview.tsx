@@ -6,6 +6,8 @@ import {
   LABEL,
   OFFER_TAG,
   PROFILE_LABEL,
+  PROFILE_QUESTION,
+  PROFILE_TEXT,
   SKIP,
   STATUS,
   WARRANTY,
@@ -500,23 +502,23 @@ function FirstRun() {
     <div className="w-full max-w-[380px] rounded-ui border border-line-strong bg-card p-5">
       <div className="flex items-center gap-2">
         <Image src="/mark.png" alt="" width={20} height={22} />
-        <span className="font-semibold">Welcome to BuyWise</span>
+        <span className="font-semibold">{PROFILE_TEXT.welcome}</span>
       </div>
-      <p className="mt-2 text-[13.5px] text-muted">Three questions so BuyWise only speaks up when it matters to you. You can change them anytime.</p>
+      <p className="mt-2 text-[13.5px] text-muted">{PROFILE_TEXT.intro}</p>
       <div className="mt-4">
-        <Choice q="What condition would you buy?" options={PROFILE_OPTIONS.condition} selected={profile.condition} />
-        <Choice q="How patient are you?" options={PROFILE_OPTIONS.patience} selected={profile.patience} />
-        <Choice q="Price alerts" options={PROFILE_OPTIONS.alerts} selected={profile.alerts} />
+        <Choice q={PROFILE_QUESTION.condition} options={PROFILE_OPTIONS.condition} selected={profile.condition} />
+        <Choice q={PROFILE_QUESTION.patience} options={PROFILE_OPTIONS.patience} selected={profile.patience} />
+        <Choice q={PROFILE_QUESTION.alerts} options={PROFILE_OPTIONS.alerts} selected={profile.alerts} />
       </div>
       <div className="border-t border-line pt-4 text-[12.5px] text-muted">
         <p>
           {PROFILE_LABEL.prime}: {profile.prime ? "Yes" : "No"} (detected)
         </p>
-        <p className="mt-1">Stored on this device only.</p>
+        <p className="mt-1">{PROFILE_TEXT.onDevice}</p>
       </div>
       <div className="mt-4 flex items-center gap-3">
-        <Btn>Done</Btn>
-        <Btn kind="link">Skip for now</Btn>
+        <Btn>{PROFILE_TEXT.done}</Btn>
+        <Btn kind="link">{PROFILE_TEXT.skip}</Btn>
       </div>
     </div>
   );
@@ -619,7 +621,7 @@ function Dashboard() {
               <span>{v}</span>
             </div>
           ))}
-          <p className="py-3 text-[12px] text-faint">Stored on this device only.</p>
+          <p className="py-3 text-[12px] text-faint">{PROFILE_TEXT.onDevice}</p>
         </div>
       )}
     </div>

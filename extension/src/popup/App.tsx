@@ -6,9 +6,10 @@ import {
 } from "../content/amazon";
 import ErrorState from "../components/ErrorState";
 import LoadingState from "../components/LoadingState";
-
-const BACKEND_URL = "http://localhost:8000";
-const USER_ID = 1;
+import { PROFILE_TEXT, profileSummary } from "../../../website/app/preview/copy";
+import { choiceText, loadProfile, resolvedAnswers, type StoredProfile } from "../profile";
+import { BACKEND_URL } from "../config";
+import { getUserId } from "../userId";
 
 type PopupState =
   | { status: "loading" }
@@ -44,10 +45,24 @@ const ACTION_LABEL: Record<string, string> = {
   added_to_watchlist: "Watching",
 };
 
+function profileSummaryFor(profile: StoredProfile): string {
+  const a = resolvedAnswers(profile.answers);
+  return profileSummary({
+    condition: choiceText("condition", a.condition),
+    patience: choiceText("patience", a.patience),
+    prime: false, // Prime is read from the page later (#77, Oct 30)
+  });
+}
+
 const App: React.FC = () => {
   const [popupState, setPopupState] = useState<PopupState>({ status: "loading" });
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [profile, setProfile] = useState<StoredProfile | null>(null);
+
+  useEffect(() => {
+    loadProfile().then(setProfile).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const loadPopup = async (): Promise<void> => {
@@ -61,9 +76,10 @@ const App: React.FC = () => {
           setPopupState({ status: "non-product" });
           setDashboardLoading(true);
           try {
+            const userId = encodeURIComponent(await getUserId());
             const [watchlistRes, activityRes] = await Promise.all([
-              fetch(`${BACKEND_URL}/watchlist/${USER_ID}`),
-              fetch(`${BACKEND_URL}/activity/recent?user_id=${USER_ID}&limit=10`),
+              fetch(`${BACKEND_URL}/watchlist/${userId}`),
+              fetch(`${BACKEND_URL}/activity/recent?user_id=${userId}&limit=10`),
             ]);
             const watchlistData = watchlistRes.ok ? await watchlistRes.json() : { watchlist: [] };
             const activityData = activityRes.ok ? await activityRes.json() : { items: [] };
@@ -213,6 +229,21 @@ const App: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* ── Profile ── */}
+          {profile && (
+            <div className="buywise-db-section">
+              <div className="buywise-db-section-header">
+                <span className="buywise-db-section-title">{PROFILE_TEXT.editTitle}</span>
+                <button type="button" className="buywise-db-link" onClick={() => chrome.runtime.openOptionsPage()}>
+                  {profile.seenAt ? PROFILE_TEXT.edit : PROFILE_TEXT.setUp}
+                </button>
+              </div>
+              <div className="buywise-db-profile">
+                {profile.seenAt ? profileSummaryFor(profile) : PROFILE_TEXT.notSetUp}
+              </div>
+            </div>
+          )}
 
           {/* ── Footer nudge ── */}
           <div className="buywise-db-footer">

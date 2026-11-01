@@ -150,3 +150,8 @@
 #buywise-root .bw-button:hover {
   background: var(--bw-ink-2);
 }
+
+#buywise-root dt {
+  color: var(--bw-muted);
+  font-weight: 400;
+}
