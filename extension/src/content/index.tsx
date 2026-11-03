@@ -4,7 +4,7 @@ import BuyWisePanel from "../components/BuyWisePanel";
 import LoadingState from "../components/LoadingState";
 import ErrorState from "../components/ErrorState";
 import { isAmazonProductPage, extractASIN, extractProductImage } from "./amazon";
-import { extractOffers } from "./offers";
+import { extractOffers, PageOffers } from "./offers";
 import { BuyWiseData } from "../types";
 import "./styles.css";
 import Panel from "./Panel";
@@ -48,16 +48,39 @@ function mountFakePanel(data: PanelData): boolean {
   currentContainer.classList.add("bw-floating");
   document.body.appendChild(currentContainer);
 
-  currentRoot = createRoot(currentContainer);
-  currentRoot.render(
-    <Panel
-      data={data}
-      markUrl={chrome.runtime.getURL("mark.png")}
-      onClose={removeExistingUI}
-      onSeeOffers={() => openOffersPanel()}
-    />
-  );
+  const root = createRoot(currentContainer);
+  currentRoot = root;
+  const render = (offers: PageOffers) =>
+    root.render(
+      <Panel
+        data={data}
+        markUrl={chrome.runtime.getURL("mark.png")}
+        onClose={removeExistingUI}
+        onSeeOffers={() => openOffersPanel()}
+        offers={offers}
+      />
+    );
+  render(extractOffers());
+  // Amazon fills in the "Other sellers" box after the page loads; re-read once it's there
+  whenOtherSellersLoad(() => {
+    if (root === currentRoot) render(extractOffers());
+  });
   return true;
+}
+
+const OTHER_SELLERS_WAIT_MS = 10000;
+
+function whenOtherSellersLoad(onLoad: () => void): void {
+  if (extractOffers().otherOffersCount !== null) return;
+  const started = Date.now();
+  const timer = window.setInterval(() => {
+    if (extractOffers().otherOffersCount !== null) {
+      window.clearInterval(timer);
+      onLoad();
+    } else if (Date.now() - started > OTHER_SELLERS_WAIT_MS) {
+      window.clearInterval(timer);
+    }
+  }, 500);
 }
 
 async function showPanel(): Promise<boolean> {

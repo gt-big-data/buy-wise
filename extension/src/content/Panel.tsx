@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { PanelData } from "./fakeData";
+import { PageOffers } from "./offers";
+import OffersSection from "./OffersSection";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
@@ -8,25 +10,38 @@ type Props = {
   markUrl: string;
   onClose: () => void;
   onSeeOffers: () => void;
+  offers?: PageOffers;
 };
 
-export default function Panel({ data, markUrl, onClose, onSeeOffers }: Props) {
+export default function Panel({ data, markUrl, onClose, onSeeOffers, offers }: Props) {
+  const [minimized, setMinimized] = useState(false);
+
+  // Stays mounted while minimized so the offer list keeps updating behind the chip
   return (
-    <div className="bw-panel">
-      <div className="bw-head">
-        <img src={markUrl} alt="" width={16} height={18} />
-        <span className="bw-name">BuyWise</span>
-        <span>checked {data.offersChecked} offers</span>
-        <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
-          ×
+    <>
+      {minimized && (
+        <button type="button" className="bw-chip" onClick={() => setMinimized(false)}>
+          <img src={markUrl} alt="" width={14} height={16} />
+          BuyWise
         </button>
+      )}
+      <div className="bw-panel" hidden={minimized}>
+        <div className="bw-head">
+          <img src={markUrl} alt="" width={16} height={18} />
+          <span className="bw-name">BuyWise</span>
+          <span>checked {data.offersChecked} offers</span>
+          <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="bw-body">
+          {data.state === "better_offer" && <BetterOffer data={data} onSeeOffers={onSeeOffers} />}
+          {data.state === "wait" && <Wait data={data} />}
+          {data.state === "nothing_better" && <NothingBetter data={data} />}
+        </div>
+        {offers && <OffersSection offers={offers} onCompareOpen={() => setMinimized(true)} />}
       </div>
-      <div className="bw-body">
-        {data.state === "better_offer" && <BetterOffer data={data} onSeeOffers={onSeeOffers} />}
-        {data.state === "wait" && <Wait data={data} />}
-        {data.state === "nothing_better" && <NothingBetter data={data} />}
-      </div>
-    </div>
+    </>
   );
 }
 
