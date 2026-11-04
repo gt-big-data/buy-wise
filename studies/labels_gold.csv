@@ -1,0 +1,51 @@
+parent_asin,asin_a,asin_b,gold,topics,source,reason
+B00OUUX058,B00DI89WDW,B00DI89X7M,No real difference,,agreed,
+B00PKTU83U,B00NJ2M33I,B00NJ2M43M,A is worse,sound; sound quality,agreed,
+B00QUG4XL0,B00Q6P4CMA,B00JG2WRUO,B is worse,durability; reliability,agreed,
+B014HNC9A4,B07F1FXPH1,B00TKF53LC,A is worse,sound; sound quality,agreed,
+B01KBEOL5E,B01KBEOL5E,B07M9KPR1P,B is worse,fit; mounting hardware fit; sturdiness,agreed,
+B01LWPGB6C,B01D5H8P0G,B01D5H8PQ0,A is worse,noise; sound quality,agreed,
+B01MDKJXCH,B01D5H8JW0,B01D5H8KO2,No real difference,,agreed,
+B076H7HV8B,B07588K6PB,B0758CSSF2,No real difference,,miguel,stripping 2 vs 1 and CL2 marking 3 vs 2; same wire in different lengths
+B0771VF9TJ,B01LMVIS18,B01HGM33HG,A is worse,app,agreed,
+B0787KLT56,B0746RBK2M,B0787HVXKQ,A is worse,durability; reliability,agreed,
+B079HBKGSW,B00846E7JW,B00B1EO1Z4,No real difference,,agreed,
+B07CQMZVZ6,B000AJIF4E,B0002H02ZY,No real difference,,agreed,
+B07H71N1LN,B06XTX2S2N,B06XFTWCBJ,No real difference,,agreed,
+B07HH6X34D,B07HH1QSLB,B07HH23P69,A is worse,reliability; sound; sound quality,agreed,
+B07QKX28XR,B07QKYTGH9,B07QKT3BKR,B is worse,durability; bass,claude,B early failures or loose connectors 5 vs 1 and weak bass 3 vs 1; A cable issues split into tangling 2 short 1 length 1
+B07S764D9V,B07J4WHNFC,B003EM8008,A is worse,durability; reliability; sound,agreed,
+B07T2WGJ77,B07Q7DM9HP,B07NSJMSK3,B is worse,durability; usb charging,claude,B USB ports failing 3 vs 1 and whole unit failures 3 vs 1
+B0819W2H7V,B00LM2Y2U4,B015PZ7QO2,Mixed,durability; sound; sound quality,agreed,
+B0891Z6HWT,B087JVV8FK,B087JWTWF9,No real difference,,agreed,
+B08HTMG8SP,B07MTRQ6B3,B08FM2MXZC,No real difference,,agreed,
+B08LZKCGQ6,B08KW1KR5H,B08KVXPMBF,No real difference,,agreed,
+B08MZ81BYY,B08G84P8ZX,B08BJ64D47,A is worse,sturdiness,agreed,
+B095J3HLGN,B08WM3LMJF,B08WM1V5P1,No real difference,,agreed,
+B0964C3B3F,B07TMH18YG,B0766CHN7C,No real difference,,agreed,
+B096GT8CJH,B07YPXLCDV,B07Q6ZWMLR,No real difference,,agreed,
+B099RGJG9D,B0822DDMQY,B096XT6R4C,B is worse,adhesion; grip,agreed,
+B09G9KFQ54,B076JJ3N1T,B07Z5DZM31,No real difference,,agreed,
+B09GFWZGK8,B094NC89P9,B094N7YJM5,No real difference,,agreed,
+B09H23TPRY,B07431YDWM,B07XP88QGM,No real difference,,agreed,
+B09LHJRPVL,B09BF64J55,B09HC4441Y,B is worse,connectivity,claude,B bluetooth dropouts or audio lag 4 vs 0; noise cancelling complaints similar
+B09MFJQBYR,B01N0782B3,B01N3U9SJG,No real difference,,agreed,
+B09MMWM2Y8,B07QDPXCSH,B07QK2SPP7,No real difference,,agreed,
+B09PRC3WC5,B09FT58QQP,B09N3RYJ66,B is worse,durability,claude,B buds dying within weeks 4 vs 1; touch and battery complaints similar
+B09XYMSZLL,B00DOMYL24,B079RKX5ZL,No real difference,,agreed,
+B0B3ZKBJ8V,B09YLFHFDW,B09YLCXLKY,B is worse,connectivity; reliability; sound,agreed,
+B0B8YC6MGW,B09LYF2ST7,B0B8YNRS6D,B is worse,durability; noise cancelling,agreed,
+B0B95V4ZBW,B0B6GHW1SX,B0B6G9TPNQ,Mixed,connectivity; fit,claude,A pairing or dropout 6 vs 2 and B small cups or clamping or slipping 3 vs 0; may be noise if versions are only colors
+B0BF4SSL82,B09SG2Q23M,B09SG3GV43,B is worse,usb charging; usb ports,agreed,
+B0BGK79RXL,B0B4MWCFV4,B0B4MZWCXK,B is worse,battery; tracking accuracy,agreed,
+B0BGK8R2SG,B0B4N7LSM6,B0B4N2T7GL,A is worse,durability,claude,A units dead or not charging 3 vs 1; sync and missing features similar
+B0BJ9PRHZ3,B0B1LVC5VZ,B0B1LPNDGF,A is worse,connectivity,claude,A pairing or connection failures 6 vs 1; fit sound and noise cancelling under 2x
+B0BM8R3GSB,B09QGR8FM7,B09QHHTV36,No real difference,,claude,reviews discuss build quality and both are praised; almost no complaints either side
+B0BP28CLNX,B08NP57YRG,B08NP2TLL3,No real difference,,agreed,
+B0BTYRKJM4,B092J8LPWR,B092YTLYC7,B is worse,usb charging,claude,B slow or dead USB charging 4 vs 2; A socket and cord defects only 2
+B0BW4PFM58,B010OYASRG,B013TL8CNS,A is worse,battery,agreed,
+B0BXL2H5PD,B093GCL18V,B0925RMK9H,B is worse,reliability; stand,agreed,
+B0BXM4RTZ4,B075WWSMFN,B07BB5FDS2,No real difference,,agreed,
+B0BYFHJWHC,B084S748F9,B018E6KHTA,No real difference,,agreed,
+B0C1JGLV8T,B000N99BBC,B001EVGIYG,B is worse,connectivity,claude,B switch failing to pass traffic 3 vs 1; power supply noise 1 vs 1
+B0C235B94P,B0828BJGD2,B09N9VRCZV,A is worse,defects; reliability,agreed,
