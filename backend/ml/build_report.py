@@ -112,12 +112,14 @@ def build_snapshot(source_path: Path) -> str:
     # Save snapshot copy
     snapshot_csv = snap_dir / "Prices.csv"
     raw_df.to_csv(snapshot_csv, index=False)
+    output_hash = _compute_hash(snapshot_csv)
 
     # Generate markdown report
     current_time_utc = datetime.now(timezone.utc).isoformat()
     report_content = f"""# Data Snapshot Report: `{snap_id}`
 
 - **Created At:** {current_time_utc} UTC
+- **Output Hash:** `{output_hash}`
 - **Source File:** `{source_path.name}`
 - **Date Range:** {date_min.date()} to {date_max.date()} ({date_span_days} days)
 
@@ -138,6 +140,7 @@ def build_snapshot(source_path: Path) -> str:
     report_path = snap_dir / "report.md"
     report_path.write_text(report_content)
     print(f"Snapshot created: {snap_dir}")
+    print(f"Output Hash: {output_hash}")
     print(f"Report written: {report_path}")
     return snap_id
 
