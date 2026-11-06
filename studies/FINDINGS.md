@@ -333,6 +333,26 @@ The 357,817 rows overstate it: the file is one row per day with the last price c
 
 ---
 
+### Study 018 — Better ranking, same dollars: can we point the model at the money?
+`python -m ml.evaluate --folds walk --ci --save --tag weighted ...`, then `s018_dollar_policies.py`. These are paired comparisons over four windows.
+
+Tuned models rank better than the served recipe (CatBoost on 26 features: PR-AUC +0.036), but catch no more dollars, because the gains are on cheap items (Study 017). Two attempts to fix that:
+
+**1. Train and tune with each decision weighted by price (or √price): no help.** No weighted model catches more than its unweighted version at any wait rate. Full price weighting also costs PR-AUC (−0.017 for both models). The model already ranks expensive items well (PR-AUC 0.68 on items over $200), so weighting mostly adds noise from a few products.
+
+**2. Rank by chance × price instead of chance alone: more dollars, but more wrong WAITs.**
+
+| CatBoost tuned, 26 features | Precision @20% | $ caught (buys at the low) | $ no alert (buys on day 14) |
+|---|---|---|---|
+| Ranked by chance | **54.1%** | $4.76 | **$3.44** |
+| Ranked by chance × price | 42.9% | **$5.58** | $2.57 |
+
+Ranking by chance × price beats the served recipe by $0.65–1.07 per decision when the shopper buys at the 14-day low. **But precision drops about 11 points, and if the shopper just buys on day 14 it's worse** ($2.57 vs $3.44 at 20%), because a wrong WAIT on an expensive item often means paying more later. The extra dollars only exist if alerts reliably catch the dip, which Study 007 says they don't fully (weekly checking keeps about 78%).
+
+**Recommendation: keep ranking by chance.** False positives cost real money on expensive items, so precision matters more than the headline "$ caught". Tuned CatBoost on 26 features has the best precision and ranking we've measured, and ties the served recipe on dollars. False positives are controlled the way serving already does it: WAIT only when the calibrated chance clears a threshold (`MIN_DROP_CHANCE`, currently 40%). Raising it trades fewer WAITs for more correct ones.
+
+---
+
 ## 4. What this adds up to
 
 **The bad news.** What we shipped doesn't work. A model at lift 1.05 is a coin flip wearing a confidence score. Had we deployed to real users we'd have been giving random advice with an authoritative-looking percentage attached.
