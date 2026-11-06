@@ -38,9 +38,35 @@ ul {
 }
 
 .db-sample {
-  margin-left: auto;
   font-size: 12.5px;
   color: #5f665f;
+}
+
+.db-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.db-button--small {
+  margin-top: 0;
+  height: 30px;
+  font-size: 13px;
+}
+
+.db-button:disabled {
+  color: #5f665f;
+  cursor: default;
+}
+
+a.db-item-title {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.db-item-title:hover {
+  text-decoration: underline;
 }
 
 section {

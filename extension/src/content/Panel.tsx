@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { PanelData } from "./fakeData";
+import { extractASIN } from "./amazon";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
@@ -91,18 +92,33 @@ function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
       </dl>
       <p className="bw-note">
         It dropped {data.drops} times in the last {data.months} months. No other seller has it cheaper right now.
-        <WatchFlow price={data.price} expectedLow={data.expectedLow} />
+        <WatchFlow expectedLow={data.expectedLow} />
       </p>
     </>
   );
 }
-
-// Tap Watch, set a target, get notified. Nothing is saved yet; that's #74.
-function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number }) {
-  const [step, setStep] = useState<"start" | "target" | "watching">("start");
+// Tap Watch, set a target, get notified. The target is saved to the backend's
+// watchlist, and the background script checks prices against it (#74).
+function WatchFlow({ expectedLow }: { expectedLow: number }) {
+  const [step, setStep] = useState<"start" | "target" | "saving" | "watching">("start");
   const [target, setTarget] = useState(String(Math.round(expectedLow)));
+  const [error, setError] = useState<string | null>(null);
   const targetPrice = Number(target);
-  const validTarget = targetPrice > 0 && targetPrice < price;
+
+  async function watch() {
+    setStep("saving");
+    setError(null);
+    const asin = extractASIN();
+    const res = await chrome.runtime
+      .sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin, target_price: targetPrice })
+      .catch(() => null);
+    if (res?.ok) {
+      setStep("watching");
+    } else {
+      setError(res?.error?.includes("not found") ? "BuyWise doesn't track this product yet." : "Couldn't save. Is the backend running?");
+      setStep("target");
+    }
+  }
 
   if (step === "start") {
     return (
@@ -112,7 +128,7 @@ function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number 
     );
   }
 
-  if (step === "target") {
+  if (step === "target" || step === "saving") {
     return (
       <div className="bw-watch">
         <label className="bw-watch-label" htmlFor="bw-target">
@@ -129,13 +145,11 @@ function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number 
               onChange={(e) => setTarget(e.target.value.replace(/[^0-9.]/g, ""))}
             />
           </span>
-          <button type="button" className="bw-button bw-button--inline" disabled={!validTarget} onClick={() => setStep("watching")}>
-            Watch
+          <button type="button" className="bw-button bw-button--inline" disabled={!(targetPrice > 0) || step === "saving"} onClick={watch}>
+            {step === "saving" ? "Saving..." : "Watch"}
           </button>
         </div>
-        <p className="bw-note">
-          {validTarget ? `Expected low is ${money(expectedLow)}.` : `Pick a price below today's ${money(price)}.`}
-        </p>
+        <p className={error ? "bw-note bw-caution" : "bw-note"}>{error ?? `Expected low is ${money(expectedLow)}.`}</p>
       </div>
     );
   }
@@ -147,20 +161,12 @@ function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number 
         We'll send a Chrome notification when it hits {money(targetPrice)} or lower.
       </p>
       <div className="bw-watch-row" style={{ marginTop: 10 }}>
-        <button type="button" className="bw-link" onClick={() => sendTestAlert(targetPrice)}>
-          Preview the alert
-        </button>
-        <button type="button" className="bw-link" onClick={() => setStep("start")}>
-          Stop watching
+        <button type="button" className="bw-link" onClick={() => chrome.runtime.sendMessage({ type: "BUYWISE_OPEN_DASHBOARD" })}>
+          See everything you're watching
         </button>
       </div>
     </div>
   );
-}
-
-function sendTestAlert(target: number): void {
-  const title = document.getElementById("productTitle")?.textContent?.trim() ?? "This product";
-  chrome.runtime.sendMessage({ type: "BUYWISE_TEST_ALERT", title, target }).catch(() => {});
 }
 
 function NothingBetter({ data }: { data: Extract<PanelData, { state: "nothing_better" }> }) {
