@@ -44,7 +44,9 @@ def tuned_params(tag: str, model_name: str, fold: str) -> dict:
     t = t[(t.model == model_name) & (t.fold == fold)]
     if t.empty:
         raise SystemExit(f"no tuning log for {model_name} / {fold}; run ml.evaluate --folds walk --save first")
-    best = t.loc[t["val PR-AUC"].idxmax()].drop(["trial", "val PR-AUC", "model", "fold"])
+    score = "val objective" if "val objective" in t and t["val objective"].notna().all() else "val PR-AUC"
+    best = t.loc[t[score].idxmax()].drop(["trial", "val PR-AUC", "val objective", "weight", "model", "fold"],
+                                         errors="ignore")
     out = {}
     for k, v in best.items():
         if isinstance(v, float) and math.isnan(v):

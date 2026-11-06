@@ -134,6 +134,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--budget", type=int, default=tuning.TUNE_BUDGET, help="tuning trials per model per fold")
     ap.add_argument("--reference", default="XGBoost (default)", help="model the paired differences are against")
     ap.add_argument("--save", action="store_true", help=f"write tables to {RESULTS}")
+    ap.add_argument("--tag", default="", help="suffix for saved file names, so separate experiments don't overwrite")
     args = ap.parse_args(argv)
     tuning.TUNE_BUDGET = args.budget
 
@@ -150,7 +151,7 @@ def main(argv: list[str] | None = None) -> None:
         res.models = models
         results.append(res)
 
-    tag = f"{Path(ds.source).name.split('.')[0]}_{args.folds}"
+    tag = f"{Path(ds.source).name.split('.')[0]}_{args.folds}" + (f"_{args.tag}" if args.tag else "")
     if args.ci or len(folds) > 1:
         text, tab, paired = ci_leaderboard(results, args.ci or 1000, args.reference)
         print(text)

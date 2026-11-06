@@ -20,7 +20,7 @@ from ml.bench.metrics import score_policies
 from ml.bench.models import XGB, CatBoost
 from ml.bench.runner import FoldResult, run_fold, run_model
 from ml.bench.splits import walk_forward_folds
-from ml.bench.tuning import Tuned, early_stopping_split, tune
+from ml.bench.tuning import Tuned, early_stopping_split, row_weights, tune
 from ml.features import ALL_FEATURES, FEATURES, HORIZON_DAYS, add_features, add_labels, daily_panel
 from tests.test_bench import _assert_no_overlap, _fold, _prices
 
@@ -134,6 +134,39 @@ def test_shuffled_labels_leave_nothing_to_find():
     s = run_model(m, Fold("shuffled", train, val, f.test, f.history))
     lift = score_policies(f.test, {"m": s}, (0.3,)).lift.iloc[0]
     assert 0.6 < lift < 1.4
+
+
+def test_price_weights_follow_price_and_average_one():
+    rows = pd.DataFrame({"price": [10.0, 40.0, 250.0]})
+    assert row_weights(rows, None) is None
+    for scheme in ("sqrt_price", "price"):
+        w = row_weights(rows, scheme)
+        assert w.mean() == pytest.approx(1) and (np.diff(w) > 0).all()
+
+
+def test_weighted_tuning_scores_by_weighted_pr_auc():
+    """A price-weighted model is chosen on price-weighted PR-AUC, and it really
+    trains with weights (so its scores differ from the unweighted model's)."""
+    from sklearn.metrics import average_precision_score
+
+    f = _fold()
+    best, trials = tune(XGB, f.train, f.val, budget=2, weight="price")
+    assert (trials.weight == "price").all()
+    assert trials["val objective"].max() == pytest.approx(
+        average_precision_score(f.val.y, best.score(f.val), sample_weight=row_weights(f.val, "price")))
+    plain = XGB()
+    plain.fit(f.train, f.val)
+    weighted = XGB(weight="price")
+    weighted.fit(f.train, f.val)
+    assert not np.allclose(plain.score(f.test), weighted.score(f.test))
+
+
+@pytest.mark.parametrize("cls", [XGB, CatBoost])
+def test_weighted_models_see_only_features_at_test_time(cls):
+    if cls().available():
+        pytest.skip(cls().available())
+    s = run_model(cls(feature_cols=ALL_FEATURES, weight="sqrt_price"), _fold())
+    assert ((s >= 0) & (s <= 1)).all()
 
 
 @pytest.mark.parametrize("cls", [XGB, CatBoost])

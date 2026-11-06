@@ -139,8 +139,9 @@ class XGB(TabularModel):
         return XGBClassifier(**params, eval_metric="aucpr", early_stopping_rounds=50, tree_method="hist",
                              n_jobs=-1, random_state=42)
 
-    def _fit(self, est, X, y, X_es, y_es):
-        est.fit(X, y, eval_set=[(X_es, y_es)], verbose=False)
+    def _fit(self, est, X, y, X_es, y_es, w=None, w_es=None):
+        est.fit(X, y, sample_weight=w, eval_set=[(X_es, y_es)],
+                sample_weight_eval_set=None if w_es is None else [w_es], verbose=False)
 
 
 class CatBoost(TabularModel):
@@ -166,8 +167,10 @@ class CatBoost(TabularModel):
         return CatBoostClassifier(**params, eval_metric="PRAUC", od_type="Iter", od_wait=50,
                                   thread_count=-1, random_seed=42, verbose=0, allow_writing_files=False)
 
-    def _fit(self, est, X, y, X_es, y_es):
-        est.fit(X, y, eval_set=(X_es, y_es), use_best_model=True)
+    def _fit(self, est, X, y, X_es, y_es, w=None, w_es=None):
+        from catboost import Pool
+
+        est.fit(Pool(X, y, weight=w), eval_set=Pool(X_es, y_es, weight=w_es), use_best_model=True)
 
 
 class TunedCatBoost(Tuned):
@@ -266,6 +269,11 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "xgb_tuned_all": lambda src: Tuned(XGB, ALL_FEATURES),
     "cat_default_all": lambda src: CatBoost(feature_cols=ALL_FEATURES),
     "cat_tuned_all": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES),
+    # Count expensive decisions more, in training and in the tuning objective.
+    "xgb_tuned_all_sqrtw": lambda src: Tuned(XGB, ALL_FEATURES, weight="sqrt_price"),
+    "xgb_tuned_all_pricew": lambda src: Tuned(XGB, ALL_FEATURES, weight="price"),
+    "cat_tuned_all_sqrtw": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES, weight="sqrt_price"),
+    "cat_tuned_all_pricew": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES, weight="price"),
 }
 RULES = ("top90", "rel90", "november")
 R2_MODELS = ("xgb_default", "xgb_tuned", "cat_default", "cat_tuned")
