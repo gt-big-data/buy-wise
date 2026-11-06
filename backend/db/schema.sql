@@ -53,12 +53,28 @@ CREATE TABLE predictions (
     pred_14d DECIMAL(10,2),
     pred_30d DECIMAL(10,2),
     confidence_score FLOAT,
+
+    -- Track record (#85, migration 003). Nullable so older inserts still work.
+    price_at_prediction DECIMAL(10,2) NULL,
+    p_drop FLOAT NULL,
+    horizon_days SMALLINT NULL,
+    drop_threshold FLOAT NULL,
+    model_version VARCHAR(64) NULL,
+    predicted_on DATE NULL,
+    resolved_at TIMESTAMP NULL,
+    actual_min_price DECIMAL(10,2) NULL,
+    actual_end_price DECIMAL(10,2) NULL,
+    dropped BOOLEAN NULL,
+    was_correct BOOLEAN NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
+
     foreign key (product_id) references products(product_id)
 		ON DELETE CASCADE,
-        
-	INDEX idx_product_created (product_id, created_at)
+
+	INDEX idx_product_created (product_id, created_at),
+    INDEX idx_unresolved (resolved_at, predicted_on),
+    INDEX idx_model_version (model_version)
 );
 
 CREATE TABLE user_activity (
