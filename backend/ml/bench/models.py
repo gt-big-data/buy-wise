@@ -67,20 +67,25 @@ def xgb_classifier():
 
 class ServedXGB(BaseModel):
     """The frozen model in buywise_clean.joblib, exactly as the extension serves it
-    (raw classifier probability, before the calibrator).
+    (raw classifier probability, before the calibrator). Since #79 that is tuned
+    CatBoost; pass `path=PREVIOUS_SERVED` for the XGBoost it replaced.
 
     It was trained on data before its own test period, so it can only be scored
     on folds that start after that. On earlier folds it would have seen the
     test prices. Use CleanXGB (same recipe, retrained per fold) there."""
     name = "clean model (served)"
     outputs_probability = True
-    feature_cols = FEATURES
 
-    def __init__(self, path: Path | None = None):
+    def __init__(self, path: Path | None = None, name: str | None = None):
         from ml.inference import MODEL_PATH
 
         self.path = path or MODEL_PATH
+        self.name = name or self.name
         self._bundle = None
+
+    @property
+    def feature_cols(self):
+        return list(self.bundle.get("features", FEATURES))
 
     def available(self):
         return None if self.path.exists() else f"{self.path.name} not found (run ml.train_clean)"
@@ -101,7 +106,13 @@ class ServedXGB(BaseModel):
         return self._bundle
 
     def score(self, test, history):
-        return self.bundle["classifier"].predict_proba(test[FEATURES])[:, 1]
+        return self.bundle["classifier"].predict_proba(test[self.feature_cols])[:, 1]
+
+
+# The XGBoost served from October until the CatBoost swap (#79). Kept so the
+# spring leaderboard still reproduces and the swap can be rolled back by copying
+# this file over buywise_clean.joblib.
+PREVIOUS_SERVED = ML_DIR / "buywise_clean_xgb_2026-10.joblib"
 
 
 class CleanXGB(BaseModel):
@@ -258,6 +269,7 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "rel90": lambda src: RuleRel90(),
     "november": lambda src: RuleNovember(),
     "served": lambda src: ServedXGB(),
+    "served_xgb_2026_10": lambda src: ServedXGB(PREVIOUS_SERVED, "previously served XGBoost (Oct 2026)"),
     "xgb": lambda src: CleanXGB(),
     "april": lambda src: AprilModel(src),
     # R2 (#79). `_all` adds the candidate features in features.EXTRA_FEATURES.

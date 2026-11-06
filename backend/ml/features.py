@@ -19,8 +19,8 @@ DROP_THRESHOLD = 0.08  # a WAIT is "right" if the price falls >= 8% within the h
 # secondary Keepa series and may be missing.
 INPUT_COLS = ["price", "used_price", "count_new", "count_used", "list_price", "new_price", "sales_rank"]
 
-# What the served model uses. Don't change this list without retraining
-# buywise_clean.joblib; serving reads its own copy from the bundle.
+# The 18 features the October XGBoost was served with (buywise_clean_xgb_2026-10.joblib).
+# Serving reads the feature list from the model bundle, so changing this needs a retrain.
 FEATURES = [
     "rel30", "rel90", "pos90", "rel_expmin", "rel_expmax", "rel_min180",
     "vol30", "vol90", "chg7", "chg30", "nchg30", "dsince",
@@ -34,7 +34,7 @@ EXTRA_FEATURES = [
     "rank_rel30", "rank_chg30", "days_since_drop", "past_drop_rate",
 ]
 ALL_FEATURES = FEATURES + EXTRA_FEATURES
-# What serving can build: the prices table (db/schema.sql) stores list price and
+# What serving can build, and what the served CatBoost uses (#79): the prices table (db/schema.sql) stores list price and
 # sales rank but not the marketplace-new price, so new_gap is benchmark-only.
 SERVABLE_FEATURES = [f for f in ALL_FEATURES if f != "new_gap"]
 
