@@ -4,6 +4,7 @@
 
 import { BACKEND_URL } from "../config";
 import { getUserId } from "../userId";
+import { checkPrices, loadAlerts, loadWatchlist } from "./alerts";
 
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   console.log("BuyWise extension installed");
@@ -56,14 +57,33 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return false;
   }
 
+  if (message?.type === "BUYWISE_OPEN_DASHBOARD") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
+    return false;
+  }
+
+  if (message?.type === "BUYWISE_GET_WATCHLIST") {
+    Promise.all([loadWatchlist(), loadAlerts()])
+      .then(([items, alerts]) => sendResponse({ ok: true, items, alerts }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
+  if (message?.type === "BUYWISE_CHECK_PRICES") {
+    checkPrices()
+      .then((sent) => sendResponse({ ok: true, sent }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
   if (message?.type === "BUYWISE_WATCHLIST_ADD") {
-    const { asin } = message;
+    const { asin, target_price } = message;
     getUserId()
       .then((userId) =>
         fetch(`${BACKEND_URL}/watchlist`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, asin }),
+          body: JSON.stringify({ user_id: userId, asin, target_price: target_price ?? null }),
         })
       )
       .then(async (r) => {
@@ -73,10 +93,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
         return r.json();
       })
-      .then((data) => sendResponse({ ok: true, ...data }))
+      .then((data) => {
+        sendResponse({ ok: true, ...data });
+        // Check right away, so a target at or above today's price alerts now.
+        checkPrices().catch(() => {});
+      })
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true;
   }
 
   return false;
+});
+
+// Clicking any BuyWise notification opens the dashboard.
+chrome.notifications.onClicked.addListener(() => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("dashboard.html") });
+});
+
+// Re-check watched prices every hour and when Chrome starts. Prices only change
+// when the daily job (#90) runs, so hourly is plenty.
+chrome.alarms.create("buywise-check-prices", { periodInMinutes: 60 });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "buywise-check-prices") checkPrices().catch(() => {});
+});
+chrome.runtime.onStartup.addListener(() => {
+  checkPrices().catch(() => {});
 });

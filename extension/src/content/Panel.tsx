@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { PanelData } from "./fakeData";
+import { extractASIN } from "./amazon";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
@@ -91,8 +92,80 @@ function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
       </dl>
       <p className="bw-note">
         It dropped {data.drops} times in the last {data.months} months. No other seller has it cheaper right now.
+        <WatchFlow expectedLow={data.expectedLow} />
       </p>
     </>
+  );
+}
+// Tap Watch, set a target, get notified. The target is saved to the backend's
+// watchlist, and the background script checks prices against it (#74).
+function WatchFlow({ expectedLow }: { expectedLow: number }) {
+  const [step, setStep] = useState<"start" | "target" | "saving" | "watching">("start");
+  const [target, setTarget] = useState(String(Math.round(expectedLow)));
+  const [error, setError] = useState<string | null>(null);
+  const targetPrice = Number(target);
+
+  async function watch() {
+    setStep("saving");
+    setError(null);
+    const asin = extractASIN();
+    const res = await chrome.runtime
+      .sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin, target_price: targetPrice })
+      .catch(() => null);
+    if (res?.ok) {
+      setStep("watching");
+    } else {
+      setError(res?.error?.includes("not found") ? "BuyWise doesn't track this product yet." : "Couldn't save. Is the backend running?");
+      setStep("target");
+    }
+  }
+
+  if (step === "start") {
+    return (
+      <button type="button" className="bw-button" onClick={() => setStep("target")}>
+        Watch this price
+      </button>
+    );
+  }
+
+  if (step === "target" || step === "saving") {
+    return (
+      <div className="bw-watch">
+        <label className="bw-watch-label" htmlFor="bw-target">
+          Tell me when it drops to
+        </label>
+        <div className="bw-watch-row">
+          <span className="bw-money-input">
+            $
+            <input
+              id="bw-target"
+              className="bw-mono"
+              value={target}
+              inputMode="decimal"
+              onChange={(e) => setTarget(e.target.value.replace(/[^0-9.]/g, ""))}
+            />
+          </span>
+          <button type="button" className="bw-button bw-button--inline" disabled={!(targetPrice > 0) || step === "saving"} onClick={watch}>
+            {step === "saving" ? "Saving..." : "Watch"}
+          </button>
+        </div>
+        <p className={error ? "bw-note bw-caution" : "bw-note"}>{error ?? `Expected low is ${money(expectedLow)}.`}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bw-watch">
+      <p className="bw-strong">Watching at {money(targetPrice)}.</p>
+      <p className="bw-note" style={{ marginTop: 4 }}>
+        We'll send a Chrome notification when it hits {money(targetPrice)} or lower.
+      </p>
+      <div className="bw-watch-row" style={{ marginTop: 10 }}>
+        <button type="button" className="bw-link" onClick={() => chrome.runtime.sendMessage({ type: "BUYWISE_OPEN_DASHBOARD" })}>
+          See everything you're watching
+        </button>
+      </div>
+    </div>
   );
 }
 
