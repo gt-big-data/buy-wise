@@ -69,7 +69,7 @@ def leaderboard(te: pd.DataFrame, scores: dict[str, np.ndarray],
 
 
 def parse_models(arg: str) -> list[str]:
-    presets = {"default": list(DEFAULT_MODELS), "all": list(MODELS), "r2": [*RULES, "xgb", *R2_MODELS]}
+    presets = {"default": list(DEFAULT_MODELS), "all": list(MODELS), "r2": [*RULES, "served", "xgb", *R2_MODELS]}
     keys = presets.get(arg) or arg.split(",")
     unknown = [k for k in keys if k not in MODELS]
     if unknown:

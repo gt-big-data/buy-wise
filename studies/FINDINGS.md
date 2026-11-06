@@ -276,6 +276,63 @@ The 357,817 rows overstate it: the file is one row per day with the last price c
 
 ---
 
+### Study 003 — Which signals carry the prediction
+`s003_signal_inventory.py`. The 26 features (18 served, plus 8 added in R2) are split into seven groups. Tuned XGBoost and CatBoost are refit with each group removed (drop-one) and with each group added to price position alone (add-one). Each model keeps the settings it picked on validation. Results are pooled over four walk-forward test windows, with paired 95% intervals from product-level resampling.
+
+| Group | Drop it: PR-AUC lost (XGB / Cat) | Add it to price position: PR-AUC gained | Drop it: $ lost @20% (XGB / Cat) |
+|---|---|---|---|
+| **Price position** (vs medians, ranges, 1-year high, list price) | **0.026 / 0.036** | (the base: 0.495 / 0.486 alone) | $0.19 / $0.30 |
+| **Volatility** (vol, changes, days since drop, past drop rate) | **0.033 / 0.031** | **+0.039 / +0.049** | not significant |
+| **Price level** (log price) | **0.020 / 0.027** | **+0.018 / +0.031** | **$0.49 / $0.60** |
+| Calendar (month, week) | 0.012 / 0.015 | not significant | $0.26 / $0.22 |
+| Momentum (7- and 30-day change) | ~0.006, borderline | not significant | mixed |
+| Offer counts (used/new gaps, seller counts) | not significant | not significant | $0.17 / not significant |
+| Demand (sales rank) | **0.000 / 0.002, nothing** | not significant | not significant |
+
+**Three groups do the work: where today's price sits, how jumpy the product is, and how expensive it is.** Price position alone reaches PR-AUC 0.49, and adding volatility takes it to 0.53. Shuffling price position on test costs 0.24 PR-AUC, far more than any other group, and volatility comes second at 0.07–0.09.
+
+**Price level matters most for dollars.** Removing it costs $0.49–0.60 per decision at a 20% wait rate, about twice any other group. It's how the model knows which decisions have money behind them.
+
+**Sales rank carries no signal**, by any of the three measures (drop-one, add-one, or shuffling). The same goes for offer counts and momentum. These are candidates to drop, and dropping them means less to fetch and store.
+
+**Caveat.** The groups overlap: many of the volatility features are built from the same price series as the position features. So drop-one undersells correlated groups, which is why add-one is reported too.
+
+---
+
+### Study 017 — Where accuracy is worst, and why
+`s017_error_breakdown.py` extends Study 006 to the four walk-forward windows, with error bars. It uses tuned XGBoost on 26 features; CatBoost looks the same. Two questions are asked of each segment:
+- How well does the model rank decisions inside the segment (PR-AUC, against the segment's base rate)?
+- What does its overall 20% WAIT policy earn there, against the most a perfect forecaster could (the ceiling)?
+
+| Segment | Base rate | PR-AUC [95%] | PR-AUC ÷ base rate | $ caught / ceiling per decision |
+|---|---|---|---|---|
+| < $25 | 15.0% | 0.35 [0.28, 0.43] | 2.3× | $0.12 / $0.47 |
+| $25–75 | 17.0% | 0.48 [0.41, 0.56] | 2.8× | $0.90 / $1.70 |
+| $75–200 | 24.9% | 0.59 [0.52, 0.65] | 2.4× | $4.34 / $6.68 |
+| > $200 | 33.3% | **0.68 [0.59, 0.76]** | 2.1× | **$20.36 / $28.49** |
+| Calm | 9.3% | **0.30 [0.25, 0.36]** | **3.2×** | $0.58 / $2.01 |
+| Medium | 17.2% | 0.41 [0.36, 0.47] | 2.4× | $2.14 / $5.65 |
+| Twitchy | 30.6% | 0.63 [0.58, 0.67] | 2.1× | $8.60 / $10.57 |
+| Seen in training | 21.1% | 0.56 [0.52, 0.61] | 2.7× | $4.68 / $6.59 |
+| **Not seen in training** | 21.0% | **0.45 [0.38, 0.53]** | **2.1×** | $4.43 / $9.87 |
+| History 2+ years | 19.3% | 0.50 [0.43, 0.56] | 2.6× | $3.21 / $4.69 |
+| Amazon Basics (worst brand) | 18.9% | **0.31 [0.24, 0.41]** | **1.7×** | $0.24 / $0.89 |
+| Nov–Dec vs rest of year | 19.2% vs 21.5% | 0.57 vs 0.55 | — | no gap |
+
+**There are two kinds of "bad", and they need different fixes.**
+- **Nothing to predict:** cheap and calm products. Their PR-AUC is low, but relative to their base rate the model ranks them *better* than anything else (3.2× on calm items). There's just very little to catch: at most 47 cents per decision on items under $25. This confirms Study 006's "no opinion" recommendation. No model fixes it, and the product should simply stay quiet there.
+- **Hard to predict:** products the model hasn't seen, and Amazon Basics. Their base rates are normal (21% and 19%), yet the model ranks them clearly worse, at 2.1× and 1.7×.
+  - Amazon Basics is private label: Amazon sets its prices without the competitive repricing that our price-position features read.
+  - Unseen products are mostly new listings with short histories, where the 90- and 180-day windows are still filling up.
+
+**This reverses Study 006's "slightly better on unseen products"** (AUC 0.826 vs 0.790). That was one test window with a different definition of "unseen". Across four windows, with products new to each window's training data, unseen products rank worse by 0.11 PR-AUC. The intervals only just overlap, and it's 6,622 decisions on few products, so treat cold start as a likely weakness rather than a strength.
+
+**No season effect.** November–December ranks about the same as the rest of the year, so the calendar features (Study 003) add a little, but there's no holiday blind spot.
+
+**Not answered yet: by category.** Both datasets are one category (electronics, 172282). The breakdown runs by category automatically once the multi-category Keepa pull (#83) lands.
+
+---
+
 ## 4. What this adds up to
 
 **The bad news.** What we shipped doesn't work. A model at lift 1.05 is a coin flip wearing a confidence score. Had we deployed to real users we'd have been giving random advice with an authoritative-looking percentage attached.
@@ -329,6 +386,12 @@ cd studies
 ../backend/.venv/bin/python s006_segmentation.py
 ../backend/.venv/bin/python s009_substitution.py
 ../backend/.venv/bin/python s016_april_snapshot.py
+
+# R2: the leaderboard first (saves the tuning log the next three read), ~45 min
+cd ../backend && python -m ml.evaluate --models r2 --folds walk --ci --save && cd ../studies
+python s003_signal_inventory.py
+python s017_error_breakdown.py
+python r2_charts.py                # figures in results/figures/
 ```
 
 `Prices.csv` and `Product.csv` are copied here from `origin/Training_data_generation:notebooks/`.
@@ -340,7 +403,6 @@ cd studies
 | # | Question |
 |---|---|
 | 002b | **Horizon choice.** The 14-day window came from the old model's target and was never justified. Ceiling is $5.08 at 14 days, $8.01 at 30, $13.33 at 90 (204 ASINs, mean price $98). What horizon is the product actually built around? Everything in Studies 001/002 is sized at 14 days by default. |
-| 003 | Full signal inventory — which features add what, and how much do they overlap? |
 | 008 | Alert latency — how fast must we notify before the value decays? |
 | 010 | Subscribe & Save orchestration — how much is the 15% tier worth over a year? |
 | 011 | Pack-size / unit-price arbitrage across product variants |

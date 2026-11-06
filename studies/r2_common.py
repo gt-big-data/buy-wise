@@ -1,4 +1,4 @@
-"""Shared setup for the R2 studies (s003, s017, s018).
+"""Shared setup for the R2 studies (s003, s017, r2_charts).
 
 They reuse the settings each model chose when it was tuned on each fold's
 validation rows (`python -m ml.evaluate ... --save` writes them to

@@ -5,7 +5,7 @@ Needs the tables from:
     python s003_signal_inventory.py                                 (feature groups)
     python s017_error_breakdown.py                                  (segments)
 
-    cd studies && python s018_charts.py [prices|apr2026_500]
+    cd studies && python r2_charts.py [prices|apr2026_500]
 
 Writes results/figures/<tag>_fig*.png.
 """

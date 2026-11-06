@@ -276,6 +276,7 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "cat_tuned_all_pricew": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES, weight="price"),
 }
 RULES = ("top90", "rel90", "november")
-R2_MODELS = ("xgb_default", "xgb_tuned", "cat_default", "cat_tuned")
+R2_MODELS = ("xgb_default", "xgb_tuned", "cat_default", "cat_tuned",
+             "xgb_default_all", "xgb_tuned_all", "cat_default_all", "cat_tuned_all")
 # What `python -m ml.evaluate` shows by default: today's leaderboard.
 DEFAULT_MODELS = (*RULES, "served", "april")
