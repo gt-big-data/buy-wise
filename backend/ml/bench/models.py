@@ -3,6 +3,15 @@
 To add a model (R2, R3): write a class with `name`, `outputs_probability`,
 `fit(train, val, history)` and `score(test, history)` (see interface.py), then
 add it to MODELS below. Use only `train` and `val` to learn and tune.
+
+Table models (R2) get the shared tuning for free. Subclass TabularModel
+(tuning.py) the way XGB and CatBoost do below: set `key`, `DEFAULTS` and
+`SPACE`, write `make(params)` (and `_fit` if it early-stops), then register
+
+    "lgbm": lambda src: LightGBM(),            # library defaults
+    "lgbm_tuned": lambda src: Tuned(LightGBM), # same budget as everyone
+
+Add `feature_cols=ALL_FEATURES` for the version with the R2 candidate features.
 """
 from __future__ import annotations
 
@@ -14,7 +23,8 @@ import pandas as pd
 
 from ml.bench.data import DEFAULT_SOURCE
 from ml.bench.interface import BaseModel, Fold, PriceHistory
-from ml.features import FEATURES
+from ml.bench.tuning import TabularModel, Tuned, choice, integer, log_uniform, uniform
+from ml.features import ALL_FEATURES, FEATURES
 
 ML_DIR = Path(__file__).resolve().parents[1]
 
@@ -64,6 +74,7 @@ class ServedXGB(BaseModel):
     test prices. Use CleanXGB (same recipe, retrained per fold) there."""
     name = "clean model (served)"
     outputs_probability = True
+    feature_cols = FEATURES
 
     def __init__(self, path: Path | None = None):
         from ml.inference import MODEL_PATH
@@ -98,6 +109,7 @@ class CleanXGB(BaseModel):
     data, with early stopping on that fold's validation data."""
     name = "XGBoost (clean recipe, retrained)"
     outputs_probability = True
+    feature_cols = FEATURES
 
     def fit(self, train, val, history):
         self.clf = xgb_classifier()
@@ -105,6 +117,62 @@ class CleanXGB(BaseModel):
 
     def score(self, test, history):
         return self.clf.predict_proba(test[FEATURES])[:, 1]
+
+
+# ---- R2 table models: default and tuned, same features, same budget -------------
+
+class XGB(TabularModel):
+    """XGBoost. Defaults are the served recipe's settings; early stopping uses the
+    tail of train, not validation (see tuning.py)."""
+    key = "XGBoost"
+    DEFAULTS = dict(n_estimators=600, learning_rate=0.03, max_depth=5, subsample=0.8,
+                    colsample_bytree=0.8, reg_lambda=2.0, reg_alpha=0.0, min_child_weight=1.0,
+                    scale_pos_weight=1.0)
+    SPACE = dict(n_estimators=choice(2000), learning_rate=log_uniform(0.01, 0.2), max_depth=integer(3, 9),
+                 min_child_weight=log_uniform(1, 50), subsample=uniform(0.5, 1.0),
+                 colsample_bytree=uniform(0.4, 1.0), reg_lambda=log_uniform(0.1, 20),
+                 reg_alpha=log_uniform(1e-3, 10), scale_pos_weight=choice(1.0, 2.0, 4.0))
+
+    def make(self, params):
+        from xgboost import XGBClassifier
+
+        return XGBClassifier(**params, eval_metric="aucpr", early_stopping_rounds=50, tree_method="hist",
+                             n_jobs=-1, random_state=42)
+
+    def _fit(self, est, X, y, X_es, y_es):
+        est.fit(X, y, eval_set=[(X_es, y_es)], verbose=False)
+
+
+class CatBoost(TabularModel):
+    """CatBoost. Defaults are the library's (1000 rounds, learning rate picked by
+    CatBoost), plus the same early stopping as every model."""
+    key = "CatBoost"
+    DEFAULTS = dict(iterations=1000)
+    SPACE = dict(iterations=choice(2000), learning_rate=log_uniform(0.01, 0.2), depth=integer(4, 8),
+                 l2_leaf_reg=log_uniform(1, 30), bagging_temperature=uniform(0, 2),
+                 random_strength=log_uniform(0.1, 10), border_count=choice(64, 128, 254),
+                 auto_class_weights=choice(None, "SqrtBalanced", "Balanced"))
+
+    def available(self):
+        try:
+            import catboost  # noqa: F401
+        except ImportError:
+            return "catboost not installed (pip install -r requirements.txt)"
+        return None
+
+    def make(self, params):
+        from catboost import CatBoostClassifier
+
+        return CatBoostClassifier(**params, eval_metric="PRAUC", od_type="Iter", od_wait=50,
+                                  thread_count=-1, random_seed=42, verbose=0, allow_writing_files=False)
+
+    def _fit(self, est, X, y, X_es, y_es):
+        est.fit(X, y, eval_set=(X_es, y_es), use_best_model=True)
+
+
+class TunedCatBoost(Tuned):
+    def available(self):
+        return CatBoost().available()
 
 
 class AprilModel(BaseModel):
@@ -189,7 +257,17 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "served": lambda src: ServedXGB(),
     "xgb": lambda src: CleanXGB(),
     "april": lambda src: AprilModel(src),
+    # R2 (#79). `_all` adds the candidate features in features.EXTRA_FEATURES.
+    "xgb_default": lambda src: XGB(),
+    "xgb_tuned": lambda src: Tuned(XGB),
+    "cat_default": lambda src: CatBoost(),
+    "cat_tuned": lambda src: TunedCatBoost(CatBoost),
+    "xgb_default_all": lambda src: XGB(feature_cols=ALL_FEATURES),
+    "xgb_tuned_all": lambda src: Tuned(XGB, ALL_FEATURES),
+    "cat_default_all": lambda src: CatBoost(feature_cols=ALL_FEATURES),
+    "cat_tuned_all": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES),
 }
 RULES = ("top90", "rel90", "november")
+R2_MODELS = ("xgb_default", "xgb_tuned", "cat_default", "cat_tuned")
 # What `python -m ml.evaluate` shows by default: today's leaderboard.
 DEFAULT_MODELS = (*RULES, "served", "april")

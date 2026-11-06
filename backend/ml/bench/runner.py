@@ -1,6 +1,7 @@
 """Fit each model on a fold and collect its test scores, with the guard rails:
-labels are hidden at test time, history ends where each period ends, and a
-model must return one finite number per test row."""
+labels are hidden at test time, history ends where each period ends, table
+models (feature_cols set) see only their feature columns, and a model must
+return one finite number per test row."""
 from __future__ import annotations
 
 import time
@@ -34,8 +35,16 @@ def hide_labels(df: pd.DataFrame) -> pd.DataFrame:
 def run_model(model: BaseModel, fold: Fold) -> np.ndarray:
     fit_until = max(fold.train.date.max(), fold.val.date.max()) if len(fold.val) else fold.train.date.max()
     model.fit(fold.train, fold.val, fold.history.truncated(fit_until))
-    test = hide_labels(fold.test)
-    s = np.asarray(model.score(test, fold.history.truncated(fold.test.date.max())), dtype=float).ravel()
+    cols = getattr(model, "feature_cols", None)
+    if cols is not None:
+        missing = [c for c in cols if c not in fold.test.columns]
+        if missing:
+            raise ValueError(f"{model.name}: test rows have no {missing}")
+        # Table models see their features and nothing else: no price, date, product or history.
+        s = model.score(fold.test[list(cols)].reset_index(drop=True), None)
+    else:
+        s = model.score(hide_labels(fold.test), fold.history.truncated(fold.test.date.max()))
+    s = np.asarray(s, dtype=float).ravel()
     if len(s) != len(fold.test):
         raise ValueError(f"{model.name}: returned {len(s)} scores for {len(fold.test)} test rows")
     if not np.isfinite(s).all():

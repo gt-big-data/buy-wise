@@ -98,9 +98,15 @@ class Model(Protocol):
 
 
 class BaseModel:
-    """Convenience base: no-op fit, not a probability, always available."""
+    """Convenience base: no-op fit, not a probability, always available.
+
+    Set `feature_cols` to a list of columns and the runner gives score() only
+    those columns, and no price history. A table model then can't read a later
+    row's price, even by accident. Leave it None if the model needs more
+    (rules read their own column; sequence models use history.windows())."""
     name = "unnamed"
     outputs_probability = False
+    feature_cols: list[str] | None = None
 
     def available(self) -> str | None:
         """None if the model can run here, else the reason it can't (missing file, etc.)."""
