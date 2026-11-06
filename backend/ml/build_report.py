@@ -12,6 +12,7 @@ import hashlib
 import os
 import subprocess
 from pathlib import Path
+import shutil
 
 import joblib
 import numpy as np
@@ -109,10 +110,14 @@ def build_snapshot(source_path: Path) -> str:
     date_max = valid_price_df["datetime"].max()
     date_span_days = (date_max - date_min).days
 
-    # Save snapshot copy
+    # Save raw snapshot copy for downstream evaluation loader
     snapshot_csv = snap_dir / "Prices.csv"
-    raw_df.to_csv(snapshot_csv, index=False)
-    output_hash = _compute_hash(snapshot_csv)
+    shutil.copyfile(source_path, snapshot_csv)
+
+    # Save final processed dataset and compute true output hash
+    processed_csv = snap_dir / "processed_dataset.csv"
+    processed_df.to_csv(processed_csv, index=False)
+    output_hash = _compute_hash(processed_csv)
 
     # Generate markdown report
     current_time_utc = datetime.now(timezone.utc).isoformat()
