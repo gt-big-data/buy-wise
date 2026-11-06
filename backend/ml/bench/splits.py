@@ -35,6 +35,32 @@ def chronological_split(p: pd.DataFrame) -> Split:
     )
 
 
+def walk_forward_folds(rows: pd.DataFrame, panel: pd.DataFrame, n: int = 4,
+                       test_days: int = 91, val_days: int = 91) -> list[Fold]:
+    """`n` back-to-back test windows of `test_days`, ending at the last date.
+    Four 91-day windows cover a full year, so every season is tested once and
+    one lucky stretch can't decide the result.
+
+    Each fold trains on everything before its validation window, so training
+    grows fold by fold. At both boundaries a row is kept only if its 14-day
+    answer finishes before the next period starts."""
+    h = pd.Timedelta(days=HORIZON_DAYS)
+    end = rows.date.max() + pd.Timedelta(days=1)
+    history = PriceHistory(panel)
+    folds = []
+    for i in range(n):
+        t0 = end - pd.Timedelta(days=test_days * (n - i))
+        t1 = t0 + pd.Timedelta(days=test_days)
+        v0 = t0 - pd.Timedelta(days=val_days)
+        train = rows[rows.date + h < v0]
+        val = rows[(rows.date >= v0) & (rows.date + h < t0)]
+        test = rows[(rows.date >= t0) & (rows.date < t1)]
+        folds.append(Fold(f"walk{i + 1}", train, val, test, history,
+                          info={"protocol": f"walk-forward {n}x{test_days}d", "horizon_days": HORIZON_DAYS,
+                                "val_start": v0, "test_start": t0, "test_end": t1}))
+    return folds
+
+
 def legacy_fold(rows: pd.DataFrame, panel: pd.DataFrame) -> Fold:
     """The single 60/20/20 split the spring leaderboard used. Kept so today's
     numbers can always be reproduced."""

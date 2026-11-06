@@ -1,6 +1,8 @@
 """Train the leak-free buy/wait model that inference.py serves.
 
     cd backend && .venv/bin/python -m ml.train_clean
+    python -m ml.train_clean --model cat_tuned --features servable          # try a challenger, don't save
+    python -m ml.train_clean --model cat_tuned --features servable --save   # replace the served model
 
 Three chronological periods (see evaluate.chronological_split):
   train       fits the models
@@ -12,9 +14,15 @@ MIN_DROP_CHANCE. Fewer WAITs, but each one is worth acting on.
 
 The model is saved only if it beats the best simple rule on validation at the
 same wait rate. That gate is the reason evaluate.py exists.
+
+--model picks the classifier: `served` (the default, the recipe below) or an R2
+model tuned on validation with the benchmark's shared budget (ml/bench/tuning.py).
+A challenger is only saved with --save, and the report then shows it next to the
+currently served model on the same test rows, as the before/after numbers.
 """
 from __future__ import annotations
 
+import argparse
 from datetime import datetime, timezone
 
 import joblib
@@ -24,32 +32,57 @@ from xgboost import XGBClassifier, XGBRegressor
 
 from ml.evaluate import (baseline_scores, build_dataset, chronological_split, leaderboard,
                          load_prices, score_decision, score_policies)
-from ml.features import FEATURES
+from ml.features import FEATURES, SERVABLE_FEATURES
 from ml.inference import MODEL_PATH
 
 MIN_DROP_CHANCE = 0.40  # highest threshold where the model still beats the simple rules on validation
 
 
-def main() -> None:
+def challenger(model: str, feats: list[str], tr, va):
+    """An R2 model tuned on validation with the shared budget."""
+    from ml.bench.models import XGB, CatBoost
+    from ml.bench.tuning import tune
+
+    cls = {"xgb_tuned": XGB, "cat_tuned": CatBoost}[model]
+    best, trials = tune(cls, tr, va, feats)
+    print(f"{cls.key}: best of {len(trials)} trials, val PR-AUC {trials['val PR-AUC'].max():.4f} "
+          f"(defaults {trials['val PR-AUC'].iloc[0]:.4f})")
+    return best.est, best.params
+
+
+def main(argv: list[str] | None = None) -> None:
+    ap = argparse.ArgumentParser(prog="python -m ml.train_clean")
+    ap.add_argument("--model", choices=["served", "xgb_tuned", "cat_tuned"], default="served")
+    ap.add_argument("--features", choices=["base", "servable"], default="base",
+                    help="base: the 18 served features. servable: plus the R2 features serving can build")
+    ap.add_argument("--save", action="store_true", help="save a challenger (the served recipe always saves)")
+    args = ap.parse_args(argv)
+    feats = FEATURES if args.features == "base" else SERVABLE_FEATURES
+    save = args.save or (args.model == "served" and args.features == "base")
+
     data = build_dataset(load_prices())
     s = chronological_split(data)
     tr, va, te = s.train, s.val.copy(), s.test.copy()
     print(f"train {len(tr):,} | val {len(va):,} | test {len(te):,} rows, {data.asin.nunique()} products")
 
-    clf = XGBClassifier(n_estimators=600, learning_rate=0.03, max_depth=5, subsample=0.8,
-                        colsample_bytree=0.8, reg_lambda=2.0, eval_metric="aucpr",
-                        early_stopping_rounds=50, n_jobs=-1, random_state=42)
-    clf.fit(tr[FEATURES], tr.y, eval_set=[(va[FEATURES], va.y)], verbose=False)
+    params = None
+    if args.model == "served":
+        clf = XGBClassifier(n_estimators=600, learning_rate=0.03, max_depth=5, subsample=0.8,
+                            colsample_bytree=0.8, reg_lambda=2.0, eval_metric="aucpr",
+                            early_stopping_rounds=50, n_jobs=-1, random_state=42)
+        clf.fit(tr[feats], tr.y, eval_set=[(va[feats], va.y)], verbose=False)
+    else:
+        clf, params = challenger(args.model, feats, tr, va)
 
     # Expected size of the 14-day low, as a fraction of today's price. Drives the
     # "predicted best price" the extension shows; the WAIT decision ignores it.
     reg = XGBRegressor(n_estimators=600, learning_rate=0.03, max_depth=5, subsample=0.8,
                        colsample_bytree=0.8, reg_lambda=2.0, objective="reg:absoluteerror",
                        early_stopping_rounds=50, n_jobs=-1, random_state=42)
-    reg.fit(tr[FEATURES], tr.drop_pct.clip(lower=0), eval_set=[(va[FEATURES], va.drop_pct.clip(lower=0))],
+    reg.fit(tr[feats], tr.drop_pct.clip(lower=0), eval_set=[(va[feats], va.drop_pct.clip(lower=0))],
             verbose=False)
 
-    va["proba"] = clf.predict_proba(va[FEATURES])[:, 1]
+    va["proba"] = clf.predict_proba(va[feats])[:, 1]
     calibrator = IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0).fit(va.proba, va.y)
     wait_rate = float((calibrator.predict(va.proba) >= MIN_DROP_CHANCE).mean())
 
@@ -58,12 +91,21 @@ def main() -> None:
     best_rule = gate[gate.policy != "model"]["$ caught"].max()
     model_val = gate[gate.policy == "model"]["$ caught"].iloc[0]
     print(f"\nvalidation gate @ {wait_rate:.0%} wait: model ${model_val:.2f} vs best rule ${best_rule:.2f}")
+    if MODEL_PATH.exists() and args.model != "served":
+        old = joblib.load(MODEL_PATH)
+        old_val = score_policies(va, {"served": old["classifier"].predict_proba(va[old["features"]])[:, 1]},
+                                 (wait_rate,))["$ caught"].iloc[0]
+        print(f"  currently served model at the same wait rate: ${old_val:.2f}")
     if model_val <= best_rule:
         raise SystemExit("Model does not beat the best rule on validation. Not saving.")
 
-    te["proba"] = clf.predict_proba(te[FEATURES])[:, 1]
-    te["pred_drop"] = reg.predict(te[FEATURES]).clip(min=0)
-    print("\n" + leaderboard(te, {"clean model": te.proba.values, **baseline_scores(te)}))
+    te["proba"] = clf.predict_proba(te[feats])[:, 1]
+    te["pred_drop"] = reg.predict(te[feats]).clip(min=0)
+    board = {"clean model": te.proba.values}
+    if MODEL_PATH.exists() and args.model != "served":
+        old = joblib.load(MODEL_PATH)  # before/after on the same test rows
+        board["currently served"] = old["classifier"].predict_proba(te[old["features"]])[:, 1]
+    print("\n" + leaderboard(te, {**board, **baseline_scores(te)}))
 
     te["p_drop"] = calibrator.predict(te.proba)
     served = te[te.p_drop >= MIN_DROP_CHANCE]
@@ -97,13 +139,17 @@ def main() -> None:
         "products": int(data.asin.nunique()),
         "test_period": [str(te.date.min().date()), str(te.date.max().date())],
         "min_drop_chance": MIN_DROP_CHANCE,
+        "model": args.model, "params": params,
         "wait_outcomes": wait_outcomes,
         "test": own.iloc[0].drop("policy").astype(float).round(4).to_dict(),
         "low_forecast_mae": {"model": round(mae_model, 2), "flat": round(mae_flat, 2)},
     }
+    if not save:
+        print("\nnot saved (pass --save to replace the served model)")
+        return
     joblib.dump({"classifier": clf, "regressor": reg, "calibrator": calibrator,
                  "min_drop_chance": MIN_DROP_CHANCE, "wait_outcomes": wait_outcomes,
-                 "features": FEATURES, "meta": meta}, MODEL_PATH)
+                 "features": list(feats), "meta": meta}, MODEL_PATH)
     print(f"\nsaved {MODEL_PATH.name}")
 
 

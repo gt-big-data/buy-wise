@@ -29,8 +29,8 @@ except Exception as _exc:
 def predict_for_asin(price_records: list[dict], today: datetime | None = None) -> dict:
     """Run the model on DB price records (any order; DB returns newest first).
 
-    Each record needs 'price' and 'timestamp'; used_price, count_new and
-    count_used are used when present.
+    Each record needs 'price' and 'timestamp'; used_price, count_new,
+    count_used, list_price and sales_rank are used when present.
 
     Returns:
         {
@@ -58,6 +58,8 @@ def predict_for_asin(price_records: list[dict], today: datetime | None = None) -
         "used_price": num(r.get("used_price")),
         "count_new": num(r.get("count_new")),
         "count_used": num(r.get("count_used")),
+        "list_price": num(r.get("list_price")),
+        "sales_rank": num(r.get("sales_rank")),
     } for r in price_records]
     today = pd.Timestamp(today or datetime.now(timezone.utc)).tz_localize(None).normalize()
     # Keepa records price *changes*, so the last price still holds today.

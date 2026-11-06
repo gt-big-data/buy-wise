@@ -27,3 +27,6 @@ PLAN.md
 studies/review_counts.csv
 studies/reviews_pulled.*
 studies/sentiment_scores.csv
+
+# R2: raw per-row test scores (large; rebuilt by python -m ml.evaluate --save)
+studies/results/scores_*.csv.gz

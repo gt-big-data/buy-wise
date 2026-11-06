@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from ml.features import REQUIRED, add_features, add_labels, daily_panel
@@ -28,8 +29,16 @@ def load_prices(path: Path = DEFAULT_SOURCE) -> pd.DataFrame:
     """Read the Keepa export into the column names the backend DB uses."""
     df = pd.read_csv(path, parse_dates=["datetime"])
     df.columns = df.columns.str.lower().str.strip()
-    df = df.rename(columns={"datetime": "date", "amazon": "price", "used": "used_price"})
-    return df[["asin", "date", "price", "used_price", "count_new", "count_used"]]
+    df = df.rename(columns={"datetime": "date", "amazon": "price", "used": "used_price",
+                            "new": "new_price", "listprice": "list_price"})
+    # Prices.csv has only SALES_SCORE, which is -log(sales rank); later pulls have both.
+    if "sales_rank" not in df.columns and "sales_score" in df.columns:
+        df["sales_rank"] = np.exp(-df["sales_score"])
+    for c in ("list_price", "new_price", "sales_rank"):
+        if c not in df.columns:
+            df[c] = np.nan
+    return df[["asin", "date", "price", "used_price", "count_new", "count_used",
+               "list_price", "new_price", "sales_rank"]]
 
 
 def _usable(prices: pd.DataFrame) -> pd.DataFrame:
