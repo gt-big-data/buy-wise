@@ -32,11 +32,6 @@ export default function Panel({ data, markUrl, onClose, onSeeOffers }: Props) {
 
 function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: "better_offer" }>; onSeeOffers: () => void }) {
   const { amazon, best } = data;
-  const daysLater = best.daysOut - amazon.daysOut;
-
-  let reason = `${best.condition}, ${money(amazon.price - best.price)} less. ${best.seller} has ${best.stars} stars over ${best.years} years`;
-  reason += best.freeReturns ? " and free returns." : ".";
-  if (daysLater > 0) reason += ` Arrives ${daysLater} day${daysLater > 1 ? "s" : ""} later.`;
 
   return (
     <>
@@ -63,7 +58,7 @@ function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: 
       </div>
       <p className="bw-note">
         <span className="bw-strong">Why: </span>
-        {reason}{" "}
+        {data.reason}{" "}
         {!best.fullWarranty && <span className="bw-caution">May not include the manufacturer warranty.</span>}
       </p>
       <button type="button" className="bw-button" onClick={onSeeOffers}>
