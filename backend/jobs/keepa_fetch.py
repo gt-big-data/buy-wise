@@ -5,7 +5,6 @@ from datetime import datetime
 from dotenv import load_dotenv
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-from db.connection import get_product, insert_product, insert_price
 from typing import Optional
 
 load_dotenv()
@@ -192,6 +191,9 @@ def _write_to_db(asin: str, name: str, records: list[dict]) -> None:
     """Upsert the product and insert all price records into the DB."""
     if not records:
         return
+
+    # Import DB functions only when records actually need to be saved.
+    from db.connection import get_product, insert_product, insert_price
 
     insert_product(asin, name, brand=None, category=None)
     product = get_product(asin)
