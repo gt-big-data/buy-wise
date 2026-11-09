@@ -4,9 +4,13 @@ import BuyWisePanel from "../components/BuyWisePanel";
 import LoadingState from "../components/LoadingState";
 import ErrorState from "../components/ErrorState";
 import { isAmazonProductPage, extractASIN, extractProductImage } from "./amazon";
-import { extractOffers } from "./offers";
+import { extractOffers, PageOffers } from "./offers";
 import { BuyWiseData } from "../types";
 import "./styles.css";
+import Panel from "./Panel";
+import { openOffersPanel } from "./offerPanel";
+import "./panel.css";
+import { pickFakeData, PanelData } from "./fakeData";
 
 let currentRoot: Root | null = null;
 let currentContainer: HTMLDivElement | null = null;
@@ -31,6 +35,58 @@ function createContainer(): HTMLDivElement {
   container.id = "buywise-root";
   document.body.appendChild(container);
   return container;
+}
+
+function mountFakePanel(data: PanelData): boolean {
+  if (!isAmazonProductPage()) return false;
+  removeExistingUI();
+  document.getElementById("buywise-root")?.remove();
+
+  currentContainer = document.createElement("div");
+  currentContainer.id = "buywise-root";
+
+  currentContainer.classList.add("bw-floating");
+  document.body.appendChild(currentContainer);
+
+  const root = createRoot(currentContainer);
+  currentRoot = root;
+  const render = (offers: PageOffers) =>
+    root.render(
+      <Panel
+        data={data}
+        markUrl={chrome.runtime.getURL("mark.png")}
+        onClose={removeExistingUI}
+        onSeeOffers={() => openOffersPanel()}
+        offers={offers}
+      />
+    );
+  render(extractOffers());
+  // Amazon fills in the "Other sellers" box after the page loads; re-read once it's there
+  whenOtherSellersLoad(() => {
+    if (root === currentRoot) render(extractOffers());
+  });
+  return true;
+}
+
+const OTHER_SELLERS_WAIT_MS = 10000;
+
+function whenOtherSellersLoad(onLoad: () => void): void {
+  if (extractOffers().otherOffersCount !== null) return;
+  const started = Date.now();
+  const timer = window.setInterval(() => {
+    if (extractOffers().otherOffersCount !== null) {
+      window.clearInterval(timer);
+      onLoad();
+    } else if (Date.now() - started > OTHER_SELLERS_WAIT_MS) {
+      window.clearInterval(timer);
+    }
+  }, 500);
+}
+
+async function showPanel(): Promise<boolean> {
+  const fake = pickFakeData(window.location.href);
+  if (fake) return mountFakePanel(fake);
+  return mountFloatingPanel();
 }
 
 async function fetchBuyWiseData(asin: string): Promise<BuyWiseData> {
@@ -178,13 +234,13 @@ function followVariantChanges(): void {
 function init(): void {
   console.log("BuyWise content script loaded");
   if (!isAmazonProductPage()) return;
-  window.setTimeout(() => { mountFloatingPanel(); }, 500);
+  window.setTimeout(() => { showPanel(); }, 500);
   followVariantChanges();
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "BUYWISE_OPEN_PANEL") {
-    mountFloatingPanel().then((opened) => sendResponse({ opened }));
+    showPanel().then((opened) => sendResponse({ opened }));
     return true;
   }
   if (message?.type === "BUYWISE_CLOSE_PANEL") {

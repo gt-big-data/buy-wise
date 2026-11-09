@@ -221,6 +221,7 @@ def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=No
                 target_price
             )
             VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE target_price = COALESCE(VALUES(target_price), target_price)
         """
 
         cursor.execute(query, (user_id, product_id, recommendation_at_add, target_price))

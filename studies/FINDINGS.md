@@ -248,6 +248,34 @@ It generalizes. Slightly *better* on unseen products. The model is learning gene
 
 ---
 
+### Study 016 — A second dataset was sitting in an old branch
+`s016_april_snapshot.py` — the 500-product pull from April's `xgboost_model` branch (#47), now in `snapshots/apr2026_500/`
+
+| | Current `Prices.csv` | April snapshot |
+|---|---|---|
+| Products | 312 | **500** (337 not in the current file) |
+| Dates | Apr 2023 – Apr 2026 | same |
+| Spacing | every ~4 days, 34% of gaps are exact weeks | daily, no weekly artifact |
+| Real price changes per product (median) | 40 | 47 |
+| Products with under 30 rows | 110 | 16 |
+| Products spanning a year or more | 204 | 374 |
+
+The 357,817 rows overstate it: the file is one row per day with the last price carried forward, so 90% of rows repeat the previous price. **The gain is products, not density.** Per product, the two files hold about the same number of real price changes.
+
+**The model holds up on it.** Same harness, same split, `--data snapshots/apr2026_500/Prices.csv.gz`:
+
+| At a 20% wait rate | Current (218 test products) | April (413 test products) |
+|---|---|---|
+| Base rate (8%+ drop within 14 days) | 21.9% | 16.9% |
+| Served model AUC | 0.802 | 0.829 |
+| Same recipe, retrained AUC | 0.802 | 0.850 |
+| Best rule AUC | 0.730 | 0.767 |
+| Served model lift | 2.53 | 2.85 |
+
+**Caveats.** On the 12,040 product-days both files cover, they agree on Amazon's price only 65% of the time (median gap 4.7% when they differ). That fits sampling at different times of day, since Amazon reprices within a day, but without the raw Keepa responses it can't be proven. So the two files shouldn't be merged into one; treat April as a separate dataset. 163 of the served model's training products are also in April's test set (later dates, so no time leakage, but not fully independent products); the retrained row is the clean comparison. The old April model can't run on this snapshot because its `Product.csv` names one column differently.
+
+---
+
 ## 4. What this adds up to
 
 **The bad news.** What we shipped doesn't work. A model at lift 1.05 is a coin flip wearing a confidence score. Had we deployed to real users we'd have been giving random advice with an authoritative-looking percentage attached.
@@ -300,6 +328,7 @@ cd studies
 ../backend/.venv/bin/python s005_clean_rebuild.py
 ../backend/.venv/bin/python s006_segmentation.py
 ../backend/.venv/bin/python s009_substitution.py
+../backend/.venv/bin/python s016_april_snapshot.py
 ```
 
 `Prices.csv` and `Product.csv` are copied here from `origin/Training_data_generation:notebooks/`.

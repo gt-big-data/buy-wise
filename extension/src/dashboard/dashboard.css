@@ -1,0 +1,199 @@
+/* Dashboard page. Colors match website/app/globals.css and panel.css. */
+
+body {
+  margin: 0;
+  background: #f7f7f4;
+  color: #111311;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+p,
+h2,
+h3,
+dl,
+dd,
+ul {
+  margin: 0;
+}
+
+.db {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.db-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e4df;
+}
+
+.db-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.db-sample {
+  font-size: 12.5px;
+  color: #5f665f;
+}
+
+.db-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.db-button--small {
+  margin-top: 0;
+  height: 30px;
+  font-size: 13px;
+}
+
+.db-button:disabled {
+  color: #5f665f;
+  cursor: default;
+}
+
+a.db-item-title {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.db-item-title:hover {
+  text-decoration: underline;
+}
+
+section {
+  margin-top: 32px;
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+
+h3 {
+  margin-top: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.db-list {
+  margin-top: 8px;
+  padding: 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #c9ccc6;
+  border-radius: 6px;
+}
+
+.db-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+}
+
+.db-item + .db-item {
+  border-top: 1px solid #e2e4df;
+}
+
+.db-item--alert {
+  justify-content: flex-start;
+}
+
+.db-when {
+  flex: none;
+  width: 110px;
+}
+
+.db-item-main {
+  min-width: 0;
+}
+
+.db-item-title {
+  font-weight: 500;
+}
+
+.db-item-side {
+  flex: none;
+  text-align: right;
+}
+
+.db-stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #fff;
+  border: 1px solid #c9ccc6;
+  border-radius: 6px;
+}
+
+.db-stats > div {
+  padding: 14px;
+}
+
+.db-stats > div + div {
+  border-left: 1px solid #e2e4df;
+}
+
+.db-stat {
+  font-size: 22px;
+}
+
+.db-profile {
+  background: #fff;
+  border: 1px solid #c9ccc6;
+  border-radius: 6px;
+}
+
+.db-profile > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+
+.db-profile > div + div {
+  border-top: 1px solid #e2e4df;
+}
+
+.db-button {
+  margin-top: 12px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #c9ccc6;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.db-button:hover {
+  border-color: #111311;
+}
+
+.db-muted {
+  color: #5f665f;
+  font-size: 13px;
+}
+
+.db-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.db-good {
+  color: #0e6b31;
+}
+
+.db-caution {
+  color: #8a6100;
+}

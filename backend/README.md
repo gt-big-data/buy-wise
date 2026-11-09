@@ -94,6 +94,7 @@ When the real model is ready, it should call `insert_prediction(...)` with its o
 
 ```bash
 docker compose exec -T mysql mysql -uroot -proot buywise < backend/db/migrations/001_prices_keepa_columns.sql
+docker compose exec -T mysql mysql -uroot -proot buywise < backend/db/migrations/002_watchlist_user_id_string.sql
 ```
 
 **`seed.sql`** — 5 fake products with price history and predictions. Useful for local development without real Keepa data.

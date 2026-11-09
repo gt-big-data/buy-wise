@@ -27,3 +27,10 @@ PLAN.md
 studies/review_counts.csv
 studies/reviews_pulled.*
 studies/sentiment_scores.csv
+
+
+# Ignore local data snapshots and experiment logs
+studies/snapshots/
+studies/experiment_log.csv
+# studies/Prices.csv
+# studies/Product.csv
