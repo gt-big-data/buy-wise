@@ -183,6 +183,32 @@ def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, c
         if conn:
             conn.close()
 
+def log_prediction(product_id, pred_14d, recommendation, confidence, *, price_at_prediction,
+                   p_drop, horizon_days, drop_threshold, model_version, predicted_on):
+    """Store a prediction with everything the track record (#85) needs to score it later.
+
+    Needs migration 003. Unlike insert_prediction, this raises on failure, so a
+    daily logging job that breaks says so instead of silently logging nothing.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO predictions (
+                product_id, pred_14d, recommendation, confidence_score,
+                price_at_prediction, p_drop, horizon_days, drop_threshold, model_version, predicted_on
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (product_id, pred_14d, recommendation, confidence, price_at_prediction, p_drop,
+              horizon_days, drop_threshold, model_version, predicted_on))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
 def get_latest_prediction(product_id):
     conn = None
     cursor = None
@@ -221,6 +247,7 @@ def add_to_watchlist(user_id, product_id, recommendation_at_add, target_price=No
                 target_price
             )
             VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE target_price = COALESCE(VALUES(target_price), target_price)
         """
 
         cursor.execute(query, (user_id, product_id, recommendation_at_add, target_price))

@@ -78,7 +78,11 @@ export function parseOfferList(root: ParentNode): OfferListResult {
   const totalCount = countAttr != null && countAttr !== "" ? Number(countAttr) : null;
 
   const rows: [Element, boolean][] = [];
-  const pinnedRow = root.querySelector("#aod-pinned-offer");
+  // Some pages (books, Nov 3) pin only the product header: title and stars, no offer.
+  // Skip it then; a pinned row with any offer markup is still read and checked.
+  const pinned = root.querySelector("#aod-pinned-offer");
+  const pinnedRow =
+    pinned?.querySelector("#aod-offer-heading, #aod-offer-soldBy, [data-csa-c-price-to-pay], .a-price") ? pinned : null;
   if (pinnedRow) rows.push([pinnedRow, true]);
   root.querySelectorAll("#aod-offer").forEach((row) => rows.push([row, false]));
 
