@@ -15,6 +15,7 @@ import pandas as pd
 from ml.bench.data import DEFAULT_SOURCE
 from ml.bench.interface import BaseModel, Fold, PriceHistory
 from ml.features import FEATURES
+from ml.bench.tabular import LightGBM, SmallNeuralNet
 
 ML_DIR = Path(__file__).resolve().parents[1]
 
@@ -189,6 +190,10 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "served": lambda src: ServedXGB(),
     "xgb": lambda src: CleanXGB(),
     "april": lambda src: AprilModel(src),
+    "lightgbm": lambda src: LightGBM(),
+    "lightgbm-tuned": lambda src: LightGBM(tuned=True),
+    "small-nn": lambda src: SmallNeuralNet(),
+    "small-nn-tuned": lambda src: SmallNeuralNet(tuned=True),
 }
 RULES = ("top90", "rel90", "november")
 # What `python -m ml.evaluate` shows by default: today's leaderboard.
