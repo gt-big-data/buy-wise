@@ -112,7 +112,9 @@ chrome.notifications.onClicked.addListener(() => {
 
 // Re-check watched prices every hour and when Chrome starts. Prices only change
 // when the daily job (#90) runs, so hourly is plenty.
-chrome.alarms.create("buywise-check-prices", { periodInMinutes: 60 });
+chrome.alarms.get("buywise-check-prices").then((alarm) => {
+  if (!alarm) chrome.alarms.create("buywise-check-prices", { periodInMinutes: 60 });
+});
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "buywise-check-prices") checkPrices().catch(() => {});
 });

@@ -41,6 +41,16 @@ describe("parseOfferList layout changes", () => {
     expect(parseOfferList(doc)).toMatchObject({ status: "unreadable", reason: "no offer rows, count says 12" });
   });
 
+  it("skips a pinned block that is only the product header", () => {
+    const doc = load("synthetic-mixed.html");
+    const pinned = doc.querySelector("#aod-pinned-offer")!;
+    pinned.innerHTML = '<div id="aod-asin-title"><h5 id="aod-asin-title-text">Some Book</h5></div><div id="aod-asin-reviews">4.8 out of 5 stars</div>';
+    const result = parseOfferList(doc);
+    expect(result.status).toBe("ok");
+    expect(result.offers.map((o) => o.seller)).toEqual(["Amazon Resale", "Goodwillswpa", "MobileMonster"]);
+    expect(result.offers.every((o) => !o.pinned)).toBe(true);
+  });
+
   it("reports unreadable for markup it doesn't recognise at all", () => {
     const doc = new DOMParser().parseFromString("<div id='aod-container'><p>new layout</p></div>", "text/html");
     expect(parseOfferList(doc)).toMatchObject({ status: "unreadable", reason: "no offer rows and no offer count" });

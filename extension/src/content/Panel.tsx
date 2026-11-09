@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { PanelData } from "./fakeData";
 import { extractASIN } from "./amazon";
+import { PageOffers } from "./offers";
+import OffersSection from "./OffersSection";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
@@ -9,35 +11,43 @@ type Props = {
   markUrl: string;
   onClose: () => void;
   onSeeOffers: () => void;
+  offers?: PageOffers;
 };
 
-export default function Panel({ data, markUrl, onClose, onSeeOffers }: Props) {
+export default function Panel({ data, markUrl, onClose, onSeeOffers, offers }: Props) {
+  const [minimized, setMinimized] = useState(false);
+
+  // Stays mounted while minimized so the offer list keeps updating behind the chip
   return (
-    <div className="bw-panel">
-      <div className="bw-head">
-        <img src={markUrl} alt="" width={16} height={18} />
-        <span className="bw-name">BuyWise</span>
-        <span>checked {data.offersChecked} offers</span>
-        <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
-          ×
+    <>
+      {minimized && (
+        <button type="button" className="bw-chip" onClick={() => setMinimized(false)}>
+          <img src={markUrl} alt="" width={14} height={16} />
+          BuyWise
         </button>
+      )}
+      <div className="bw-panel" hidden={minimized}>
+        <div className="bw-head">
+          <img src={markUrl} alt="" width={16} height={18} />
+          <span className="bw-name">BuyWise</span>
+          <span>checked {data.offersChecked} offers</span>
+          <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="bw-body">
+          {data.state === "better_offer" && <BetterOffer data={data} onSeeOffers={onSeeOffers} />}
+          {data.state === "wait" && <Wait data={data} />}
+          {data.state === "nothing_better" && <NothingBetter data={data} />}
+        </div>
+        {offers && <OffersSection offers={offers} onCompareOpen={() => setMinimized(true)} />}
       </div>
-      <div className="bw-body">
-        {data.state === "better_offer" && <BetterOffer data={data} onSeeOffers={onSeeOffers} />}
-        {data.state === "wait" && <Wait data={data} />}
-        {data.state === "nothing_better" && <NothingBetter data={data} />}
-      </div>
-    </div>
+    </>
   );
 }
 
 function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: "better_offer" }>; onSeeOffers: () => void }) {
   const { amazon, best } = data;
-  const daysLater = best.daysOut - amazon.daysOut;
-
-  let reason = `${best.condition}, ${money(amazon.price - best.price)} less. ${best.seller} has ${best.stars} stars over ${best.years} years`;
-  reason += best.freeReturns ? " and free returns." : ".";
-  if (daysLater > 0) reason += ` Arrives ${daysLater} day${daysLater > 1 ? "s" : ""} later.`;
 
   return (
     <>
@@ -64,7 +74,7 @@ function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: 
       </div>
       <p className="bw-note">
         <span className="bw-strong">Why: </span>
-        {reason}{" "}
+        {data.reason}{" "}
         {!best.fullWarranty && <span className="bw-caution">May not include the manufacturer warranty.</span>}
       </p>
       <button type="button" className="bw-button" onClick={onSeeOffers}>
@@ -92,8 +102,8 @@ function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
       </dl>
       <p className="bw-note">
         It dropped {data.drops} times in the last {data.months} months. No other seller has it cheaper right now.
-        <WatchFlow expectedLow={data.expectedLow} />
       </p>
+      <WatchFlow expectedLow={data.expectedLow} />
     </>
   );
 }
