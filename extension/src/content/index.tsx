@@ -1,3 +1,4 @@
+import { followLivePrices } from "./livePrices";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import BuyWisePanel from "../components/BuyWisePanel";
@@ -188,7 +189,7 @@ async function mountFloatingPanel(): Promise<boolean> {
     postActivity(data.asin, "added_to_watchlist");
 
     // Persist to backend
-    chrome.runtime.sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin: data.asin }).catch(() => {});
+    chrome.runtime.sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin: data.asin, target_price: data.predictedBestPrice }).catch(() => {});
 
     // Mirror to local storage for instant isWatched state
     chrome.storage.local.get(["buywise_watchlist"], (res) => {
@@ -236,6 +237,7 @@ function init(): void {
   if (!isAmazonProductPage()) return;
   window.setTimeout(() => { showPanel(); }, 500);
   followVariantChanges();
+  followLivePrices();
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

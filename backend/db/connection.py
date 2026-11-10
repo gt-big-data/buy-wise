@@ -123,6 +123,7 @@ def insert_price(
     except Exception as e:
         if conn:
             conn.rollback()
+        raise
     finally:
         if cursor:
             cursor.close()
@@ -139,7 +140,7 @@ def get_price_history(product_id, limit=100):
             SELECT *
             FROM prices
             WHERE product_id = %s
-            ORDER BY timestamp DESC
+            ORDER BY timestamp DESC, price_id DESC
             LIMIT %s
         """
         cursor.execute(query, (product_id, limit))
