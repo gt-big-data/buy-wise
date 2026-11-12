@@ -21,6 +21,7 @@ try:
         get_latest_prediction,
         get_price_history as db_get_price_history,
         insert_prediction,
+        insert_price,
         add_to_watchlist,
         remove_from_watchlist,
         get_watchlist,
@@ -531,6 +532,22 @@ def get_price_history(asin: str) -> PriceHistoryResponse:
     prediction = get_latest_prediction(product["product_id"])
 
     return _bucket_price_history(prices, prediction, asin)
+
+
+class PriceObservation(BaseModel):
+    asin: str = Field(..., pattern=r"^[A-Z0-9]{10}$")
+    price: float = Field(..., gt=0, le=99999999.99, allow_inf_nan=False)
+
+
+@app.post("/prices", response_model=PriceObservation, status_code=201)
+def record_price(request: PriceObservation) -> PriceObservation:
+    """Save a live USD one-time price for an already tracked product."""
+    _require_db()
+    product = get_product(request.asin)
+    if not product:
+        raise HTTPException(status_code=404, detail="not_tracked")
+    insert_price(product["product_id"], request.price)
+    return request
 
 
 @app.post("/activity", response_model=ActivityResponse)

@@ -49,7 +49,14 @@ export async function loadAlerts(): Promise<SentAlert[]> {
   return Array.isArray(res[ALERTS_KEY]) ? res[ALERTS_KEY] : [];
 }
 
-export async function checkPrices(): Promise<number> {
+let inFlight: Promise<number> | null = null;
+
+export function checkPrices(): Promise<number> {
+  if (!inFlight) inFlight = runCheck().finally(() => { inFlight = null; });
+  return inFlight;
+}
+
+async function runCheck(): Promise<number> {
   const items = await loadWatchlist();
   const stored = await chrome.storage.local.get(ALERTED_KEY);
   const alerted: Record<string, number> = stored[ALERTED_KEY] ?? {};
@@ -62,7 +69,7 @@ export async function checkPrices(): Promise<number> {
     // One alert per target. Setting a new target can alert again.
     if (alerted[item.asin] === item.target) continue;
 
-    chrome.notifications.create(`buywise-${item.asin}`, {
+    await chrome.notifications.create(`buywise-${item.asin}`, {
       type: "basic",
       iconUrl: "logo.png",
       title: `Price drop: ${item.title.slice(0, 60)}`,

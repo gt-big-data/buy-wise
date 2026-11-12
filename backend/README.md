@@ -143,3 +143,35 @@ Each record in the returned list has:
 **Rate limiting:** Keepa uses a token bucket. When the bucket is empty the API returns a `refillIn` field (milliseconds until refill). `fetch_price_history` will sleep and retry up to 3 times before raising a `RuntimeError`. The paid key refills fast enough that retries should rarely trigger under normal load. If they do, the caller should back off and reschedule rather than retrying in a tight loop.
 
 **Timestamp encoding:** Keepa stores timestamps as minutes since 2011-01-01 UTC. The module converts these to Unix seconds transparently — all records returned have standard Unix timestamps.
+
+### Live price observations and alert demo (#74)
+
+`POST /prices` accepts `{"asin":"B08N5WRWNW","price":99.99}` and returns
+201 after saving a timestamped price row. The product must already be tracked
+(404 otherwise). ASINs must be ten uppercase letters/digits; USD prices must be
+positive and finite. Database write failures return an error rather than success.
+
+The extension reports `extractOffers().oneTimePrice` through its background
+worker when an Amazon.com product page opens, including delayed buy boxes and
+variant changes. It retries briefly when prices or backend data aren't ready.
+After a successful write it checks alert targets immediately. Hourly checks,
+startup checks, and the dashboard's **Check prices now** also read the latest
+stored price. This does not scrape Amazon in the background: products that no
+one visits still depend on the existing data jobs for fresh prices.
+
+To demo against your local database:
+
+1. Start `docker compose up` and load the built extension in Chrome. Allow Chrome
+   notifications in your operating system.
+2. Visit a tracked product, set an alert target below its current price, and open
+   the extension dashboard. Close that Amazon tab so it won't report a real price
+   over the demo value.
+3. From the repository root run (substitute the same ASIN and a price below the target):
+   `python3 backend/scripts/demo_price_drop.py B08N5WRWNW 49.99`.
+4. Click **Check prices now** in the dashboard. Its current price updates and a
+   Chrome notification appears via the normal alert checker. The script itself
+   only inserts the price; Chrome sends the notification.
+5. Repeat checks to confirm there is no duplicate notification. For another run,
+   choose a different target: the extension remembers one notification per ASIN
+   and target. Revisit the real product to record its actual price again. Demo
+   rows remain in history, so use a local demo database.

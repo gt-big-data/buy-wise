@@ -39,6 +39,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true; // keep message channel open for async response
   }
 
+  if (message?.type === "BUYWISE_RECORD_PRICE") {
+    fetch(`${BACKEND_URL}/prices`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asin: message.asin, price: message.price }),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`record-price: ${r.status}`);
+        await checkPrices();
+        sendResponse({ ok: true });
+      })
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
   if (message?.type === "BUYWISE_POST_ACTIVITY") {
     getUserId()
       .then((userId) =>
@@ -111,7 +126,7 @@ chrome.notifications.onClicked.addListener(() => {
 });
 
 // Re-check watched prices every hour and when Chrome starts. Prices only change
-// when the daily job (#90) runs, so hourly is plenty.
+// when a product page reports a live price or the daily job (#90) runs.
 chrome.alarms.get("buywise-check-prices").then((alarm) => {
   if (!alarm) chrome.alarms.create("buywise-check-prices", { periodInMinutes: 60 });
 });
