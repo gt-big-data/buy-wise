@@ -1,0 +1,16 @@
+[
+  {
+    "max_epochs": 100,
+    "epochs_run": 100,
+    "training_loss": 0.25132047092431126,
+    "validation_pr_auc": 0.3892945845726221,
+    "hit_cap": true
+  },
+  {
+    "max_epochs": 400,
+    "epochs_run": 400,
+    "training_loss": 0.22572303336315194,
+    "validation_pr_auc": 0.35801032053195747,
+    "hit_cap": true
+  }
+]
