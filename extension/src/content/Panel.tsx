@@ -113,7 +113,7 @@ function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: 
       <p className="bw-note">
         <span className="bw-strong">Why: </span>
         {data.reason}{" "}
-        {!best.fullWarranty && <span className="bw-caution">May not include the manufacturer warranty.</span>}
+        <span className="bw-caution">May not include the manufacturer warranty.</span>
       </p>
       <button type="button" className="bw-button" onClick={onSeeOffers}>
         See offer

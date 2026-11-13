@@ -12,7 +12,7 @@ describe("toPanelData", () => {
     if (p?.state !== "better_offer") return;
     expect(p.amazon.daysOut).toBe(2);
     expect(p.amazon.arrives).toBe("Sun, Nov 8");
-    expect(p.best.fullWarranty).toBe(false);
+    expect(p.best).toMatchObject({ stars: 4.5, ratingCount: 390, positivePercent: 94 });
     expect(p.reason).toContain("$80.99 less");
   });
 
