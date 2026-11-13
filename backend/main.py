@@ -10,6 +10,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from routes.dashboard import router as dashboard_router
+from routes.track_record import router as track_record_router
 from schemas.common import RecommendationDirection
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,7 @@ app = FastAPI(
 )
 
 app.include_router(dashboard_router)
+app.include_router(track_record_router)
 
 app.add_middleware(
     CORSMiddleware,
