@@ -144,3 +144,14 @@ export const PROFILE_TEXT = {
   notSetUp: "Not set up yet",
 } as const;
 export const assumedLine = (choice: string) => `Not answered. Using "${choice}" for now.`;
+
+// The panel while there's no answer to show yet, or when getting one failed (#119).
+export const PANEL_STATUS = {
+  loading: "Checking offers and price history…",
+  timeout: "Couldn't get an answer in time.",
+  error: "Couldn't reach BuyWise. Amazon's page is unchanged.",
+  notTracked: "BuyWise doesn't have price history for this product yet.",
+  retry: "Try again",
+  partialOffers: "Based on the offers on this page. Compare all offers to check every seller.",
+} as const;
+export const checkedOffers = (n: number) => `checked ${n} offer${n === 1 ? "" : "s"}`;
