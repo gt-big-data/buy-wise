@@ -3,19 +3,40 @@ import { PanelData } from "./fakeData";
 import { extractASIN } from "./amazon";
 import { PageOffers } from "./offers";
 import OffersSection from "./OffersSection";
+import { OfferListResult } from "./offerList";
+import { PANEL_STATUS, checkedOffers } from "../../../website/app/preview/copy";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
+// ready: data holds the endpoint's answer. The rest are the panel with no answer.
+export type PanelStatus = "ready" | "loading" | "error" | "timeout" | "not_tracked";
+
 type Props = {
-  data: PanelData;
+  data: PanelData | null;
+  status?: PanelStatus;
   markUrl: string;
   onClose: () => void;
   onSeeOffers: () => void;
+  onRetry?: () => void;
   offers?: PageOffers;
+  // The answer only saw the buy box; Amazon's full list hasn't been read yet
+  partialOffers?: boolean;
+  onOfferList?: (list: OfferListResult) => void;
 };
 
-export default function Panel({ data, markUrl, onClose, onSeeOffers, offers }: Props) {
+export default function Panel({
+  data,
+  status = "ready",
+  markUrl,
+  onClose,
+  onSeeOffers,
+  onRetry,
+  offers,
+  partialOffers,
+  onOfferList,
+}: Props) {
   const [minimized, setMinimized] = useState(false);
+  const answer = status === "ready" ? data : null;
 
   // Stays mounted while minimized so the offer list keeps updating behind the chip
   return (
@@ -30,18 +51,35 @@ export default function Panel({ data, markUrl, onClose, onSeeOffers, offers }: P
         <div className="bw-head">
           <img src={markUrl} alt="" width={16} height={18} />
           <span className="bw-name">BuyWise</span>
-          <span>checked {data.offersChecked} offers</span>
+          {answer && <span>{checkedOffers(answer.offersChecked)}</span>}
           <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
             ×
           </button>
         </div>
-        <div className="bw-body">
-          {data.state === "better_offer" && <BetterOffer data={data} onSeeOffers={onSeeOffers} />}
-          {data.state === "wait" && <Wait data={data} />}
-          {data.state === "nothing_better" && <NothingBetter data={data} />}
+        <div className="bw-body" aria-live="polite">
+          {!answer && <NoAnswer status={status} onRetry={onRetry} />}
+          {answer?.state === "better_offer" && <BetterOffer data={answer} onSeeOffers={onSeeOffers} />}
+          {answer?.state === "wait" && <Wait data={answer} />}
+          {answer?.state === "nothing_better" && <NothingBetter data={answer} />}
+          {answer && partialOffers && <p className="bw-note">{PANEL_STATUS.partialOffers}</p>}
         </div>
-        {offers && <OffersSection offers={offers} onCompareOpen={() => setMinimized(true)} />}
+        {offers && <OffersSection offers={offers} onCompareOpen={() => setMinimized(true)} onList={onOfferList} />}
       </div>
+    </>
+  );
+}
+
+function NoAnswer({ status, onRetry }: { status: PanelStatus; onRetry?: () => void }) {
+  if (status === "loading") return <p className="bw-note">{PANEL_STATUS.loading}</p>;
+  if (status === "not_tracked") return <p className="bw-note">{PANEL_STATUS.notTracked}</p>;
+  return (
+    <>
+      <p className="bw-note bw-caution">{status === "timeout" ? PANEL_STATUS.timeout : PANEL_STATUS.error}</p>
+      {onRetry && (
+        <button type="button" className="bw-button bw-button--quiet" onClick={onRetry}>
+          {PANEL_STATUS.retry}
+        </button>
+      )}
     </>
   );
 }

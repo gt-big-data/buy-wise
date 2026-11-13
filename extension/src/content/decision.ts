@@ -42,7 +42,9 @@ function toOffer(o: ApiOffer, today: Date) {
 
 // Turns the endpoint's answer into what the panel draws. Returns null when the
 // panel should stay hidden, or when the answer is missing what its status needs.
-export function toPanelData(d: Decision, today = new Date()): PanelData | null {
+// pagePrice is the price on the page; it wins over the newest price we have
+// stored, which can be a day old (#104).
+export function toPanelData(d: Decision, today = new Date(), pagePrice: number | null = null): PanelData | null {
   if (!d.show) return null;
 
   if (d.status === "better_offer") {
@@ -67,7 +69,7 @@ export function toPanelData(d: Decision, today = new Date()): PanelData | null {
     return {
       state: "wait",
       offersChecked: d.offers_checked,
-      price: d.wait.price,
+      price: pagePrice ?? d.wait.price,
       expectedLow: d.wait.expected_low,
       dropChance: d.wait.drop_chance,
       drops: d.wait.drops,
