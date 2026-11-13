@@ -1,0 +1,21 @@
+{
+  "status": "ok",
+  "dimensions": [
+    { "key": "color_name", "label": "Color", "selectedValue": "White - 6 Pack" },
+    { "key": "size_name", "label": "Size", "selectedValue": "Large" }
+  ],
+  "versions": [
+    { "asin": "B00D1ARZMC", "dimension": "color_name", "value": "White - 6 Pack", "selected": true, "available": true,
+      "price": 20, "unitPrice": 3.33, "unitLabel": "pack", "count": 6, "pricePerItem": 3.33 },
+    { "asin": "B0BNP7STX3", "dimension": "color_name", "value": "Black - 7 Pack", "selected": false, "available": true,
+      "price": 24.76, "unitPrice": null, "unitLabel": null, "count": 7, "pricePerItem": 3.54 },
+    { "asin": "B000C4UATA", "dimension": "color_name", "value": "White - 3 Pack", "selected": false, "available": true,
+      "price": null, "unitPrice": null, "unitLabel": null, "count": 3, "pricePerItem": null },
+    { "asin": "B00HVW5FQO", "dimension": "size_name", "value": "Small", "selected": false, "available": true,
+      "price": null, "unitPrice": null, "unitLabel": null, "count": null, "pricePerItem": null },
+    { "asin": "B00D1ARZMC", "dimension": "size_name", "value": "Large", "selected": true, "available": true,
+      "price": null, "unitPrice": null, "unitLabel": null, "count": null, "pricePerItem": null },
+    { "asin": "B00HVW5J7K", "dimension": "size_name", "value": "3X-Large", "selected": false, "available": false,
+      "price": null, "unitPrice": null, "unitLabel": null, "count": null, "pricePerItem": null }
+  ]
+}
