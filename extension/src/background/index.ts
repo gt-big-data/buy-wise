@@ -68,6 +68,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true;
   }
+  
+  if (message?.type === "BUYWISE_GET_TRACK_RECORD") {
+    fetch(`${BACKEND_URL}/track-record`)
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ?? `track-record: ${r.status}`);
+        }
+        return r.json();
+      })
+      .then((record) => sendResponse({ ok: true, record }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
 
   if (message?.type === "BUYWISE_CHECK_PRICES") {
     checkPrices()

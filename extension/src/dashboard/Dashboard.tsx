@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { choiceText, loadProfile, QUESTIONS, resolvedAnswers, type StoredProfile } from "../profile";
 import { PROFILE_LABEL } from "../../../website/app/preview/copy";
-import { TRACK_RECORD } from "./fakeDashboard";
+import TrackRecord from "./TrackRecord";
 import type { SentAlert, WatchedItem } from "../background/alerts";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
@@ -97,53 +97,8 @@ export default function Dashboard() {
         )}
       </section>
 
-      <section>
-        <div className="db-section-head">
-          <h2>How BuyWise has done</h2>
-          <span className="db-sample">Sample data until #85</span>
-        </div>
-        <p className="db-muted">
-          Since {TRACK_RECORD.since}. Every call is checked 14 days later against what the price actually did.
-        </p>
-        <div className="db-stats">
-          <div>
-            <p className="db-stat db-mono">
-              {TRACK_RECORD.right} of {TRACK_RECORD.calls}
-            </p>
-            <p className="db-muted">calls were right ({Math.round((TRACK_RECORD.right / TRACK_RECORD.calls) * 100)}%)</p>
-          </div>
-          <div>
-            <p className="db-stat db-mono db-good">{money(TRACK_RECORD.saved)}</p>
-            <p className="db-muted">saved when it was right</p>
-          </div>
-          <div>
-            <p className="db-stat db-mono db-caution">{money(TRACK_RECORD.lost)}</p>
-            <p className="db-muted">cost you when it was wrong</p>
-          </div>
-        </div>
-
-        <h3>Recent calls</h3>
-        <ul className="db-list">
-          {TRACK_RECORD.recent.map((c) => (
-            <li key={c.title} className="db-item">
-              <div className="db-item-main">
-                <p className="db-item-title">{c.title}</p>
-                <p className="db-muted">
-                  Said {c.said}. {c.happened}.
-                </p>
-              </div>
-              <div className="db-item-side">
-                <p className={c.right ? "db-good" : "db-caution"}>{c.right ? "Right" : "Wrong"}</p>
-                <p className="db-muted db-mono">
-                  {c.right ? "+" : "-"}
-                  {money(c.amount)}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-
+      <TrackRecord />
+      
       <section>
         <h2>Your profile</h2>
         {profile && (
