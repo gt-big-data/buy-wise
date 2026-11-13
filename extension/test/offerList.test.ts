@@ -56,3 +56,32 @@ describe("parseOfferList layout changes", () => {
     expect(parseOfferList(doc)).toMatchObject({ status: "unreadable", reason: "no offer rows and no offer count" });
   });
 });
+
+// A real offer list (Bose QuietComfort, B0CCZ26B5V, Nov 13). The expected numbers were
+// read from the page's text separately, not from this parser's output.
+describe("seller ratings on a real offer list", () => {
+  const html = readFileSync(join(__dirname, "fixtures/seller-ratings/B0CCZ26B5V.html"), "utf8");
+  const result = parseOfferList(new DOMParser().parseFromString(html, "text/html"));
+  const offers = result.offers.filter((o) => !o.pinned);
+
+  it("reads prices when Amazon's hidden price text is blank", () => {
+    expect(result.status).toBe("ok");
+    expect(result.offers[0]).toMatchObject({ pinned: true, seller: "Frontrow Tech LLC", price: 359 });
+    expect(offers.slice(0, 3).map((o) => o.price)).toEqual([178.99, 178.99, 194.9]);
+  });
+
+  it("reads stars, rating count and % positive for every seller", () => {
+    expect(offers.map((o) => [o.seller, o.stars, o.ratingCount, o.positivePercent])).toEqual([
+      ["ADV Sellers", 4.5, 390, 94],
+      ["Win-Plus shop", 4.5, 28, 88],
+      ["Silmarils (Serial Number Recorded)", 2.5, 2255, 34],
+      ["Officeworld Stores", 5, 5990, 97],
+      ["FDBV Corporate Group", 4, 662, 73],
+      ["Beach Camera Same Day Shipping", 4.5, 353956, 88],
+      ["Toms jeans and ties", 4, 143, 78],
+      ["Tech Geeks", 4.5, 315, 86],
+      ["Mostly Pre-Owned Audio", 5, 1001, 100],
+      ["wilog2001", 4, 10, 70],
+    ]);
+  });
+});
