@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, Any, List
 
-from ml.evaluate import STUDIES, load_prices
+from ml.evaluate import STUDIES
 
 
 def filter_by_condition_preference(condition_str: str, preference: str) -> bool:
@@ -86,37 +86,35 @@ def compute_offer_score(
     return round(score, 2)
 
 
+GREAT_SAVINGS = 0.10   # >= 10% below the product's typical price
+OKAY_SAVINGS = -0.03   # within 3% above typical still counts as okay
+
+
 def assign_dynamic_tiers(scored_candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Dynamically clusters scores relative to the page's max/min spread."""
-    if not scored_candidates:
-        return scored_candidates
-        
-    scores = [c["score"] for c in scored_candidates if c["passed_tests"]["passed_all"]]
-    
-    if not scores or max(scores) == min(scores):
-        for c in scored_candidates:
-            c["tier"] = "okay offer" if c["passed_tests"]["passed_all"] else "bad offer"
-        return scored_candidates
-        
-    max_score = max(scores)
-    min_score = min(scores)
-    spread = max_score - min_score
-    
+    """Tiers each offer by its savings against its own typical price.
+
+    Absolute, not relative to the page: ranking within a page always made the
+    top offer "great", so the winner's label carried no information. Each
+    candidate carries a `reference_price` for its condition (new vs used), so
+    used offers aren't "great" just for being used. No history -> "okay".
+    """
     for c in scored_candidates:
-        if not c["passed_tests"]["passed_all"] or c["score"] <= 0:
+        if not c["passed_tests"]["passed_all"]:
             c["tier"] = "bad offer"
             continue
-            
-        # Relative gap classification
-        relative_position = (c["score"] - min_score) / (spread if spread > 0 else 1.0)
-        
-        if c["score"] >= max_score * 0.85 or relative_position >= 0.70:
+        reference_price = c.get("reference_price")
+        if reference_price is None or pd.isna(reference_price) or reference_price <= 0:
+            c["tier"] = "okay offer"
+            continue
+
+        savings = (reference_price - c["price"]) / reference_price
+        if savings >= GREAT_SAVINGS:
             c["tier"] = "great offer"
-        elif relative_position >= 0.30 or c["score"] >= max_score * 0.50:
+        elif savings >= OKAY_SAVINGS:
             c["tier"] = "okay offer"
         else:
             c["tier"] = "bad offer"
-            
+
     return scored_candidates
 
 def evaluate_single_product_offers(
@@ -130,7 +128,10 @@ def evaluate_single_product_offers(
     used_price = row.get("used")
     
     baseline_source = "Amazon (Add to Cart)"
-    
+    # Typical prices from earlier observations only (see add_typical_prices).
+    typical_new = row.get("typical_new")
+    typical_used = row.get("typical_used")
+
     # Fallback if official Amazon Buy Box price is missing
     if pd.isna(amazon_price):
         if not pd.isna(new_price):
@@ -157,6 +158,7 @@ def evaluate_single_product_offers(
         "rating_count": 1000,
         "is_fba": True,
         "product_purchases": row.get("purchases", 50),
+        "reference_price": typical_used if baseline_source.startswith("Lowest Used") else typical_new,
         "reason": f"Baseline reference ({baseline_source})"
     }]
     
@@ -170,6 +172,7 @@ def evaluate_single_product_offers(
             "rating_count": row.get("new_ratings", 50),
             "is_fba": row.get("new_fba", True),
             "product_purchases": row.get("purchases", 50),
+            "reference_price": typical_new,
             "reason": f"New offer priced at ${new_price:.2f}"
         })
         
@@ -183,17 +186,22 @@ def evaluate_single_product_offers(
             "rating_count": row.get("used_ratings", 20),
             "is_fba": row.get("used_fba", False),
             "product_purchases": row.get("purchases", 50),
+            "reference_price": typical_used,
             "reason": f"({cond_str}) offer priced at ${used_price:.2f}"
         })
-        
+
     if len(candidates) == 1:
+        only = assign_dynamic_tiers([{
+            **candidates[0],
+            "passed_tests": check_offer_risk(candidates[0]["feedback_score"], candidates[0]["rating_count"]),
+        }])[0]
         return {
             "asin": asin,
             "status": "single_offer",
             "winning_source": baseline_source,
             "winning_price": amazon_price,
-            "category": "okay offer",
-            "passed_tests": {"passed_all": True},
+            "category": only["tier"],
+            "passed_tests": only["passed_tests"],
             "reason": "Only one valid offer available on page."
         }
         
@@ -256,13 +264,34 @@ def export_results_to_csv(output_filename: str = "studies/offer_ranking_results.
     return output_path
 
 
+TYPICAL_WINDOW = 14  # previous observations averaged into the "typical" price
+
+
+def add_typical_prices(df: pd.DataFrame) -> pd.DataFrame:
+    """Adds typical_new / typical_used: per-ASIN mean of the previous
+    TYPICAL_WINDOW observations, excluding the current row.
+
+    The export's amazon_ma_* columns include the current price, so comparing
+    a price against them partly compares it with itself (lookahead).
+    """
+    df = df.sort_values(["asin", "datetime"]).reset_index(drop=True)
+    by_asin = df.groupby("asin")
+    trailing = lambda s: s.shift(1).rolling(TYPICAL_WINDOW, min_periods=1).mean()
+    df["typical_new"] = by_asin["amazon"].transform(trailing)
+    df["typical_used"] = by_asin["used"].transform(trailing)
+    return df
+
+
 def run_batch_evaluation(prices_path: Path = STUDIES / "Prices.csv", user_preference: str = "any acceptable condition") -> pd.DataFrame:
     print(f"Running batch offer ranking on {prices_path} (Preference: {user_preference})...")
-    df = load_prices(prices_path)
+    # Read the raw export: load_prices renames amazon/used and drops `new`,
+    # which this module needs under their original names.
+    df = pd.read_csv(prices_path)
     
     # Normalize column names to lowercase to match lookups
     df.columns = df.columns.str.lower().str.strip()
-    
+    df = add_typical_prices(df)
+
     results = []
     for _, row in df.iterrows():
         res = evaluate_single_product_offers(row, user_preferred_condition=user_preference)
