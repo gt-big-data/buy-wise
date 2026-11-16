@@ -15,6 +15,11 @@ export interface Offer {
   shipsFromAmazon: boolean;
   returnPolicy: null; // not shown in the offer list
   pinned: boolean; // the offer behind the Add to Cart button
+  // "Seller rating is 4.5 out of 5 stars (390 ratings) 94% positive over last 12 months".
+  // null when the row has no seller rating (Amazon's own offers usually don't).
+  stars: number | null;
+  ratingCount: number | null;
+  positivePercent: number | null; // over the last 12 months
 }
 
 export interface OfferListResult {
@@ -36,11 +41,37 @@ function readSellerId(href: string | null | undefined): string | null {
   return href?.match(/[?&]seller=([A-Z0-9]+)/i)?.[1] ?? null;
 }
 
+// Amazon has carried the price in several places: a data attribute, the hidden
+// ".a-offscreen" text, only the visible whole and fraction parts, or a hidden
+// ".aok-offscreen" label (Nov 13: ".a-offscreen" was blank). Try each in turn.
+function readPrice(row: Element): number | null {
+  const attr = row.querySelector<HTMLElement>("[data-csa-c-price-to-pay]")?.dataset.csaCPriceToPay;
+  const whole = row.querySelector(".a-price .a-price-whole")?.textContent;
+  const fraction = row.querySelector(".a-price .a-price-fraction")?.textContent ?? "00";
+  return (
+    parsePrice(attr) ??
+    parsePrice(row.querySelector(".a-price .a-offscreen")?.textContent) ??
+    (whole ? parsePrice(`${whole.replace(/[^\d,]/g, "")}.${fraction.replace(/\D/g, "")}`) : null) ??
+    parsePrice(row.querySelector(".aok-offscreen")?.textContent)
+  );
+}
+
+function readSellerRating(row: Element): Pick<Offer, "stars" | "ratingCount" | "positivePercent"> {
+  const rating = text(row.querySelector("#aod-offer-seller-rating")) ?? "";
+  const stars = rating.match(/([\d.]+) out of 5 stars/);
+  const count = rating.match(/\(([\d,]+) ratings?\)/);
+  const positive = rating.match(/(\d+)% positive/);
+  return {
+    stars: stars ? Number(stars[1]) : null,
+    ratingCount: count ? Number(count[1].replace(/,/g, "")) : null,
+    positivePercent: positive ? Number(positive[1]) : null,
+  };
+}
+
 function readRow(row: Element, pinned: boolean): Partial<Offer> {
   const sellerLink = row.querySelector("#aod-offer-soldBy a");
   const seller = text(sellerLink) ?? text(row.querySelector("#aod-offer-soldBy .a-col-right .a-size-small"));
-  const priceAttr = row.querySelector<HTMLElement>("[data-csa-c-price-to-pay]")?.dataset.csaCPriceToPay;
-  const price = parsePrice(priceAttr) ?? parsePrice(row.querySelector(".a-price .a-offscreen")?.textContent);
+  const price = readPrice(row);
   const shipsFrom = text(row.querySelector("#aod-offer-shipsFrom .a-col-right"));
 
   // Each delivery option carries a price ("FREE", "$3.99") or the word "fastest"
@@ -70,6 +101,7 @@ function readRow(row: Element, pinned: boolean): Partial<Offer> {
     shipsFromAmazon: shipsFrom !== null && /^amazon(\.com)?$/i.test(shipsFrom),
     returnPolicy: null,
     pinned,
+    ...readSellerRating(row),
   };
 }
 

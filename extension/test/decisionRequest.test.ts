@@ -63,6 +63,9 @@ describe("readBuyBoxOffer", () => {
       shipsFrom: "Amazon.com",
       shipsFromAmazon: true,
       pinned: true,
+      stars: null,
+      ratingCount: null,
+      positivePercent: null,
     });
   });
 

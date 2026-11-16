@@ -2,12 +2,13 @@ from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import List, Optional, Literal
 import logging
+import re
 import threading
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from routes.dashboard import router as dashboard_router
 from routes.track_record import router as track_record_router
@@ -211,16 +212,14 @@ class DecisionOffer(BaseModel):
 
     pinned: bool = False
 
-    # These are optional because the current Amazon offer scraper does not
-    # extract all seller-quality information yet.
+    # Seller quality, as Amazon's offer list shows it: "4.5 out of 5 stars
+    # (390 ratings) 94% positive over last 12 months". Amazon doesn't show a
+    # seller's years in business, return policy or warranty there.
     stars: Optional[float] = Field(None, ge=0, le=5)
-    years: Optional[float] = Field(None, ge=0)
-    rating_count: Optional[int] = Field(None, ge=0)
-    free_returns: Optional[bool] = Field(None, alias="freeReturns")
-    full_warranty: Optional[bool] = Field(None, alias="fullWarranty")
+    rating_count: Optional[int] = Field(None, ge=0, alias="ratingCount")
+    positive_percent: Optional[float] = Field(None, ge=0, le=100, alias="positivePercent")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class DecisionRequest(BaseModel):
@@ -238,9 +237,8 @@ class DecisionOfferResponse(BaseModel):
 
 class QualifiedDecisionOfferResponse(DecisionOfferResponse):
     stars: float
-    years: float
-    free_returns: bool
-    full_warranty: bool
+    rating_count: int
+    positive_percent: float
 
 
 class DecisionWaitResponse(BaseModel):
@@ -530,7 +528,8 @@ def _condition_matches_profile(
     if not condition:
         return False
 
-    normalized = condition.strip().lower()
+    # Amazon writes used conditions as "Used - Very Good", "Used - Like New".
+    normalized = re.sub(r"^used\s*-\s*", "", condition.strip().lower())
 
     if profile_condition == "new_only":
         return normalized == "new"
@@ -639,6 +638,24 @@ def _offer_to_response(
     )
 
 
+MIN_SELLER_STARS = 4.0
+MIN_SELLER_RATINGS = 100
+MIN_SELLER_POSITIVE = 90
+
+
+def _seller_is_trusted(offer: DecisionOffer) -> bool:
+    """Only recommend a seller whose rating, rating count and recent positive
+    feedback are all on the page and all high enough."""
+    return (
+        offer.stars is not None
+        and offer.stars >= MIN_SELLER_STARS
+        and offer.rating_count is not None
+        and offer.rating_count >= MIN_SELLER_RATINGS
+        and offer.positive_percent is not None
+        and offer.positive_percent >= MIN_SELLER_POSITIVE
+    )
+
+
 def _find_qualified_alternative(
     request: DecisionRequest,
     amazon_offer: Optional[DecisionOffer],
@@ -656,10 +673,9 @@ def _find_qualified_alternative(
     qualified = []
 
     for offer in request.offers:
+        # Sellers who ship through Amazon (FBA) are still other sellers. Amazon's
+        # own offers have no seller rating, so the trust check skips them.
         if offer.pinned:
-            continue
-
-        if offer.ships_from_amazon:
             continue
 
         if not _condition_matches_profile(
@@ -678,18 +694,7 @@ def _find_qualified_alternative(
         ):
             continue
 
-        # Do not claim that a seller is well-rated unless the rating,
-        # seller tenure, returns, and warranty information are supplied.
-        if offer.stars is None or offer.stars < 4.0:
-            continue
-
-        if offer.years is None or offer.years < 1:
-            continue
-
-        if offer.free_returns is not True:
-            continue
-
-        if offer.full_warranty is not True:
+        if not _seller_is_trusted(offer):
             continue
 
         total_price = _offer_total_price(offer)
@@ -703,9 +708,8 @@ def _find_qualified_alternative(
             price=total_price,
             arrives=delivery.isoformat(),
             stars=offer.stars,
-            years=offer.years,
-            free_returns=offer.free_returns,
-            full_warranty=offer.full_warranty,
+            rating_count=offer.rating_count,
+            positive_percent=offer.positive_percent,
         )
 
         qualified.append((offer, response_offer))
@@ -1050,10 +1054,11 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
             amazon=amazon_response,
             best=best_response,
             reason=(
-                f"{best_response.seller} offers the same eligible condition "
-                f"for ${savings:.2f} less than the Amazon offer. "
-                f"The seller has a {best_response.stars:.1f}/5 rating, "
-                f"at least one year of history, free returns, and a full warranty."
+                f"{best_response.seller} sells it in {best_response.condition} "
+                f"condition for ${savings:.2f} less. "
+                f"The seller has {best_response.stars:.1f} stars from "
+                f"{best_response.rating_count:,} ratings, "
+                f"{best_response.positive_percent:.0f}% positive over the last 12 months."
             ),
             wait=None,
             next_best=None,
