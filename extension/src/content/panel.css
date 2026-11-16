@@ -195,3 +195,149 @@
   margin-top: 4px;
   color: var(--bw-ink-2);
 }
+
+#buywise-root .bw-watch {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bw-line);
+  font-size: 13px;
+}
+
+#buywise-root .bw-watch-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-watch-row {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#buywise-root .bw-money-input {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--bw-line-strong);
+  border-radius: var(--bw-radius);
+  font-size: 14px;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-money-input:focus-within {
+  border-color: var(--bw-ink);
+}
+
+#buywise-root .bw-money-input input {
+  width: 64px;
+  margin-left: 2px;
+  border: 0;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-button--inline {
+  margin-top: 0;
+}
+
+#buywise-root .bw-button:disabled {
+  background: var(--bw-line-strong);
+  cursor: default;
+}
+
+#buywise-root .bw-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  color: var(--bw-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+#buywise-root .bw-link:hover {
+  color: var(--bw-ink);
+}
+
+/* Other sellers (#69) */
+
+#buywise-root .bw-offers {
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--bw-line);
+  font-size: 13px;
+  color: var(--bw-ink);
+}
+
+#buywise-root .bw-note--tight {
+  margin-top: 2px;
+}
+
+#buywise-root .bw-button--quiet {
+  height: 32px;
+  border: 1px solid var(--bw-line-strong);
+  background: var(--bw-card);
+  color: var(--bw-ink);
+  font-size: 13px;
+}
+
+#buywise-root .bw-button--quiet:hover {
+  background: var(--bw-paper);
+}
+
+#buywise-root .bw-offer-list {
+  margin-top: 10px;
+  padding: 0;
+  list-style: none;
+}
+
+#buywise-root .bw-offer-list > li {
+  padding: 8px 0;
+  border-top: 1px solid var(--bw-line);
+}
+
+#buywise-root .bw-offer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+#buywise-root .bw-tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-offer-detail {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--bw-line-strong);
+  border-radius: 999px;
+  background: var(--bw-card);
+  color: var(--bw-ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#buywise-root.bw-floating:has(.bw-chip) {
+  width: auto;
+  border-radius: 999px;
+}

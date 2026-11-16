@@ -23,6 +23,7 @@ import pandas as pd
 
 from ml.bench.data import DEFAULT_SOURCE
 from ml.bench.interface import BaseModel, Fold, PriceHistory
+from ml.bench.tabular import LightGBM, SmallNeuralNet
 from ml.bench.tuning import TabularModel, Tuned, choice, integer, log_uniform, uniform
 from ml.features import ALL_FEATURES, FEATURES
 
@@ -333,6 +334,11 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "xgb_tuned_all_pricew": lambda src: Tuned(XGB, ALL_FEATURES, weight="price"),
     "cat_tuned_all_sqrtw": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES, weight="sqrt_price"),
     "cat_tuned_all_pricew": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES, weight="price"),
+    # R2 LightGBM and small neural net (ml/bench/tabular.py).
+    "lightgbm": lambda src: LightGBM(),
+    "lightgbm-tuned": lambda src: LightGBM(tuned=True),
+    "small-nn": lambda src: SmallNeuralNet(),
+    "small-nn-tuned": lambda src: SmallNeuralNet(tuned=True),
 }
 RULES = ("top90", "rel90", "november")
 R2_MODELS = ("xgb_default", "xgb_tuned", "cat_default", "cat_tuned",

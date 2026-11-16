@@ -6,7 +6,7 @@ We are labeling 100 pairs of product versions to check whether our methods can t
 
 Each pair is two versions from the same family (same `parent_asin`), called A and B.
 
-- The product title and what differs between the versions, if known.
+- The family's parent ASIN and each version's ASIN. Titles and what differs between versions aren't shown, because the dataset doesn't have them per version.
 - Up to 30 reviews for each version, with star ratings. Only pairs with at least 30 reviews on both sides are included.
 
 You don't see prices. Knowing which version is cheaper could make you expect it to be worse. We work out which one is cheaper afterward.
@@ -23,6 +23,10 @@ A quality difference is real if both of these are true:
 
 1. At least 3 reviewers on one version raise the same issue.
 2. That issue comes up at least twice as often on that version as on the other.
+
+Count each physical problem separately. "Hard to strip" and "stiff" are two issues, not one "cable" issue. Group complaints only when they describe the same failure in different words, such as "stopped charging" and "won't charge".
+
+"At least twice as often" includes exactly twice: 4 against 2 counts.
 
 Star ratings alone are not enough. If the stars differ but the text doesn't say why, use **Can't tell**.
 

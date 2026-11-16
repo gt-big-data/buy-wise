@@ -1,0 +1,18 @@
+{
+  "status": "ok",
+  "dimensions": [
+    { "key": "total_product_quantity", "label": "Total product quantity", "selectedValue": "24 Count" }
+  ],
+  "versions": [
+    { "asin": "B0035LCFNQ", "dimension": "total_product_quantity", "value": "24 Count", "selected": true, "available": true,
+      "price": 19.79, "unitPrice": 0.82, "unitLabel": "count", "count": 24, "pricePerItem": 0.82 },
+    { "asin": "B00000JHQ6", "dimension": "total_product_quantity", "value": "4 Count", "selected": false, "available": true,
+      "price": 5.25, "unitPrice": 1.31, "unitLabel": "count", "count": 4, "pricePerItem": 1.31 },
+    { "asin": "B003SI0TD4", "dimension": "total_product_quantity", "value": "8 Count", "selected": false, "available": true,
+      "price": 9.18, "unitPrice": null, "unitLabel": null, "count": 8, "pricePerItem": 1.15 },
+    { "asin": "B07CWYF6DT", "dimension": "total_product_quantity", "value": "1,440 Count", "selected": false, "available": true,
+      "price": 1049.99, "unitPrice": 0.73, "unitLabel": "count", "count": 1440, "pricePerItem": 0.73 },
+    { "asin": "B0B2KWJ252", "dimension": "total_product_quantity", "value": "288 Count", "selected": false, "available": false,
+      "price": null, "unitPrice": null, "unitLabel": null, "count": 288, "pricePerItem": null }
+  ]
+}

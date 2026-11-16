@@ -25,6 +25,11 @@ except Exception as _exc:
     _MODELS_LOADED = False
     log.warning("clean model not loaded: %s", _exc)
 
+# Stored with every logged prediction (#85) so the track record can tell models apart.
+MODEL_VERSION = f"clean@{_bundle['meta']['trained_at']}" if _MODELS_LOADED else None
+OFFLINE_TEST = _bundle["meta"].get("test") if _MODELS_LOADED else None
+TEST_PERIOD = _bundle["meta"].get("test_period") if _MODELS_LOADED else None
+
 
 def predict_for_asin(price_records: list[dict], today: datetime | None = None) -> dict:
     """Run the model on DB price records (any order; DB returns newest first).

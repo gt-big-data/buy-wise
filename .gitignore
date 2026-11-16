@@ -30,3 +30,12 @@ studies/sentiment_scores.csv
 
 # R2: raw per-row test scores (large; rebuilt by python -m ml.evaluate --save)
 studies/results/scores_*.csv.gz
+
+# Track record output (backend/scripts/track_record.py)
+backend/track_record_out/
+
+# Ignore local data snapshots and experiment logs
+studies/snapshots/
+studies/experiment_log.csv
+# studies/Prices.csv
+# studies/Product.csv

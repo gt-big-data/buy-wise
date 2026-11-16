@@ -3,7 +3,7 @@
   "name": "BuyWise",
   "version": "1.0.0",
   "description": "Smart shopping assistant",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["activeTab", "storage", "notifications", "alarms"],
   "host_permissions": ["https://*.amazon.com/*", "http://localhost:8000/*"],
   "icons": {
     "16": "logo.png",

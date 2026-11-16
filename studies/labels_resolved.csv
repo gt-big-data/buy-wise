@@ -1,0 +1,31 @@
+parent_asin,asin_a,asin_b,gold,topics,source,reason
+B076H7HV8B,B07588K6PB,B0758CSSF2,No real difference,,miguel,stripping 2 vs 1 and CL2 marking 3 vs 2; same wire in different lengths
+B07QKX28XR,B07QKYTGH9,B07QKT3BKR,Mixed,cable tangling; durability; bass,miguel,A cable tangling 3 vs 0; B earbud or connector failures 4 vs 1 and weak bass 3 vs 1
+B07T2WGJ77,B07Q7DM9HP,B07NSJMSK3,B is worse,usb failure,miguel,B nonworking USB ports 3 vs 1; weak charging output counted separately
+B09LHJRPVL,B09BF64J55,B09HC4441Y,No real difference,,miguel,B Bluetooth dropouts 2 vs 0; short wireless range 1 vs 0 and audio sync delay 1 vs 0 counted separately; weak noise isolation on both
+B09PRC3WC5,B09FT58QQP,B09N3RYJ66,B is worse,durability,miguel,B earbuds died after use 3 vs 1; pairing and short battery life counted separately
+B0B95V4ZBW,B0B6GHW1SX,B0B6G9TPNQ,B is worse,touch sensitivity,miguel,B accidental touch activation 5 vs 0; small cups and tight clamping and slipping counted separately
+B0BJ9PRHZ3,B0B1LVC5VZ,B0B1LPNDGF,A is worse,connectivity; call microphone,miguel,A pairing or dropout problems 5 vs 2 and poor call microphone 3 vs 1; weak ANC 3 vs 3
+B0BM8R3GSB,B09QGR8FM7,B09QHHTV36,No real difference,,miguel,Build and outlet spacing discussed positively on both; blocked outlets 0 vs 1; no issue reaches 3 reviewers
+B0BTYRKJM4,B092J8LPWR,B092YTLYC7,B is worse,slow usb charging,miguel,B slow USB charging 3 vs 1; dead USB ports 1 vs 1; A socket and cable defects are separate single reports
+B0C1JGLV8T,B000N99BBC,B001EVGIYG,B is worse,network traffic failure,miguel,B switch fails to pass traffic 3 vs 0; A startup delay is a separate issue
+B0C338S8M7,B096SRYXMP,B096SV8SJG,Mixed,noise cancellation; connectivity; sound artifacts,miguel,A weak listening noise cancellation 3 vs 1; B pairing or dropouts 6 vs 1 and noise artifacts 5 vs 1
+B0C33C3XFV,B08L6ZYW21,B08L6ZPV7T,B is worse,pairing; dropouts,miguel,B pairing or dropout issues independent of dead units 3 vs 1; early deaths common on both
+B005TF55R4,B004KKZ0HE,B004KKZ0H4,No real difference,,miguel,Dust spots 5 vs 4; weak battery life 0 vs 1; charging inconvenience separate from battery life; failures have different causes
+B07F96Q43D,B07F96Q43D,B07FNT2Y63,No real difference,,miguel,Dead on arrival 2 vs 3; short cord 1 vs 3 excluded as chosen length; other physical issues below 3
+B005CTMS3G,B0056YNA7U,B0056YNA2A,Mixed,bundled software; loose connector; drive failure,miguel,A bundled software complaints 3 vs 0; B loose connector 3 vs 1 and drive failures 6 vs 3; corrected failure report excluded
+B0BGK8R2SG,B0B4N7LSM6,B0B4N2T7GL,B is worse,syncing,miguel,B repeated loss of sync 3 vs 1; A charging faults 2 vs 0 and post-use dead watches 2 vs 0 are separate issues; duplicate B sync review counted once
+B0BN2K2FKQ,B07KFRQ13L,B07KBDSB5H,B is worse,tape damage,miguel,B eating or ripping tapes 3 vs 1; low volume 3 vs 4; slow tape speed 2 vs 0 below threshold
+B00GPL2TEI,B001EM9JXC,B001XW06MQ,No real difference,,miguel,B wobble 1 and threading trouble 1 and broken ring 1 are separate issues; blurry images 7 vs 4; chosen optical effects excluded
+B00BL17BXG,B009Z7VBXE,B009Z7VAKS,No real difference,,miguel,Cracked plastic in normal use 3 vs 4; peeling 0 vs 1; stand instability 2 vs 3; no issue reaches twice the other side
+B0012OL3KE,B0012OELOO,B0011N180Q,A is worse,shutter lag,miguel,A shutter or shooting delay 3 vs 1; slow image review counted separately; duplicate B screen breakage counted once
+B00B7ULHA4,B005GSS7PQ,B005GSRKT0,Mixed,tapping noise; screen scratching,miguel,A loud tapping 3 vs 0; B actual screen or protector scratching 3 vs 1; feared scratches excluded
+B07L72BD5H,B07B8TKYJY,B07L72TL6K,No real difference,,miguel,Nonworking cables 2 vs 1; limited transfer speed 1 vs 0; neither separate issue reaches 3 reviewers
+B09GRDTBDT,B072PPPWBF,B071SCZPQ2,A is worse,reduced bass,miguel,A reduced bass or excessive treble 3 vs 0; B general build criticism 2 and mushy foam 1 do not establish the same physical issue
+B093BPDXGF,B07WY5J9FV,B082V3WHNQ,No real difference,,miguel,Packaging-related curling excluded; faded safety stripes 0 vs 1 and sliding under wheels 0 vs 1; quality otherwise praised
+B09X9MMLK8,B07KFBRWFG,B07HJ1TDW7,No real difference,,miguel,A peeling edging 2 vs 0 and worn metal finish 2 vs 0 are separate issues; B narrow styling excluded as chosen design
+B09FGNWVB1,B07T9K7N1G,B07YHQYX5G,A is worse,setup instructions,miguel,A unclear setup instructions 5 vs 1; false motion alarms 1 vs 2; missed motion events counted separately
+B0BQH1QXMK,B0B5GKWYQW,B0B1J3TZNN,A is worse,sim slot; setup,miguel,A SIM insertion or removal problems 3 vs 0; B weak solar charging 2 vs 1 and short battery life 1 vs 0 are separate issues; provider outage excluded
+B0BZ4SLGQF,B09BBWVS88,B0BGR496YT,A is worse,controls,miguel,A unclear interface or indicator display 3 vs 0; remote lag and interference are separate single reports
+B09LHFWYHF,B07MJ5L611,B07T9F11P6,No real difference,,miguel,Short-lived or failed cables 5 vs 8 after deduplication; slow charging 2 vs 2; exposed wires 0 vs 1
+B09JVHTSSF,B088W98ZNQ,B088WGT2CC,A is worse,camera cutout; stand stability,miguel,A obstructed camera cutout 3 vs 0 and unstable stand 3 vs 1; B slippery material 2 vs 0 below threshold; duplicate stand review counted once

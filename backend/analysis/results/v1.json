@@ -1,0 +1,1020 @@
+{
+  "version": "v1",
+  "built_on": "2026-11-13",
+  "inputs": {
+    "labels_gold.csv": "1b62c0e4a8ac",
+    "sentiment_baseline.csv": "f3789cbe9da3"
+  },
+  "quiet": {
+    "source": "placeholder until #81 (FINDINGS.md section 3)",
+    "min_price_for_wait": 25.0,
+    "min_drop_chance": 0.4,
+    "min_saving": 1.0
+  },
+  "offers": {
+    "source": "placeholder until #86 (matches the #92 rules)",
+    "min_stars": 4.0,
+    "min_years": 1.0,
+    "max_days_later": 7
+  },
+  "version_pairs": {
+    "source": "T2 (#84): human label, else sentiment baseline",
+    "pairs": [
+      {
+        "parent_asin": "B0BRVBD7ZT",
+        "asin_a": "B0BL6N985M",
+        "asin_b": "B0BL6LXX58",
+        "verdict": "No real difference",
+        "source": "sentiment baseline",
+        "topics": []
+      },
+      {
+        "parent_asin": "B01GJ3WA36",
+        "asin_a": "B008F3QGK2",
+        "asin_b": "B009Z7P072",
+        "verdict": "A is worse",
+        "source": "sentiment baseline",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07RM7VC91",
+        "asin_a": "B00LSRW3U4",
+        "asin_b": "B015RP0OSU",
+        "verdict": "No real difference",
+        "source": "sentiment baseline",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0B7W48BW8",
+        "asin_a": "B09V354J7K",
+        "asin_b": "B09V388CVK",
+        "verdict": "No real difference",
+        "source": "sentiment baseline",
+        "topics": []
+      },
+      {
+        "parent_asin": "B08XM4K5GR",
+        "asin_a": "B07JZ2GQJF",
+        "asin_b": "B08RBXCJCF",
+        "verdict": "B is worse",
+        "source": "sentiment baseline",
+        "topics": []
+      },
+      {
+        "parent_asin": "B00OUUX058",
+        "asin_a": "B00DI89WDW",
+        "asin_b": "B00DI89X7M",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B00PKTU83U",
+        "asin_a": "B00NJ2M33I",
+        "asin_b": "B00NJ2M43M",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "sound",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B00QUG4XL0",
+        "asin_a": "B00Q6P4CMA",
+        "asin_b": "B00JG2WRUO",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B014HNC9A4",
+        "asin_a": "B07F1FXPH1",
+        "asin_b": "B00TKF53LC",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "sound",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B01KBEOL5E",
+        "asin_a": "B01KBEOL5E",
+        "asin_b": "B07M9KPR1P",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "fit",
+          "mounting hardware fit",
+          "sturdiness"
+        ]
+      },
+      {
+        "parent_asin": "B01LWPGB6C",
+        "asin_a": "B01D5H8P0G",
+        "asin_b": "B01D5H8PQ0",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "noise",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B01MDKJXCH",
+        "asin_a": "B01D5H8JW0",
+        "asin_b": "B01D5H8KO2",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B076H7HV8B",
+        "asin_a": "B07588K6PB",
+        "asin_b": "B0758CSSF2",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0771VF9TJ",
+        "asin_a": "B01LMVIS18",
+        "asin_b": "B01HGM33HG",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "app"
+        ]
+      },
+      {
+        "parent_asin": "B0787KLT56",
+        "asin_a": "B0746RBK2M",
+        "asin_b": "B0787HVXKQ",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B079HBKGSW",
+        "asin_a": "B00846E7JW",
+        "asin_b": "B00B1EO1Z4",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07CQMZVZ6",
+        "asin_a": "B000AJIF4E",
+        "asin_b": "B0002H02ZY",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07H71N1LN",
+        "asin_a": "B06XTX2S2N",
+        "asin_b": "B06XFTWCBJ",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07HH6X34D",
+        "asin_a": "B07HH1QSLB",
+        "asin_b": "B07HH23P69",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "reliability",
+          "sound",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B07QKX28XR",
+        "asin_a": "B07QKYTGH9",
+        "asin_b": "B07QKT3BKR",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "cable tangling",
+          "durability",
+          "bass"
+        ]
+      },
+      {
+        "parent_asin": "B07S764D9V",
+        "asin_a": "B07J4WHNFC",
+        "asin_b": "B003EM8008",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "reliability",
+          "sound"
+        ]
+      },
+      {
+        "parent_asin": "B07T2WGJ77",
+        "asin_a": "B07Q7DM9HP",
+        "asin_b": "B07NSJMSK3",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "usb failure"
+        ]
+      },
+      {
+        "parent_asin": "B0819W2H7V",
+        "asin_a": "B00LM2Y2U4",
+        "asin_b": "B015PZ7QO2",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "sound",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B0891Z6HWT",
+        "asin_a": "B087JVV8FK",
+        "asin_b": "B087JWTWF9",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B08HTMG8SP",
+        "asin_a": "B07MTRQ6B3",
+        "asin_b": "B08FM2MXZC",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B08LZKCGQ6",
+        "asin_a": "B08KW1KR5H",
+        "asin_b": "B08KVXPMBF",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B08MZ81BYY",
+        "asin_a": "B08G84P8ZX",
+        "asin_b": "B08BJ64D47",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "sturdiness"
+        ]
+      },
+      {
+        "parent_asin": "B095J3HLGN",
+        "asin_a": "B08WM3LMJF",
+        "asin_b": "B08WM1V5P1",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0964C3B3F",
+        "asin_a": "B07TMH18YG",
+        "asin_b": "B0766CHN7C",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B096GT8CJH",
+        "asin_a": "B07YPXLCDV",
+        "asin_b": "B07Q6ZWMLR",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B099RGJG9D",
+        "asin_a": "B0822DDMQY",
+        "asin_b": "B096XT6R4C",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "adhesion",
+          "grip"
+        ]
+      },
+      {
+        "parent_asin": "B09G9KFQ54",
+        "asin_a": "B076JJ3N1T",
+        "asin_b": "B07Z5DZM31",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09GFWZGK8",
+        "asin_a": "B094NC89P9",
+        "asin_b": "B094N7YJM5",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09H23TPRY",
+        "asin_a": "B07431YDWM",
+        "asin_b": "B07XP88QGM",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09LHJRPVL",
+        "asin_a": "B09BF64J55",
+        "asin_b": "B09HC4441Y",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09MFJQBYR",
+        "asin_a": "B01N0782B3",
+        "asin_b": "B01N3U9SJG",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09MMWM2Y8",
+        "asin_a": "B07QDPXCSH",
+        "asin_b": "B07QK2SPP7",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09PRC3WC5",
+        "asin_a": "B09FT58QQP",
+        "asin_b": "B09N3RYJ66",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "durability"
+        ]
+      },
+      {
+        "parent_asin": "B09XYMSZLL",
+        "asin_a": "B00DOMYL24",
+        "asin_b": "B079RKX5ZL",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0B3ZKBJ8V",
+        "asin_a": "B09YLFHFDW",
+        "asin_b": "B09YLCXLKY",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "connectivity",
+          "reliability",
+          "sound"
+        ]
+      },
+      {
+        "parent_asin": "B0B8YC6MGW",
+        "asin_a": "B09LYF2ST7",
+        "asin_b": "B0B8YNRS6D",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "noise cancelling"
+        ]
+      },
+      {
+        "parent_asin": "B0B95V4ZBW",
+        "asin_a": "B0B6GHW1SX",
+        "asin_b": "B0B6G9TPNQ",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "touch sensitivity"
+        ]
+      },
+      {
+        "parent_asin": "B0BF4SSL82",
+        "asin_a": "B09SG2Q23M",
+        "asin_b": "B09SG3GV43",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "usb charging",
+          "usb ports"
+        ]
+      },
+      {
+        "parent_asin": "B0BGK79RXL",
+        "asin_a": "B0B4MWCFV4",
+        "asin_b": "B0B4MZWCXK",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "battery",
+          "tracking accuracy"
+        ]
+      },
+      {
+        "parent_asin": "B0BGK8R2SG",
+        "asin_a": "B0B4N7LSM6",
+        "asin_b": "B0B4N2T7GL",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "syncing"
+        ]
+      },
+      {
+        "parent_asin": "B0BJ9PRHZ3",
+        "asin_a": "B0B1LVC5VZ",
+        "asin_b": "B0B1LPNDGF",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "connectivity",
+          "call microphone"
+        ]
+      },
+      {
+        "parent_asin": "B0BM8R3GSB",
+        "asin_a": "B09QGR8FM7",
+        "asin_b": "B09QHHTV36",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BP28CLNX",
+        "asin_a": "B08NP57YRG",
+        "asin_b": "B08NP2TLL3",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BTYRKJM4",
+        "asin_a": "B092J8LPWR",
+        "asin_b": "B092YTLYC7",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "slow usb charging"
+        ]
+      },
+      {
+        "parent_asin": "B0BW4PFM58",
+        "asin_a": "B010OYASRG",
+        "asin_b": "B013TL8CNS",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "battery"
+        ]
+      },
+      {
+        "parent_asin": "B0BXL2H5PD",
+        "asin_a": "B093GCL18V",
+        "asin_b": "B0925RMK9H",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "reliability",
+          "stand"
+        ]
+      },
+      {
+        "parent_asin": "B0BXM4RTZ4",
+        "asin_a": "B075WWSMFN",
+        "asin_b": "B07BB5FDS2",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BYFHJWHC",
+        "asin_a": "B084S748F9",
+        "asin_b": "B018E6KHTA",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0C1JGLV8T",
+        "asin_a": "B000N99BBC",
+        "asin_b": "B001EVGIYG",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "network traffic failure"
+        ]
+      },
+      {
+        "parent_asin": "B0C235B94P",
+        "asin_a": "B0828BJGD2",
+        "asin_b": "B09N9VRCZV",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "defects",
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B0C289FD6Y",
+        "asin_a": "B08PJ4KQ1G",
+        "asin_b": "B08PJ7JMQM",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "sound",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B0C2HWSXNL",
+        "asin_a": "B006LW0W5Y",
+        "asin_b": "B006LW0WDQ",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0C338S8M7",
+        "asin_a": "B096SRYXMP",
+        "asin_b": "B096SV8SJG",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "noise cancellation",
+          "connectivity",
+          "sound artifacts"
+        ]
+      },
+      {
+        "parent_asin": "B0C33C3XFV",
+        "asin_a": "B08L6ZYW21",
+        "asin_b": "B08L6ZPV7T",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "pairing",
+          "dropouts"
+        ]
+      },
+      {
+        "parent_asin": "B0C42DCLC6",
+        "asin_a": "B0BQZBMXD4",
+        "asin_b": "B07Z13G1P5",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "audio noise",
+          "audio quality"
+        ]
+      },
+      {
+        "parent_asin": "B0C5MCNJKR",
+        "asin_a": "B083BT3VXZ",
+        "asin_b": "B083BTSTNR",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0C5MWSM4W",
+        "asin_a": "B075F6TB7F",
+        "asin_b": "B07DGPSWY3",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "sound",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B0C85M22Z6",
+        "asin_a": "B09TN4MP6V",
+        "asin_b": "B09ZNQ7B9Y",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "fit",
+          "reliability",
+          "sound quality"
+        ]
+      },
+      {
+        "parent_asin": "B01HRPQKN6",
+        "asin_a": "B003EGIE2S",
+        "asin_b": "B004CM4A58",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B005TF55R4",
+        "asin_a": "B004KKZ0HE",
+        "asin_b": "B004KKZ0H4",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07F96Q43D",
+        "asin_a": "B07F96Q43D",
+        "asin_b": "B07FNT2Y63",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BKS8ZQKK",
+        "asin_a": "B08L427ZLS",
+        "asin_b": "B09XGZC2T5",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "airflow",
+          "noise"
+        ]
+      },
+      {
+        "parent_asin": "B005CTMS3G",
+        "asin_a": "B0056YNA7U",
+        "asin_b": "B0056YNA2A",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "bundled software",
+          "loose connector",
+          "drive failure"
+        ]
+      },
+      {
+        "parent_asin": "B0973TPHH2",
+        "asin_a": "B08V3W4YXJ",
+        "asin_b": "B08V3K77SC",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07SK6NJWP",
+        "asin_a": "B07DBZW49H",
+        "asin_b": "B07DBZPD86",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "screen protector"
+        ]
+      },
+      {
+        "parent_asin": "B07Z6QMTQV",
+        "asin_a": "B07Z6PTS74",
+        "asin_b": "B07Z6PCRLQ",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B0BN2K2FKQ",
+        "asin_a": "B07KFRQ13L",
+        "asin_b": "B07KBDSB5H",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "tape damage"
+        ]
+      },
+      {
+        "parent_asin": "B08HV6K6PB",
+        "asin_a": "B07YV1QMYW",
+        "asin_b": "B07R62GM1G",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B00GPL2TEI",
+        "asin_a": "B001EM9JXC",
+        "asin_b": "B001XW06MQ",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09ZDFZQZ5",
+        "asin_a": "B07JF8DQZJ",
+        "asin_b": "B09RQCJVN1",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "display quality",
+          "picture"
+        ]
+      },
+      {
+        "parent_asin": "B0BVR7B323",
+        "asin_a": "B06ZXZ3QBD",
+        "asin_b": "B0173PEX20",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B00BL17BXG",
+        "asin_a": "B009Z7VBXE",
+        "asin_b": "B009Z7VAKS",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09LZ1Z39P",
+        "asin_a": "B07XF786FR",
+        "asin_b": "B07YQ8DMYH",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0012OL3KE",
+        "asin_a": "B0012OELOO",
+        "asin_b": "B0011N180Q",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "shutter lag"
+        ]
+      },
+      {
+        "parent_asin": "B00B7ULHA4",
+        "asin_a": "B005GSS7PQ",
+        "asin_b": "B005GSRKT0",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "tapping noise",
+          "screen scratching"
+        ]
+      },
+      {
+        "parent_asin": "B07L72BD5H",
+        "asin_a": "B07B8TKYJY",
+        "asin_b": "B07L72TL6K",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09GRDTBDT",
+        "asin_a": "B072PPPWBF",
+        "asin_b": "B071SCZPQ2",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "reduced bass"
+        ]
+      },
+      {
+        "parent_asin": "B09326SMX6",
+        "asin_a": "B07PHVBQVS",
+        "asin_b": "B07CCBRRHS",
+        "verdict": "Mixed",
+        "source": "human label",
+        "topics": [
+          "fan noise",
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B093BPDXGF",
+        "asin_a": "B07WY5J9FV",
+        "asin_b": "B082V3WHNQ",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B07BSTN6H8",
+        "asin_a": "B00B1EO2O4",
+        "asin_b": "B00B1EO2GW",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "fit",
+          "grip"
+        ]
+      },
+      {
+        "parent_asin": "B09X9MMLK8",
+        "asin_a": "B07KFBRWFG",
+        "asin_b": "B07HJ1TDW7",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09FGNWVB1",
+        "asin_a": "B07T9K7N1G",
+        "asin_b": "B07YHQYX5G",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "setup instructions"
+        ]
+      },
+      {
+        "parent_asin": "B076LWFS9X",
+        "asin_a": "B076LNYKSK",
+        "asin_b": "B07JVXQMND",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B06Y2BTJ36",
+        "asin_a": "B00BOHNYTW",
+        "asin_b": "B0107AA98U",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B07PDKVT7S",
+        "asin_a": "B07449JMJ5",
+        "asin_b": "B074M83VD3",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BQH1QXMK",
+        "asin_a": "B0B5GKWYQW",
+        "asin_b": "B0B1J3TZNN",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "sim slot",
+          "setup"
+        ]
+      },
+      {
+        "parent_asin": "B07FFCTZLC",
+        "asin_a": "B00RPJOQQ8",
+        "asin_b": "B00RVGYHFK",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "ghosting",
+          "motion blur"
+        ]
+      },
+      {
+        "parent_asin": "B0BZ4SLGQF",
+        "asin_a": "B09BBWVS88",
+        "asin_b": "B0BGR496YT",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "controls"
+        ]
+      },
+      {
+        "parent_asin": "B08JYVX1W4",
+        "asin_a": "B07J2Q4SWZ",
+        "asin_b": "B07J2WBKXF",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BXZPHHLM",
+        "asin_a": "B016YZYOT2",
+        "asin_b": "B016YZYMBM",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09LHFWYHF",
+        "asin_a": "B07MJ5L611",
+        "asin_b": "B07T9F11P6",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B08FYRNH7S",
+        "asin_a": "B07WJJHWYD",
+        "asin_b": "B07WD5VKTS",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B006C1IM2E",
+        "asin_a": "B003VSGQPG",
+        "asin_b": "B00ZY9JJYU",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "focus",
+          "reliability",
+          "sharpness"
+        ]
+      },
+      {
+        "parent_asin": "B0BRCVR7WL",
+        "asin_a": "B01EHSLZLS",
+        "asin_b": "B01EHSLYV4",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B0BRQDRVHB",
+        "asin_a": "B0797M3SVG",
+        "asin_b": "B07X6KJKNZ",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B072MRBQQH",
+        "asin_a": "B00ZS4HK0Q",
+        "asin_b": "B01N31SJLI",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "reliability"
+        ]
+      },
+      {
+        "parent_asin": "B0C2YHWXHH",
+        "asin_a": "B09Q8N253C",
+        "asin_b": "B09Q88GXBR",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      },
+      {
+        "parent_asin": "B09JVHTSSF",
+        "asin_a": "B088W98ZNQ",
+        "asin_b": "B088WGT2CC",
+        "verdict": "A is worse",
+        "source": "human label",
+        "topics": [
+          "camera cutout",
+          "stand stability"
+        ]
+      },
+      {
+        "parent_asin": "B07YWKP28C",
+        "asin_a": "B0774RL627",
+        "asin_b": "B07WDVB3BT",
+        "verdict": "B is worse",
+        "source": "human label",
+        "topics": [
+          "durability",
+          "pairing",
+          "volume"
+        ]
+      },
+      {
+        "parent_asin": "B01LYNSL5S",
+        "asin_a": "B01D5H8TS4",
+        "asin_b": "B01D5H8UTW",
+        "verdict": "No real difference",
+        "source": "human label",
+        "topics": []
+      }
+    ]
+  }
+}

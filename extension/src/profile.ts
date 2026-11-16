@@ -1,5 +1,6 @@
-// The shopper's first-run profile. It lives in chrome.storage.local only and is
-// never sent to the backend.
+// The shopper's first-run profile. It's stored in chrome.storage.local only. Each
+// decision request carries the resolved answers (#119); the backend uses them for
+// that answer and never stores them.
 
 import { PROFILE_CHOICES, type ProfileQuestion } from "../../website/app/preview/copy";
 

@@ -1,42 +1,91 @@
-import React from "react";
+import React, { useState } from "react";
 import { PanelData } from "./fakeData";
+import { extractASIN } from "./amazon";
+import { PageOffers } from "./offers";
+import OffersSection from "./OffersSection";
+import { OfferListResult } from "./offerList";
+import { PANEL_STATUS, checkedOffers } from "../../../website/app/preview/copy";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
+// ready: data holds the endpoint's answer. The rest are the panel with no answer.
+export type PanelStatus = "ready" | "loading" | "error" | "timeout" | "not_tracked";
+
 type Props = {
-  data: PanelData;
+  data: PanelData | null;
+  status?: PanelStatus;
   markUrl: string;
   onClose: () => void;
   onSeeOffers: () => void;
+  onRetry?: () => void;
+  offers?: PageOffers;
+  // The answer only saw the buy box; Amazon's full list hasn't been read yet
+  partialOffers?: boolean;
+  onOfferList?: (list: OfferListResult) => void;
 };
 
-export default function Panel({ data, markUrl, onClose, onSeeOffers }: Props) {
+export default function Panel({
+  data,
+  status = "ready",
+  markUrl,
+  onClose,
+  onSeeOffers,
+  onRetry,
+  offers,
+  partialOffers,
+  onOfferList,
+}: Props) {
+  const [minimized, setMinimized] = useState(false);
+  const answer = status === "ready" ? data : null;
+
+  // Stays mounted while minimized so the offer list keeps updating behind the chip
   return (
-    <div className="bw-panel">
-      <div className="bw-head">
-        <img src={markUrl} alt="" width={16} height={18} />
-        <span className="bw-name">BuyWise</span>
-        <span>checked {data.offersChecked} offers</span>
-        <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
-          ×
+    <>
+      {minimized && (
+        <button type="button" className="bw-chip" onClick={() => setMinimized(false)}>
+          <img src={markUrl} alt="" width={14} height={16} />
+          BuyWise
         </button>
+      )}
+      <div className="bw-panel" hidden={minimized}>
+        <div className="bw-head">
+          <img src={markUrl} alt="" width={16} height={18} />
+          <span className="bw-name">BuyWise</span>
+          {answer && <span>{checkedOffers(answer.offersChecked)}</span>}
+          <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        <div className="bw-body" aria-live="polite">
+          {!answer && <NoAnswer status={status} onRetry={onRetry} />}
+          {answer?.state === "better_offer" && <BetterOffer data={answer} onSeeOffers={onSeeOffers} />}
+          {answer?.state === "wait" && <Wait data={answer} />}
+          {answer?.state === "nothing_better" && <NothingBetter data={answer} />}
+          {answer && partialOffers && <p className="bw-note">{PANEL_STATUS.partialOffers}</p>}
+        </div>
+        {offers && <OffersSection offers={offers} onCompareOpen={() => setMinimized(true)} onList={onOfferList} />}
       </div>
-      <div className="bw-body">
-        {data.state === "better_offer" && <BetterOffer data={data} onSeeOffers={onSeeOffers} />}
-        {data.state === "wait" && <Wait data={data} />}
-        {data.state === "nothing_better" && <NothingBetter data={data} />}
-      </div>
-    </div>
+    </>
+  );
+}
+
+function NoAnswer({ status, onRetry }: { status: PanelStatus; onRetry?: () => void }) {
+  if (status === "loading") return <p className="bw-note">{PANEL_STATUS.loading}</p>;
+  if (status === "not_tracked") return <p className="bw-note">{PANEL_STATUS.notTracked}</p>;
+  return (
+    <>
+      <p className="bw-note bw-caution">{status === "timeout" ? PANEL_STATUS.timeout : PANEL_STATUS.error}</p>
+      {onRetry && (
+        <button type="button" className="bw-button bw-button--quiet" onClick={onRetry}>
+          {PANEL_STATUS.retry}
+        </button>
+      )}
+    </>
   );
 }
 
 function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: "better_offer" }>; onSeeOffers: () => void }) {
   const { amazon, best } = data;
-  const daysLater = best.daysOut - amazon.daysOut;
-
-  let reason = `${best.condition}, ${money(amazon.price - best.price)} less. ${best.seller} has ${best.stars} stars over ${best.years} years`;
-  reason += best.freeReturns ? " and free returns." : ".";
-  if (daysLater > 0) reason += ` Arrives ${daysLater} day${daysLater > 1 ? "s" : ""} later.`;
 
   return (
     <>
@@ -63,8 +112,8 @@ function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: 
       </div>
       <p className="bw-note">
         <span className="bw-strong">Why: </span>
-        {reason}{" "}
-        {!best.fullWarranty && <span className="bw-caution">May not include the manufacturer warranty.</span>}
+        {data.reason}{" "}
+        <span className="bw-caution">May not include the manufacturer warranty.</span>
       </p>
       <button type="button" className="bw-button" onClick={onSeeOffers}>
         See offer
@@ -92,7 +141,79 @@ function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
       <p className="bw-note">
         It dropped {data.drops} times in the last {data.months} months. No other seller has it cheaper right now.
       </p>
+      <WatchFlow expectedLow={data.expectedLow} />
     </>
+  );
+}
+// Tap Watch, set a target, get notified. The target is saved to the backend's
+// watchlist, and the background script checks prices against it (#74).
+function WatchFlow({ expectedLow }: { expectedLow: number }) {
+  const [step, setStep] = useState<"start" | "target" | "saving" | "watching">("start");
+  const [target, setTarget] = useState(String(Math.round(expectedLow)));
+  const [error, setError] = useState<string | null>(null);
+  const targetPrice = Number(target);
+
+  async function watch() {
+    setStep("saving");
+    setError(null);
+    const asin = extractASIN();
+    const res = await chrome.runtime
+      .sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin, target_price: targetPrice })
+      .catch(() => null);
+    if (res?.ok) {
+      setStep("watching");
+    } else {
+      setError(res?.error?.includes("not found") ? "BuyWise doesn't track this product yet." : "Couldn't save. Is the backend running?");
+      setStep("target");
+    }
+  }
+
+  if (step === "start") {
+    return (
+      <button type="button" className="bw-button" onClick={() => setStep("target")}>
+        Watch this price
+      </button>
+    );
+  }
+
+  if (step === "target" || step === "saving") {
+    return (
+      <div className="bw-watch">
+        <label className="bw-watch-label" htmlFor="bw-target">
+          Tell me when it drops to
+        </label>
+        <div className="bw-watch-row">
+          <span className="bw-money-input">
+            $
+            <input
+              id="bw-target"
+              className="bw-mono"
+              value={target}
+              inputMode="decimal"
+              onChange={(e) => setTarget(e.target.value.replace(/[^0-9.]/g, ""))}
+            />
+          </span>
+          <button type="button" className="bw-button bw-button--inline" disabled={!(targetPrice > 0) || step === "saving"} onClick={watch}>
+            {step === "saving" ? "Saving..." : "Watch"}
+          </button>
+        </div>
+        <p className={error ? "bw-note bw-caution" : "bw-note"}>{error ?? `Expected low is ${money(expectedLow)}.`}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bw-watch">
+      <p className="bw-strong">Watching at {money(targetPrice)}.</p>
+      <p className="bw-note" style={{ marginTop: 4 }}>
+        We'll send a Chrome notification when it hits {money(targetPrice)} or lower.
+      </p>
+      <div className="bw-watch-row" style={{ marginTop: 10 }}>
+        <button type="button" className="bw-link" onClick={() => chrome.runtime.sendMessage({ type: "BUYWISE_OPEN_DASHBOARD" })}>
+          See everything you're watching
+        </button>
+      </div>
+    </div>
   );
 }
 
