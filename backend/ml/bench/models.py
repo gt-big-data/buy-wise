@@ -184,6 +184,45 @@ class CatBoost(TabularModel):
         est.fit(Pool(X, y, weight=w), eval_set=Pool(X_es, y_es, weight=w_es), use_best_model=True)
 
 
+class RandomForest(TabularModel):
+    """Random Forest classifier with a fixed seed for reproducible scores."""
+    key = "Random Forest"
+    DEFAULTS = dict(n_estimators=300, max_depth=None, max_features="sqrt",
+                    min_samples_split=2, min_samples_leaf=1, class_weight=None)
+    SPACE = dict(n_estimators=choice(100, 250, 500), max_depth=choice(None, 8, 16, 24),
+                 max_features=choice("sqrt", 0.5, 1.0), min_samples_split=integer(2, 20),
+                 min_samples_leaf=integer(1, 10),
+                 class_weight=choice(None, "balanced", "balanced_subsample"))
+
+    def make(self, params):
+        from sklearn.ensemble import RandomForestClassifier
+
+        return RandomForestClassifier(**params, random_state=42, n_jobs=-1)
+
+
+class LogisticRegressionModel(TabularModel):
+    """Median-imputed and scaled logistic regression, fit on training rows only."""
+    key = "Logistic Regression"
+    DEFAULTS = dict(C=1.0, class_weight=None, max_iter=2000)
+    SPACE = dict(C=log_uniform(1e-3, 1e3), class_weight=choice(None, "balanced"))
+
+    def make(self, params):
+        from sklearn.impute import SimpleImputer
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+
+        return Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+            ("classifier", LogisticRegression(**params, random_state=42)),
+        ])
+
+    def _fit(self, est, X, y, X_es, y_es, w=None, w_es=None):
+        fit_params = {} if w is None else {"classifier__sample_weight": w}
+        est.fit(X, y, **fit_params)
+
+
 class TunedCatBoost(Tuned):
     def available(self):
         return CatBoost().available()
@@ -277,10 +316,18 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
     "xgb_tuned": lambda src: Tuned(XGB),
     "cat_default": lambda src: CatBoost(),
     "cat_tuned": lambda src: TunedCatBoost(CatBoost),
+    "rf_default": lambda src: RandomForest(),
+    "rf_tuned": lambda src: Tuned(RandomForest),
+    "logreg_default": lambda src: LogisticRegressionModel(),
+    "logreg_tuned": lambda src: Tuned(LogisticRegressionModel),
     "xgb_default_all": lambda src: XGB(feature_cols=ALL_FEATURES),
     "xgb_tuned_all": lambda src: Tuned(XGB, ALL_FEATURES),
     "cat_default_all": lambda src: CatBoost(feature_cols=ALL_FEATURES),
     "cat_tuned_all": lambda src: TunedCatBoost(CatBoost, ALL_FEATURES),
+    "rf_default_all": lambda src: RandomForest(feature_cols=ALL_FEATURES),
+    "rf_tuned_all": lambda src: Tuned(RandomForest, ALL_FEATURES),
+    "logreg_default_all": lambda src: LogisticRegressionModel(feature_cols=ALL_FEATURES),
+    "logreg_tuned_all": lambda src: Tuned(LogisticRegressionModel, ALL_FEATURES),
     # Count expensive decisions more, in training and in the tuning objective.
     "xgb_tuned_all_sqrtw": lambda src: Tuned(XGB, ALL_FEATURES, weight="sqrt_price"),
     "xgb_tuned_all_pricew": lambda src: Tuned(XGB, ALL_FEATURES, weight="price"),
@@ -289,6 +336,8 @@ MODELS: dict[str, Callable[[Path], BaseModel]] = {
 }
 RULES = ("top90", "rel90", "november")
 R2_MODELS = ("xgb_default", "xgb_tuned", "cat_default", "cat_tuned",
-             "xgb_default_all", "xgb_tuned_all", "cat_default_all", "cat_tuned_all")
+             "rf_default", "rf_tuned", "logreg_default", "logreg_tuned",
+             "xgb_default_all", "xgb_tuned_all", "cat_default_all", "cat_tuned_all",
+             "rf_default_all", "rf_tuned_all", "logreg_default_all", "logreg_tuned_all")
 # What `python -m ml.evaluate` shows by default: today's leaderboard.
 DEFAULT_MODELS = (*RULES, "served", "april")
