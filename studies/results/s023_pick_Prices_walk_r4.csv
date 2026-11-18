@@ -1,0 +1,2 @@
+model,serve,why
+"CatBoost (tuned, 26 features)",30d 8%,"beats 14d 8% by $0.61 [0.34, 0.89] per decision, the most of any version"

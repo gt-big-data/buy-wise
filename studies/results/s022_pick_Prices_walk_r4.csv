@@ -1,0 +1,4 @@
+model,serve,why
+"CatBoost (tuned, 26 features)",platt,"isotonic has the lowest ECE, but its paired gain over platt [-0.0132, 0.0163] includes 0, so the simplest wins"
+"XGBoost (tuned, 26 features)",platt,lowest ECE
+LSTM (seed 0),platt,lowest ECE

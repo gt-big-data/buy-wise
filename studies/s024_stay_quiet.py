@@ -186,7 +186,8 @@ def main(data="prices", horizon=None, threshold=None, n_boot=1000):
                       "G_wrong": round(float(last.loc[b, "G_wrong"]), 4)} for b in quiet.BANDS},
         "test": {k: round(float(v), 3) for k, v in quiet.outcome(test, speak).items()},
     }
-    path = os.path.join(RESULTS, f"r4_quiet_rule_{t}.json")
+    # The hand-off file is the picked version's; a run for another version (a what-if) is named by it.
+    path = os.path.join(RESULTS, f"r4_quiet_rule_{sfx if horizon else t}.json")
     with open(path, "w") as f:
         json.dump(rule, f, indent=2)
     print(f"wrote {path}")

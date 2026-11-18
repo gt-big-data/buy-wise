@@ -1,0 +1,21 @@
+fold,model,seconds
+walk1,rule: top of 90-day range,0.17841910000424832
+walk1,rule: price vs 90-day median,0.18530709999322426
+walk1,LightGBM (tuned),12.145597299997462
+walk1,"XGBoost (clean recipe, retrained)",3.7127547999989474
+walk1,Small neural net (tuned),640.0783357000037
+walk2,rule: top of 90-day range,0.3407002000021748
+walk2,rule: price vs 90-day median,0.3044048999872757
+walk2,LightGBM (tuned),22.44157890000497
+walk2,"XGBoost (clean recipe, retrained)",5.042351399999461
+walk2,Small neural net (tuned),792.8871547000017
+walk3,rule: top of 90-day range,0.46329709999554325
+walk3,rule: price vs 90-day median,0.3623812000005273
+walk3,LightGBM (tuned),29.522847000000183
+walk3,"XGBoost (clean recipe, retrained)",9.047915200004354
+walk3,Small neural net (tuned),880.1708901999955
+walk4,rule: top of 90-day range,0.4737271000049077
+walk4,rule: price vs 90-day median,0.38192719999642577
+walk4,LightGBM (tuned),31.363604600002873
+walk4,"XGBoost (clean recipe, retrained)",19.04494199999317
+walk4,Small neural net (tuned),1054.68013909999
