@@ -306,7 +306,11 @@ def decide(signals: dict) -> dict:
     """
     price, quiet, offer = signals["price"], signals["quiet"], signals["best_offer"]
     best = offer.get("best") if offer["status"] == "ok" else None
-    can_wait = quiet["status"] == "ok" and quiet["wait_worth_showing"]
+    can_wait = (
+        quiet["status"] == "ok"
+        and quiet["wait_worth_showing"]
+        and price.get("recommendation") == "WAIT"
+    )
     base = {"offers_checked": signals["offers_checked"], "amazon": signals["amazon"], "best": None,
             "wait": None, "next_best": None}
 
@@ -316,10 +320,40 @@ def decide(signals: dict) -> dict:
             best = None  # waiting beats the offer
 
     if best and signals["amazon"]:
-        return {**base, "show": True, "status": "better_offer",
-                "best": {k: best[k] for k in ("seller", "condition", "price", "arrives", "stars",
-                                              "years", "free_returns", "full_warranty")},
-                "reason": copy.headline_better_offer(best["saving"], best["condition"])}
+        best_response = {
+            k: best[k]
+            for k in ("seller", "condition", "price", "arrives", "stars")
+        }
+
+        for key in (
+            "rating_count",
+            "positive_percent",
+            "years",
+            "free_returns",
+            "full_warranty",
+        ):
+            if key in best:
+                best_response[key] = best[key]
+
+        return {
+            **base,
+            "show": True,
+            "status": "better_offer",
+            "best": best_response,
+            "reason": (
+                f"Same item, {best['condition'].lower()}, "
+                f"${best['saving']:.2f} less. "
+                f"{best['stars']:.1f} stars from "
+                f"{best['rating_count']:,} ratings, "
+                f"{best['positive_percent']:.0f}% positive."
+                if "rating_count" in best and "positive_percent" in best
+                else copy.headline_better_offer(
+                    best["saving"],
+                    best["condition"],
+                )
+            ),
+        }
+
     if can_wait:
         return {**base, "show": True, "status": "wait",
                 "reason": copy.headline_wait(price["drop_chance"]),

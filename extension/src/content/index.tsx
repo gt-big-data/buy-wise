@@ -174,6 +174,16 @@ async function mountLivePanel(): Promise<boolean> {
     status = "ready";
     partialOffers = request.offers_source === "page";
     render();
+        chrome.runtime.sendMessage({
+        type: "BUYWISE_LOG_DECISION",
+        payload: {
+          asin: asin!,
+          page_price: request.page_price,
+          decision: res.decision,
+        },
+      }).catch((err: Error) => {
+        console.warn("BuyWise decision log:", err);
+      });
   }
 
   function onOfferList(list: OfferListResult): void {
