@@ -15,7 +15,7 @@ export type Decision = {
   status: "better_offer" | "wait" | "nothing_better";
   offers_checked: number;
   amazon: ApiOffer | null;
-  best: (ApiOffer & { stars: number; years: number; free_returns: boolean; full_warranty: boolean }) | null;
+  best: (ApiOffer & { stars: number; rating_count: number; positive_percent: number }) | null;
   reason: string;
   wait: { price: number; expected_low: number; drop_chance: number; drops: number; months: number } | null;
   next_best: { price: number; days_later: number } | null;
@@ -42,7 +42,9 @@ function toOffer(o: ApiOffer, today: Date) {
 
 // Turns the endpoint's answer into what the panel draws. Returns null when the
 // panel should stay hidden, or when the answer is missing what its status needs.
-export function toPanelData(d: Decision, today = new Date()): PanelData | null {
+// pagePrice is the price on the page; it wins over the newest price we have
+// stored, which can be a day old (#104).
+export function toPanelData(d: Decision, today = new Date(), pagePrice: number | null = null): PanelData | null {
   if (!d.show) return null;
 
   if (d.status === "better_offer") {
@@ -55,9 +57,8 @@ export function toPanelData(d: Decision, today = new Date()): PanelData | null {
       best: {
         ...toOffer(d.best, today),
         stars: d.best.stars,
-        years: d.best.years,
-        freeReturns: d.best.free_returns,
-        fullWarranty: d.best.full_warranty,
+        ratingCount: d.best.rating_count,
+        positivePercent: d.best.positive_percent,
       },
     };
   }
@@ -67,7 +68,7 @@ export function toPanelData(d: Decision, today = new Date()): PanelData | null {
     return {
       state: "wait",
       offersChecked: d.offers_checked,
-      price: d.wait.price,
+      price: pagePrice ?? d.wait.price,
       expectedLow: d.wait.expected_low,
       dropChance: d.wait.drop_chance,
       drops: d.wait.drops,
