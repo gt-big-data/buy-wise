@@ -46,9 +46,13 @@ def check_offer_risk(
     min_feedback: float = 90.0, 
     min_ratings: int = 5
 ) -> Dict[str, bool]:
-    """Applies hard risk filters and returns boolean test results."""
-    feedback_ok = pd.isna(feedback_score) or (feedback_score >= min_feedback)
-    ratings_ok = pd.isna(rating_count) or (rating_count >= min_ratings)
+    """Applies hard risk filters and returns boolean test results.
+
+    A missing signal fails: we can't explain why an unknown seller is safe.
+    Amazon-run sellers get their signals from `amazon_signals` first.
+    """
+    feedback_ok = not pd.isna(feedback_score) and feedback_score >= min_feedback
+    ratings_ok = not pd.isna(rating_count) and rating_count >= min_ratings
     passed_all = bool(feedback_ok and ratings_ok)
     
     return {
@@ -116,6 +120,70 @@ def assign_dynamic_tiers(scored_candidates: List[Dict[str, Any]]) -> List[Dict[s
             c["tier"] = "bad offer"
 
     return scored_candidates
+
+
+def is_amazon_run(seller: Any) -> bool:
+    """Amazon.com, Amazon Resale, Amazon Warehouse, Amazon <country>."""
+    return isinstance(seller, str) and seller.strip().lower().startswith("amazon")
+
+
+def amazon_signals(offer: Dict[str, Any]) -> Dict[str, Any]:
+    """Amazon's own offers show no seller feedback or rating count on the page.
+    Treat them as fully trusted instead of as an unrated seller."""
+    if not is_amazon_run(offer.get("source")):
+        return offer
+    return {
+        **offer,
+        "feedback_score": 100.0 if pd.isna(offer.get("feedback_score")) else offer["feedback_score"],
+        "rating_count": 1000 if pd.isna(offer.get("rating_count")) else offer["rating_count"],
+    }
+
+
+def rank_offers(
+    offers: List[Dict[str, Any]],
+    typical_new: float,
+    typical_used: float,
+    user_preferred_condition: str = "any acceptable condition",
+) -> List[Dict[str, Any]]:
+    """Ranks any number of offers on one page, best first.
+
+    Each offer: source (seller name), price (total incl. shipping), condition,
+    feedback_score, rating_count, is_fba; optional is_atc, product_purchases,
+    reference_price, reason. Savings are measured against the Add to Cart
+    offer (else the cheapest new, else the cheapest offer). Offers that fail
+    the risk checks rank below every offer that passes. Returns [] if the
+    condition preference filters out everything.
+    """
+    if not offers:
+        return []
+    atc = [o["price"] for o in offers if o.get("is_atc")]
+    new = [o["price"] for o in offers if str(o.get("condition", "")).strip().lower() == "new"]
+    baseline = atc[0] if atc else min(new) if new else min(o["price"] for o in offers)
+
+    ranked = []
+    for o in map(amazon_signals, offers):
+        if not filter_by_condition_preference(o.get("condition"), user_preferred_condition):
+            continue
+        is_new = str(o.get("condition", "")).strip().lower() == "new"
+        ranked.append({
+            **o,
+            "reference_price": o.get("reference_price", typical_new if is_new else typical_used),
+            "reason": o.get("reason") or f"{o.get('source')}: {o.get('condition')}, ${o['price']:.2f}",
+            "score": compute_offer_score(
+                price=o["price"],
+                baseline_price=baseline,
+                feedback_score=o.get("feedback_score"),
+                rating_count=o.get("rating_count"),
+                is_fba=bool(o.get("is_fba")),
+                product_purchases=o.get("product_purchases", 50),
+            ),
+            "passed_tests": check_offer_risk(o.get("feedback_score"), o.get("rating_count")),
+        })
+
+    ranked = assign_dynamic_tiers(ranked)
+    ranked.sort(key=lambda c: (c["passed_tests"]["passed_all"], c["score"]), reverse=True)
+    return ranked
+
 
 def evaluate_single_product_offers(
     row: pd.Series, 
@@ -205,27 +273,11 @@ def evaluate_single_product_offers(
             "reason": "Only one valid offer available on page."
         }
         
-    scored_candidates = []
-    for c in candidates:
-        if not filter_by_condition_preference(c["condition"], user_preferred_condition):
-            continue
-            
-        tests = check_offer_risk(c["feedback_score"], c["rating_count"])
-        score = compute_offer_score(
-            price=c["price"],
-            baseline_price=amazon_prices_ref if 'amazon_prices_ref' in locals() else amazon_price,
-            feedback_score=c["feedback_score"],
-            rating_count=c["rating_count"],
-            is_fba=c["is_fba"],
-            product_purchases=c["product_purchases"]
-        )
-        
-        scored_candidates.append({
-            **c,
-            "score": score,
-            "passed_tests": tests
-        })
-        
+    # Prices.csv carries no seller signals, so the candidates above use
+    # placeholder ones. Real offer lists (#69) should call rank_offers directly.
+    candidates[0]["is_atc"] = True
+    scored_candidates = rank_offers(candidates, typical_new, typical_used, user_preferred_condition)
+
     if not scored_candidates:
         scored_candidates = [{
             **candidates[0],
@@ -234,10 +286,7 @@ def evaluate_single_product_offers(
             "passed_tests": {"passed_all": True},
             "reason": "All alternative offers filtered out by user condition preference."
         }]
-    else:
-        scored_candidates = assign_dynamic_tiers(scored_candidates)
-        
-    scored_candidates.sort(key=lambda x: x["score"], reverse=True)
+
     winner = scored_candidates[0]
     
     return {
