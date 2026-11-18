@@ -139,20 +139,57 @@ def amazon_signals(offer: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+# How much less than new an item in each condition is worth to a careful
+# buyer. A used offer counts as cheaper only once its price, scaled up by
+# 1 / (1 - discount), beats the new price. Like New = 0.13: across 282 ASINs in
+# Prices.csv the cheapest used offer is a median 13% below Add to Cart (steady
+# across price bands). The steeper rungs were set on hand-check rows 1-25
+# (studies/hand_check); rows 26-50 are the held-out test.
+CONDITION_DISCOUNT = {
+    "new": 0.0,
+    "like new": 0.13,
+    "refurbished": 0.20,
+    "very good": 0.30,
+    "good": 0.35,
+    "acceptable": 0.40,
+}
+UNKNOWN_CONDITION_DISCOUNT = 0.40  # unknown condition: assume the worst rung
+
+# Smallest saving worth switching away from a safe Add to Cart offer for:
+# a product decision (#86 "when the difference is too small to mention").
+MIN_SAVINGS_USD = 2.00
+MIN_SAVINGS_PCT = 0.03
+
+
+def condition_discount(condition: Any, discounts: Dict[str, float] | None = None) -> float:
+    """Maps an Amazon condition string ("Used - Very Good", "New", ...) to its discount."""
+    table = discounts or CONDITION_DISCOUNT
+    c = str(condition or "new").strip().lower()
+    if c == "new":
+        return table["new"]
+    for key in ["like new", "very good", "good", "acceptable", "refurbished"]:
+        if key in c:
+            return table[key]
+    return UNKNOWN_CONDITION_DISCOUNT
+
+
 def rank_offers(
     offers: List[Dict[str, Any]],
     typical_new: float,
     typical_used: float,
     user_preferred_condition: str = "any acceptable condition",
+    discounts: Dict[str, float] | None = None,
 ) -> List[Dict[str, Any]]:
     """Ranks any number of offers on one page, best first.
 
     Each offer: source (seller name), price (total incl. shipping), condition,
     feedback_score, rating_count, is_fba; optional is_atc, product_purchases,
     reference_price, reason. Savings are measured against the Add to Cart
-    offer (else the cheapest new, else the cheapest offer). Offers that fail
-    the risk checks rank below every offer that passes. Returns [] if the
-    condition preference filters out everything.
+    offer (else the cheapest new, else the cheapest offer), on the
+    condition-adjusted price (see CONDITION_DISCOUNT). Offers that fail the
+    risk checks rank below every offer that passes, and a safe Add to Cart
+    offer stays on top unless the winner saves at least MIN_SAVINGS.
+    Returns [] if the condition preference filters out everything.
     """
     if not offers:
         return []
@@ -165,12 +202,14 @@ def rank_offers(
         if not filter_by_condition_preference(o.get("condition"), user_preferred_condition):
             continue
         is_new = str(o.get("condition", "")).strip().lower() == "new"
+        effective_price = o["price"] / (1 - condition_discount(o.get("condition"), discounts))
         ranked.append({
             **o,
+            "effective_price": effective_price,
             "reference_price": o.get("reference_price", typical_new if is_new else typical_used),
             "reason": o.get("reason") or f"{o.get('source')}: {o.get('condition')}, ${o['price']:.2f}",
             "score": compute_offer_score(
-                price=o["price"],
+                price=effective_price,
                 baseline_price=baseline,
                 feedback_score=o.get("feedback_score"),
                 rating_count=o.get("rating_count"),
@@ -182,6 +221,14 @@ def rank_offers(
 
     ranked = assign_dynamic_tiers(ranked)
     ranked.sort(key=lambda c: (c["passed_tests"]["passed_all"], c["score"]), reverse=True)
+
+    # Don't switch away from a safe Add to Cart offer for a trivial saving.
+    atc_offer = next((c for c in ranked if c.get("is_atc")), None)
+    if atc_offer and atc_offer["passed_tests"]["passed_all"] and not ranked[0].get("is_atc"):
+        saving = atc_offer["price"] - ranked[0]["effective_price"]
+        if saving < max(MIN_SAVINGS_USD, MIN_SAVINGS_PCT * atc_offer["price"]):
+            ranked.remove(atc_offer)
+            ranked.insert(0, atc_offer)
     return ranked
 
 
