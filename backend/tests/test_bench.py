@@ -47,13 +47,15 @@ def test_legacy_reproduction():
     """Rules + served XGBoost + April model through the new interface give
     exactly the numbers the old evaluate.py printed (served AUC 0.802)."""
     from ml.bench.data import load_dataset
-    from ml.bench.models import DEFAULT_MODELS, MODELS
+    from ml.bench.models import DEFAULT_MODELS, MODELS, PREVIOUS_SERVED, ServedXGB
     from ml.bench.splits import legacy_fold
 
     if not DEFAULT_SOURCE.exists():
         pytest.skip("studies/Prices.csv not present")
     ds = load_dataset(DEFAULT_SOURCE)
-    res = run_fold([MODELS[k](ds.source) for k in DEFAULT_MODELS], legacy_fold(ds.rows, ds.panel), verbose=False)
+    # The fixture is the XGBoost served before the CatBoost swap (#79).
+    models = [ServedXGB(PREVIOUS_SERVED) if k == "served" else MODELS[k](ds.source) for k in DEFAULT_MODELS]
+    res = run_fold(models, legacy_fold(ds.rows, ds.panel), verbose=False)
     if res.skipped:
         pytest.skip(f"model files missing: {res.skipped}")
     got = res.table().drop(columns="fold")

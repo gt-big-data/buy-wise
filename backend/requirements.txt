@@ -30,5 +30,6 @@ scikit-learn
 joblib
 pytest
 httpx
-
+catboost
+matplotlib
 lightgbm==4.7.0
