@@ -39,3 +39,5 @@ studies/snapshots/
 studies/experiment_log.csv
 # studies/Prices.csv
 # studies/Product.csv
+
+studies/offer_rankings/*
