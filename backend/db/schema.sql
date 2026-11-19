@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS predictions;
 DROP TABLE IF EXISTS user_activity;
 DROP TABLE IF EXISTS prices;
 DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS decision_logs;
 
 CREATE TABLE products (
 	product_id INT auto_increment primary key,
@@ -89,6 +90,18 @@ CREATE TABLE user_activity (
     INDEX idx_activity_time (timestamp),
     INDEX idx_activity_user_time (user_id, timestamp),
     INDEX idx_activity_asin_time (asin, timestamp)
+);
+
+CREATE TABLE decision_logs (
+    decision_log_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    asin VARCHAR(10) NOT NULL,
+    status ENUM('better_offer', 'wait', 'nothing_better') NOT NULL,
+    page_price DECIMAL(10,2),
+    decision_json JSON NOT NULL,
+    displayed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    INDEX idx_decision_asin_time (asin, displayed_at),
+    INDEX idx_decision_status_time (status, displayed_at)
 );
 
 CREATE TABLE watchlist (

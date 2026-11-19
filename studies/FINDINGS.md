@@ -276,11 +276,88 @@ The 357,817 rows overstate it: the file is one row per day with the last price c
 
 ---
 
+### Study 003 — Which signals carry the prediction
+`s003_signal_inventory.py`. The 26 features (18 served, plus 8 added in R2) are split into seven groups. Tuned XGBoost and CatBoost are refit with each group removed (drop-one) and with each group added to price position alone (add-one). Each model keeps the settings it picked on validation. Results are pooled over four walk-forward test windows, with paired 95% intervals from product-level resampling.
+
+| Group | Drop it: PR-AUC lost (XGB / Cat) | Add it to price position: PR-AUC gained | Drop it: $ lost @20% (XGB / Cat) |
+|---|---|---|---|
+| **Price position** (vs medians, ranges, 1-year high, list price) | **0.026 / 0.036** | (the base: 0.495 / 0.486 alone) | $0.19 / $0.30 |
+| **Volatility** (vol, changes, days since drop, past drop rate) | **0.033 / 0.031** | **+0.039 / +0.049** | not significant |
+| **Price level** (log price) | **0.020 / 0.027** | **+0.018 / +0.031** | **$0.49 / $0.60** |
+| Calendar (month, week) | 0.012 / 0.015 | not significant | $0.26 / $0.22 |
+| Momentum (7- and 30-day change) | ~0.006, borderline | not significant | mixed |
+| Offer counts (used/new gaps, seller counts) | not significant | not significant | $0.17 / not significant |
+| Demand (sales rank) | **0.000 / 0.002, nothing** | not significant | not significant |
+
+**Three groups do the work: where today's price sits, how jumpy the product is, and how expensive it is.** Price position alone reaches PR-AUC 0.49, and adding volatility takes it to 0.53. Shuffling price position on test costs 0.24 PR-AUC, far more than any other group, and volatility comes second at 0.07–0.09.
+
+**Price level matters most for dollars.** Removing it costs $0.49–0.60 per decision at a 20% wait rate, about twice any other group. It's how the model knows which decisions have money behind them.
+
+**Sales rank carries no signal**, by any of the three measures (drop-one, add-one, or shuffling). The same goes for offer counts and momentum. These are candidates to drop, and dropping them means less to fetch and store.
+
+**Caveat.** The groups overlap: many of the volatility features are built from the same price series as the position features. So drop-one undersells correlated groups, which is why add-one is reported too.
+
+---
+
+### Study 017 — Where accuracy is worst, and why
+`s017_error_breakdown.py` extends Study 006 to the four walk-forward windows, with error bars. It uses tuned XGBoost on 26 features; CatBoost looks the same. Two questions are asked of each segment:
+- How well does the model rank decisions inside the segment (PR-AUC, against the segment's base rate)?
+- What does its overall 20% WAIT policy earn there, against the most a perfect forecaster could (the ceiling)?
+
+| Segment | Base rate | PR-AUC [95%] | PR-AUC ÷ base rate | $ caught / ceiling per decision |
+|---|---|---|---|---|
+| < $25 | 15.0% | 0.35 [0.28, 0.43] | 2.3× | $0.12 / $0.47 |
+| $25–75 | 17.0% | 0.48 [0.41, 0.56] | 2.8× | $0.90 / $1.70 |
+| $75–200 | 24.9% | 0.59 [0.52, 0.65] | 2.4× | $4.34 / $6.68 |
+| > $200 | 33.3% | **0.68 [0.59, 0.76]** | 2.1× | **$20.36 / $28.49** |
+| Calm | 9.3% | **0.30 [0.25, 0.36]** | **3.2×** | $0.58 / $2.01 |
+| Medium | 17.2% | 0.41 [0.36, 0.47] | 2.4× | $2.14 / $5.65 |
+| Twitchy | 30.6% | 0.63 [0.58, 0.67] | 2.1× | $8.60 / $10.57 |
+| Seen in training | 21.1% | 0.56 [0.52, 0.61] | 2.7× | $4.68 / $6.59 |
+| **Not seen in training** | 21.0% | **0.45 [0.38, 0.53]** | **2.1×** | $4.43 / $9.87 |
+| History 2+ years | 19.3% | 0.50 [0.43, 0.56] | 2.6× | $3.21 / $4.69 |
+| Amazon Basics (worst brand) | 18.9% | **0.31 [0.24, 0.41]** | **1.7×** | $0.24 / $0.89 |
+| Nov–Dec vs rest of year | 19.2% vs 21.5% | 0.57 vs 0.55 | — | no gap |
+
+**There are two kinds of "bad", and they need different fixes.**
+- **Nothing to predict:** cheap and calm products. Their PR-AUC is low, but relative to their base rate the model ranks them *better* than anything else (3.2× on calm items). There's just very little to catch: at most 47 cents per decision on items under $25. This confirms Study 006's "no opinion" recommendation. No model fixes it, and the product should simply stay quiet there.
+- **Hard to predict:** products the model hasn't seen, and Amazon Basics. Their base rates are normal (21% and 19%), yet the model ranks them clearly worse, at 2.1× and 1.7×.
+  - Amazon Basics is private label: Amazon sets its prices without the competitive repricing that our price-position features read.
+  - Unseen products are mostly new listings with short histories, where the 90- and 180-day windows are still filling up.
+
+**This reverses Study 006's "slightly better on unseen products"** (AUC 0.826 vs 0.790). That was one test window with a different definition of "unseen". Across four windows, with products new to each window's training data, unseen products rank worse by 0.11 PR-AUC. The intervals only just overlap, and it's 6,622 decisions on few products, so treat cold start as a likely weakness rather than a strength.
+
+**No season effect.** November–December ranks about the same as the rest of the year, so the calendar features (Study 003) add a little, but there's no holiday blind spot.
+
+**Not answered yet: by category.** Both datasets are one category (electronics, 172282). The breakdown runs by category automatically once the multi-category Keepa pull (#83) lands.
+
+---
+
+### Study 018 — Better ranking, same dollars: can we point the model at the money?
+`python -m ml.evaluate --folds walk --ci --save --tag weighted ...`, then `s018_dollar_policies.py`. These are paired comparisons over four windows.
+
+Tuned models rank better than the served recipe (CatBoost on 26 features: PR-AUC +0.036), but catch no more dollars, because the gains are on cheap items (Study 017). Two attempts to fix that:
+
+**1. Train and tune with each decision weighted by price (or √price): no help.** No weighted model catches more than its unweighted version at any wait rate. Full price weighting also costs PR-AUC (−0.017 for both models). The model already ranks expensive items well (PR-AUC 0.68 on items over $200), so weighting mostly adds noise from a few products.
+
+**2. Rank by chance × price instead of chance alone: more dollars, but more wrong WAITs.**
+
+| CatBoost tuned, 26 features | Precision @20% | $ caught (buys at the low) | $ no alert (buys on day 14) |
+|---|---|---|---|
+| Ranked by chance | **54.1%** | $4.76 | **$3.44** |
+| Ranked by chance × price | 42.9% | **$5.58** | $2.57 |
+
+Ranking by chance × price beats the served recipe by $0.65–1.07 per decision when the shopper buys at the 14-day low. **But precision drops about 11 points, and if the shopper just buys on day 14 it's worse** ($2.57 vs $3.44 at 20%), because a wrong WAIT on an expensive item often means paying more later. The extra dollars only exist if alerts reliably catch the dip, which Study 007 says they don't fully (weekly checking keeps about 78%).
+
+**Recommendation: keep ranking by chance.** False positives cost real money on expensive items, so precision matters more than the headline "$ caught". Tuned CatBoost on 26 features has the best precision and ranking we've measured, and ties the served recipe on dollars. False positives are controlled the way serving already does it: WAIT only when the calibrated chance clears a threshold (`MIN_DROP_CHANCE`, currently 40%). Raising it trades fewer WAITs for more correct ones.
+
+---
+
 ### Studies 022–024 — R4: calibration, horizon, and when to stay quiet (#81)
 
 All three use the same four walk-forward windows (91-day test, 91-day validation before it). Each model is fitted once per window by `python -m ml.bench.r4`, which saves its scores on both the validation and the test rows. **Anything chosen here (a calibrator, a horizon, a quiet threshold) is fitted or picked on validation; test only judges it.** Intervals are 95%, resampling products, and comparisons are paired on the same resamples.
 
-**Where the CatBoost numbers come from.** The lead model is tuned CatBoost on 26 features (#79), with tuned XGBoost and the LSTM (#80) beside it. Neither is on `main` yet, so their score columns were made on the #80 branch, with the same windows, rows and labels, and merged into these files (`ml.bench.r4.merge_columns` refuses if any row or label differs). Every file also holds main's models (LightGBM tuned, XGBoost clean recipe, small neural net), and the studies fall back to them, so everything reruns on `main` alone.
+**Where the CatBoost numbers come from.** The lead model is tuned CatBoost on 26 features (#79), with tuned XGBoost and the LSTM (#80) beside it. These columns were made on the #80 branch, before #79 was merged, using the same windows, rows and labels. They were then merged into these files; `ml.bench.r4.merge_columns` refuses if any row or label differs. The CatBoost and XGBoost columns now rerun on `main` (commands below), but the LSTM's need #80. Every file also holds LightGBM (tuned), XGBoost (clean recipe) and the small neural net, and the studies fall back to them if the lead models are missing.
 
 ### Study 022 — Is the "chance of a drop" an honest number?
 `s022_calibration.py` — calibrators fitted on each window's validation rows, judged on its test rows
@@ -437,17 +514,24 @@ cd studies
 ../backend/.venv/bin/python s006_segmentation.py
 ../backend/.venv/bin/python s009_substitution.py
 ../backend/.venv/bin/python s016_april_snapshot.py
+
+# R2: the leaderboard first (saves the tuning log the next three read), ~45 min
+cd ../backend && python -m ml.evaluate --models r2 --folds walk --ci --save && cd ../studies
+python s003_signal_inventory.py
+python s017_error_breakdown.py
+python r2_charts.py                # figures in results/figures/
 ```
 
 `Prices.csv` and `Product.csv` are copied here from `origin/Training_data_generation:notebooks/`.
 
-**R4 (Studies 022–024).** Fit the models first. That saves validation and test scores for each walk-forward window; add `--data ../studies/snapshots/apr2026_500/Prices.csv.gz` for the April data. On `main` the default models run (rules, LightGBM tuned, XGBoost clean, small net). Once #79 and #80 are merged, add `cat_tuned_all,xgb_tuned_all,lstm_s0` to `--models` to get the CatBoost/XGBoost/LSTM columns used above.
+**R4 (Studies 022–024).** Fit the models first. That saves validation and test scores for each walk-forward window; add `--data ../studies/snapshots/apr2026_500/Prices.csv.gz` for the April data. Tuned CatBoost is slow: the 12-version sweep takes about 4 hours on the current data and about 8 on April. Once #80 is merged, add `lstm_s0` to the first command.
 
 ```bash
 cd backend
-python -m ml.bench.r4 --tag r4                       # 14 days / 8%: calibration (s022)
+python -m ml.bench.r4 --models top90,rel90,cat_tuned_all,xgb_tuned_all,lightgbm-tuned,xgb,small-nn-tuned --tag r4
+                                                       # 14 days / 8%: calibration (s022)
 for H in 7 14 30; do for T in 0.05 0.08 0.10 0.15; do
-  python -m ml.bench.r4 --models top90,rel90,lightgbm-tuned --horizon $H --threshold $T
+  python -m ml.bench.r4 --models top90,rel90,cat_tuned_all,lightgbm-tuned --horizon $H --threshold $T
 done; done                                             # the 12 versions (s023)
 cd ../studies
 python s022_calibration.py [prices|apr2026_500]
@@ -461,7 +545,6 @@ python s024_stay_quiet.py [prices|apr2026_500] [horizon threshold]   # default: 
 
 | # | Question |
 |---|---|
-| 003 | Full signal inventory — which features add what, and how much do they overlap? |
 | 008 | Alert latency — how fast must we notify before the value decays? |
 | 010 | Subscribe & Save orchestration — how much is the 15% tier worth over a year? |
 | 011 | Pack-size / unit-price arbitrage across product variants |

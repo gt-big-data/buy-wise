@@ -46,6 +46,26 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "BUYWISE_LOG_DECISION") {
+    fetch(`${BACKEND_URL}/decision-log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message.payload),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          throw new Error(body.detail ?? `HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => sendResponse({ ok: true, ...data }))
+      .catch((error) =>
+        sendResponse({ ok: false, error: error.message })
+      );
+    return true;
+  }
+
   if (message?.type === "BUYWISE_POST_ACTIVITY") {
     getUserId()
       .then((userId) =>

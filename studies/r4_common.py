@@ -4,9 +4,8 @@ They read the scores `python -m ml.bench.r4` wrote for the test AND validation
 rows of each walk-forward window, so no model is refitted here. Calibrators and
 stay-quiet settings are fitted on validation; test only judges.
 
-Which model leads: the first of PREFERRED found in the saved scores. Tuned
-CatBoost is the model #79 serves; on main alone it isn't registered yet, so
-LightGBM (tuned) leads there.
+Which model leads: the first of PREFERRED found in the saved scores (tuned
+CatBoost on 26 features, from #79, when it was run).
 """
 import os
 import sys
@@ -112,7 +111,7 @@ def with_context(name: str, val: pd.DataFrame, test: pd.DataFrame, horizon: int 
     rows, panel = load_rows(source(name), horizon, threshold)
     folds = walk_forward_folds(rows, panel, horizon=horizon)
     first_seen = panel.groupby("asin").date.min()
-    # past_drop_rate arrives with #79; until then jumpiness reads nchg30 (quiet.jumpiness).
+    # Jumpiness reads past_drop_rate, or nchg30 on older feature sets (quiet.jumpiness).
     cols = [c for c in ("vol30", "past_drop_rate", "nchg30", "drop_pct") if c in rows.columns]
     seg_t, seg_v, trains = [], [], {}
     for f in folds:

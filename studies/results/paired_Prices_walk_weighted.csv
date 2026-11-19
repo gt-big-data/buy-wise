@@ -1,0 +1,127 @@
+metric,a,b,folds,diff,lo,hi,p(a<=b)
+AUC,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.06868145090955846,-0.08229916303988824,-0.05410931457059598,1.0
+PR-AUC,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.13065694554952983,-0.15599165975810544,-0.0995977430224336,1.0
+precision %@10,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-13.60450382167852,-17.44581483361073,-9.139270912763829,1.0
+lift@10,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.6383329677681884,-0.8386935743747703,-0.4256824945233996,1.0
+$ caught@10,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.47706223736979636,-0.8020945083792098,-0.092081114931946,0.99
+$ no alert@10,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.3095240832751598,-0.5847116440665,0.0007573410389322767,0.974
+precision %@20,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-13.827741666774436,-17.043402858062752,-9.997660411898744,1.0
+lift@20,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.6522880442457326,-0.8347045385591864,-0.4523408799075709,1.0
+$ caught@20,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-1.4562453633364743,-2.0086709913823935,-0.9419509454350169,1.0
+$ no alert@20,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.8640805376476504,-1.2242038796836172,-0.4910703616014534,1.0
+precision %@30,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-10.129429267393022,-12.420857810797395,-7.617032486109365,1.0
+lift@30,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.4801616763524039,-0.6003136049935762,-0.35494730210888725,1.0
+$ caught@30,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-1.4997981083781546,-2.1142110407611745,-0.9392139086047806,1.0
+$ no alert@30,rule: top of 90-day range,"XGBoost (tuned, 26 features)",4,-0.6652327570867267,-1.1312687632261818,-0.2394412077532013,0.999
+AUC,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.10979861134718927,-0.12499326360875557,-0.09352842193725801,1.0
+PR-AUC,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.14909472257071044,-0.17388890160449066,-0.11752240205745683,1.0
+precision %@10,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-12.131593704105775,-16.604820146179126,-7.165168089821819,1.0
+lift@10,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.5744673190486154,-0.8080985992864934,-0.3281925030407813,1.0
+$ caught@10,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-1.15035012797876,-1.5845749695219196,-0.7039091381733207,1.0
+$ no alert@10,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.9577468895002721,-1.305747188822227,-0.6285344737711324,1.0
+precision %@20,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-7.960118065064478,-10.946004205873022,-4.909860040490964,1.0
+lift@20,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.37869525844881746,-0.5387318284472542,-0.225682856690237,1.0
+$ caught@20,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-1.255191831259661,-1.7770155549952409,-0.7951979422761148,1.0
+$ no alert@20,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-1.027320111143045,-1.4035279202355309,-0.696763339782782,1.0
+precision %@30,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-14.516436296485011,-19.68894992713928,-10.497114542463658,1.0
+lift@30,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.6855477542796269,-0.9809215583777938,-0.47927184084236235,1.0
+$ caught@30,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.3626382786515059,-0.804844553226338,0.2657558900536452,0.754
+$ no alert@30,rule: price vs 90-day median,"XGBoost (tuned, 26 features)",4,-0.6916160911044589,-1.0335587849475132,-0.3342944745073268,1.0
+AUC,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.01269301807247425,-0.01802700937537083,-0.0069572088145159255,1.0
+PR-AUC,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.026312335053428337,-0.03895958815962228,-0.012545849479663744,1.0
+precision %@10,XGBoost (default),"XGBoost (tuned, 26 features)",4,-2.8791604576457956,-5.21811302693048,-0.4184422532546646,0.988
+lift@10,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.13322904243934897,-0.25015256375848827,-0.01261450262084775,0.986
+$ caught@10,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.08564598475205143,-0.31403188742049415,0.14545189767725047,0.682
+$ no alert@10,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.12170410216400418,-0.34182017170585066,0.08470302711479757,0.849
+precision %@20,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.353634959942454,-2.4468497136697294,1.216202422622968,0.733
+lift@20,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.01786584998768692,-0.12080988721105192,0.05711212333011284,0.73
+$ caught@20,XGBoost (default),"XGBoost (tuned, 26 features)",4,0.2540227761124534,0.025248307519697446,0.488577413773217,0.012
+$ no alert@20,XGBoost (default),"XGBoost (tuned, 26 features)",4,0.08995825291887183,-0.14379863518824473,0.3249644534375573,0.305
+precision %@30,XGBoost (default),"XGBoost (tuned, 26 features)",4,-1.6917627939253492,-2.460420042454241,-0.4343728317795851,0.997
+lift@30,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.08048524585992078,-0.12018516379523725,-0.018916419115646912,0.995
+$ caught@30,XGBoost (default),"XGBoost (tuned, 26 features)",4,0.0017696656127235144,-0.15544784877055748,0.1625836500806034,0.447
+$ no alert@30,XGBoost (default),"XGBoost (tuned, 26 features)",4,-0.09664805157475342,-0.2967297831335935,0.06857636347589088,0.858
+AUC,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,1.426621010613971e-05,-0.0030720855924912605,0.0032292565409815397,0.515
+PR-AUC,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.010090730762773448,0.0018295960823324522,0.017637852802082556,0.012
+precision %@10,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,-0.41491045180998753,-1.7461918525167057,1.4731827200004177,0.582
+lift@10,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,-0.01519725403083294,-0.07908053941976628,0.07425245584908925,0.536
+$ caught@10,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.0715539495476265,-0.041790538804089034,0.1883185126794759,0.103
+$ no alert@10,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.06146388535293079,-0.05397756185299168,0.1724051145966241,0.174
+precision %@20,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.40848530050426035,-0.7158497857342471,1.4255137740071433,0.264
+lift@20,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.019784274550650682,-0.034963782565896925,0.06569236563846756,0.262
+$ caught@20,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.10311761726823221,-0.02087372226236657,0.21895157407584465,0.055
+$ no alert@20,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.11492615557289776,-0.002851773770481802,0.2289993440399252,0.03
+precision %@30,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,-0.24466716786398024,-0.894092234332632,0.47158576107241407,0.711
+lift@30,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,-0.011679408217416754,-0.04159340072456939,0.022319376941208755,0.703
+$ caught@30,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.026008431541621135,-0.1568828158476763,0.16652092152702452,0.44
+$ no alert@30,"CatBoost (tuned, 26 features)","XGBoost (tuned, 26 features)",4,0.014596695821186056,-0.16375594508239508,0.18777960800077736,0.43
+AUC,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.0011198079932578375,-0.0019711534969729713,0.00418724555981502,0.244
+PR-AUC,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.00400476891036694,-0.003914618936417929,0.011853588675790462,0.193
+precision %@10,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.7622315997927558,-2.3038763154346826,1.3092502286092451,0.687
+lift@10,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.0355535665627138,-0.10997053035726818,0.06305663516157599,0.685
+$ caught@10,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.0019315895372233882,-0.1249529017593521,0.12211004327305149,0.516
+$ no alert@10,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.024177034999112834,-0.09913169880658876,0.10727058190845322,0.497
+precision %@20,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.7289896352616481,-0.5684321839327308,1.7553209371917002,0.125
+lift@20,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.034123920190704204,-0.025908945339042474,0.07971465108214894,0.135
+$ caught@20,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.06004024144869291,-0.3523948089892233,0.16388039551385877,0.68
+$ no alert@20,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.02845344173886044,-0.145082798690147,0.15249938485070497,0.584
+precision %@30,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.2708701799994202,-0.8309477667909693,0.5127120415449722,0.623
+lift@30,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.01258419386949683,-0.039662020924236735,0.02563321737782679,0.606
+$ caught@30,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.003025773689766531,-0.08142721997646449,0.11679303024759456,0.401
+$ no alert@30,"XGBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.028980139339438882,-0.041383794772816396,0.1802298691327356,0.151
+AUC,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.0076835973101465616,-0.012546474965681774,-0.0029097048659178755,0.997
+PR-AUC,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.01687297410134625,-0.029550514123542256,-0.003086822882171617,0.995
+precision %@10,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-2.0326601526525394,-4.713532802975859,0.9679586420810705,0.906
+lift@10,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.09625258125137703,-0.21781885960426398,0.048301699472918916,0.906
+$ caught@10,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.039215976128880836,-0.15788991233909738,0.35372464110688695,0.337
+$ no alert@10,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.012841402154424308,-0.18741458544894668,0.2557130362204407,0.515
+precision %@20,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.44415836515563,-2.001116819966021,1.1191852583051773,0.687
+lift@20,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.02313426340026936,-0.10238909259805544,0.049810920426121535,0.7
+$ caught@20,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.09400060225297135,-0.43240049171040845,0.3062067459364349,0.704
+$ no alert@20,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.048691879166148144,-0.27273457181274224,0.28167178101024704,0.64
+precision %@30,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.6978580689111027,-1.725043214032481,0.11359676173408757,0.963
+lift@30,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.033713151285892806,-0.08437040920936333,0.003120265238730605,0.965
+$ caught@30,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.09221765969970264,-0.38136440538165034,0.03796860254467241,0.938
+$ no alert@30,"XGBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.023751625398653164,-0.16215128243157895,0.12410282485378785,0.596
+AUC,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.006771466473393217,-0.01117172498449831,-0.002536086423513707,0.998
+PR-AUC,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.01304333338285446,-0.02679258471667624,-0.00012358899038678227,0.976
+precision %@10,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-2.089467524868823,-4.402860487041257,0.3482953976794827,0.954
+lift@10,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.09352467588852731,-0.20613920592912502,0.020073619696006934,0.941
+$ caught@10,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.10492314430803029,-0.057339135908361184,0.2497209233390621,0.117
+$ no alert@10,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.014104080263895646,-0.11912044033614973,0.1339637795147139,0.527
+precision %@20,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.31698000261881276,-1.8282274875608497,0.9735835691599758,0.72
+lift@20,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.017314531610868933,-0.08901794978848883,0.04230793414568757,0.747
+$ caught@20,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.10740620594313466,-0.35678199089239876,0.13735676109122638,0.762
+$ no alert@20,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.03797013372752778,-0.190545617651611,0.1390149855042834,0.671
+precision %@30,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.7576920446766664,-1.596959339265224,0.07989023274574401,0.958
+lift@30,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.03448265288718755,-0.07569615360283123,0.0049987210120529205,0.954
+$ caught@30,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.11351962112812242,-0.31182384924165757,0.005040340611072043,0.97
+$ no alert@30,"CatBoost (tuned, sqrt-price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.07713806649420096,-0.2761292656035245,0.06644033844795619,0.856
+AUC,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.006853172806101204,-0.011368179934429776,-0.0022160148667577356,0.999
+PR-AUC,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.006525647915207711,-0.018006715837043216,0.005275320723518692,0.867
+precision %@10,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-1.7061681616154942,-3.7934222472617485,0.625736655761482,0.91
+lift@10,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.07798688285454647,-0.17892045104693727,0.036397159353470876,0.902
+$ caught@10,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.08378899245814608,-0.21881647963834536,0.058903227939426595,0.89
+$ no alert@10,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.08668281799641431,-0.22316485985635826,0.010028913007263383,0.956
+precision %@20,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.491552842398022,-1.0218065596278314,1.6562571899373661,0.304
+lift@20,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,0.022229246778763034,-0.050961600535452733,0.07721041761372371,0.311
+$ caught@20,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.12020449225967766,-0.39729458225174197,0.12442983132460496,0.866
+$ no alert@20,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.05863233824716563,-0.22781717363047999,0.12026910141330023,0.779
+precision %@30,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.775401975331647,-1.3842961880321039,0.22773880144890923,0.914
+lift@30,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.03630775601277403,-0.06662931690283405,0.011067511512138242,0.917
+$ caught@30,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.11810399813849237,-0.20710943478506902,0.03600127207982265,0.925
+$ no alert@30,"CatBoost (tuned, price-weighted, 26 features)","XGBoost (tuned, 26 features)",4,-0.04238560615393183,-0.16471378086616068,0.14330666548564008,0.555
+AUC,clean model (served),"XGBoost (tuned, 26 features)",2,-0.013364536739794874,-0.021025681698058206,-0.006441608937969451,1.0
+PR-AUC,clean model (served),"XGBoost (tuned, 26 features)",2,-0.03354063821240816,-0.04843281204792767,-0.017503652003347515,1.0
+precision %@10,clean model (served),"XGBoost (tuned, 26 features)",2,-5.569501875396796,-8.322392491560917,-0.8501735658792695,0.988
+lift@10,clean model (served),"XGBoost (tuned, 26 features)",2,-0.24552533903993856,-0.37089060529372664,-0.03898209025465554,0.988
+$ caught@10,clean model (served),"XGBoost (tuned, 26 features)",2,-0.027786412205017985,-0.4732298150992831,0.7513853048156471,0.44
+$ no alert@10,clean model (served),"XGBoost (tuned, 26 features)",2,-0.021345923090104968,-0.40636166443018007,0.43274660189018876,0.559
+precision %@20,clean model (served),"XGBoost (tuned, 26 features)",2,-0.10584767734261646,-2.7305660284014346,2.0797255237270305,0.578
+lift@20,clean model (served),"XGBoost (tuned, 26 features)",2,-0.004620604977989551,-0.1220797375937788,0.09201875211853298,0.576
+$ caught@20,clean model (served),"XGBoost (tuned, 26 features)",2,0.30669790297698096,-0.02902800960303244,0.7188359662022962,0.048
+$ no alert@20,clean model (served),"XGBoost (tuned, 26 features)",2,0.15995828809782786,-0.13251194255398288,0.5034021006058221,0.242
+precision %@30,clean model (served),"XGBoost (tuned, 26 features)",2,-2.0944684590552995,-3.206488540536307,-0.2834553084539976,0.989
+lift@30,clean model (served),"XGBoost (tuned, 26 features)",2,-0.09227855224194359,-0.14261514967969652,-0.012067542174128,0.989
+$ caught@30,clean model (served),"XGBoost (tuned, 26 features)",2,-0.2370515970515843,-0.48164745700844547,0.04352827014478385,0.941
+$ no alert@30,clean model (served),"XGBoost (tuned, 26 features)",2,-0.29323838637791066,-0.5068940032232023,0.006584804242965147,0.971

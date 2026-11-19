@@ -12,10 +12,9 @@ read these files; nothing is refitted there.
 Writes studies/results/scores_<data>_walk_<tag>.csv.gz and scores_val_<...>.csv.gz.
 The tag defaults to r4_h<H>_t<T>, the name the horizon study reads.
 
-Self-contained on purpose: the walk-forward windows here match #79's
-splits.walk_forward_folds, with the boundary gap following the horizon.
-Once #79 is merged, ml.evaluate can take --horizon / --threshold and this
-runner can call it instead.
+The walk-forward windows here are splits.walk_forward_folds (identical at 14
+days) with the boundary gap following the horizon. If ml.evaluate learns
+--horizon / --threshold and saves validation scores, this runner can go.
 """
 from __future__ import annotations
 
@@ -163,7 +162,7 @@ def main(argv: list[str] | None = None) -> None:
 def merge_columns(target: Path, source: Path) -> None:
     """Add the model columns of another saved run (same data, folds, horizon and
     threshold) to `target`. Rows must match exactly; used to bring in models
-    scored on other branches (e.g. #79's tuned CatBoost) before they are merged."""
+    scored on other branches (e.g. #80's LSTM) before they are merged."""
     a, b = (pd.read_csv(p, parse_dates=["date"]) for p in (target, source))
     if len(a) != len(b) or not a[KEYS].reset_index(drop=True).equals(b[KEYS].reset_index(drop=True)):
         raise ValueError(f"{source.name}: rows don't match {target.name}")
