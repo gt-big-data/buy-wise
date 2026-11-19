@@ -1,0 +1,41 @@
+{
+  "source": "R4 #81, Study 024 (apr2026_500_Prices_walk_r4): chosen on validation, judged on test",
+  "model": "CatBoost (tuned, 26 features)",
+  "horizon_days": 30,
+  "drop_threshold": 0.08,
+  "calibrator": "platt",
+  "min_drop_chance": 0.1,
+  "min_saving": 0.25,
+  "min_price_for_wait": 0.0,
+  "net_saving": "price * (p * G_right[band] + (1 - p) * G_wrong[band]); band from vol30",
+  "vol30_cuts": [
+    0.0,
+    0.0340831445574251
+  ],
+  "bands": {
+    "calm": {
+      "G_right": 0.1242,
+      "G_wrong": -0.0197
+    },
+    "medium": {
+      "G_right": 0.0871,
+      "G_wrong": -0.0341
+    },
+    "twitchy": {
+      "G_right": 0.1157,
+      "G_wrong": -0.1101
+    }
+  },
+  "test": {
+    "quiet %": 67.256,
+    "shown": 47639.0,
+    "precision %": 54.09,
+    "$ day N per WAIT": 11.716,
+    "$ at low per WAIT": 22.595,
+    "$ day N per decision": 3.836,
+    "$ at low per decision": 7.398,
+    "wrong WAITs %": 45.91,
+    "wrong: paid more %": 20.045,
+    "wrong: extra paid $": 3.013
+  }
+}

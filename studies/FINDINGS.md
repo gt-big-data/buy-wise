@@ -353,6 +353,114 @@ Ranking by chance × price beats the served recipe by $0.65–1.07 per decision 
 
 ---
 
+### Studies 022–024 — R4: calibration, horizon, and when to stay quiet (#81)
+
+All three use the same four walk-forward windows (91-day test, 91-day validation before it). Each model is fitted once per window by `python -m ml.bench.r4`, which saves its scores on both the validation and the test rows. **Anything chosen here (a calibrator, a horizon, a quiet threshold) is fitted or picked on validation; test only judges it.** Intervals are 95%, resampling products, and comparisons are paired on the same resamples.
+
+**Where the CatBoost numbers come from.** The lead model is tuned CatBoost on 26 features (#79), with tuned XGBoost and the LSTM (#80) beside it. These columns were made on the #80 branch, before #79 was merged, using the same windows, rows and labels. They were then merged into these files; `ml.bench.r4.merge_columns` refuses if any row or label differs. The CatBoost and XGBoost columns now rerun on `main` (commands below), but the LSTM's need #80. Every file also holds LightGBM (tuned), XGBoost (clean recipe) and the small neural net, and the studies fall back to them if the lead models are missing.
+
+### Study 022 — Is the "chance of a drop" an honest number?
+`s022_calibration.py` — calibrators fitted on each window's validation rows, judged on its test rows
+
+**No, not as served. Raw CatBoost oversells badly.** On the decisions where the panel would show 40% or more, it says 61% on average and the drop comes 45% of the time (April snapshot: says 65%, happens 44%). After calibration it says 56% and 56% happens.
+
+| Tuned CatBoost, test | Current: ECE | April: ECE | Current: Brier |
+|---|---|---|---|
+| Raw | 0.090 [0.078, 0.103] | 0.100 | 0.144 |
+| Isotonic | 0.014 | 0.010 | 0.129 |
+| **Platt** | **0.012** [0.010, 0.023] | **0.007** | **0.128** |
+| Beta | 0.015 | 0.008 | 0.128 |
+| Raw, products never seen in training | 0.078 | 0.052 | 0.151 |
+| **Platt, products never seen in training** | **0.043** [0.034, 0.081] | **0.037** | 0.146 |
+
+**The pick is Platt** (a two-number logistic fit on the raw score). The rule we set was: the lowest ECE on products never seen in training wins, unless its paired gain over Platt has an interval containing 0. Platt wins on April for all three models and on the current data for XGBoost and the LSTM. For CatBoost on the current data, isotonic is a little lower on unseen products (0.038), but the gain over Platt is [−0.013, +0.016], so the simplest wins.
+
+**It's a real change to what users see.** Raw CatBoost puts 40%+ on 30% of decisions; calibrated, it's 17%. Today's 40% cut-off on a raw score is too loose.
+
+**Where it's still off:** products never seen in training (ECE 0.043 after calibration), products with under a year of history (0.035), and, at about 0.03 each, twitchy items, items under $25, and November–December. Every other segment is at 0.022 or under. The LSTM is the best-calibrated model raw (0.040 current, 0.016 April), but Platt still helps it.
+
+![](results/figures/s022_reliability_Prices_walk_r4.png)
+
+---
+
+### Study 023 — The 14-day / 8% target, finally checked (closes 002b)
+`s023_horizon_threshold.py` — tuned CatBoost retrained for each of 12 versions of the question, WAIT on the top 20% of decisions in each window
+
+Scored on **day-N dollars**: the shopper waits and buys on the last day, with no alert. That keeps every version honest about the cost of waiting. All 12 versions are compared on the 53,702 decisions they share (the 30-day version loses rows near window edges).
+
+| $ per decision, current data | 5% drop | 8% drop | 10% drop | 15% drop |
+|---|---|---|---|---|
+| 7 days | $2.41 | $2.50 | $2.35 | $2.36 |
+| 14 days | $3.41 | **$3.54** (today) | $3.36 | $3.32 |
+| **30 days** | $4.05 | **$4.15** | $4.00 | $3.86 |
+
+![](results/figures/s023_horizon_threshold_Prices_walk_r4.png)
+
+**The threshold barely matters; the horizon does.** At a fixed horizon, the four thresholds land within $0.22 of each other, and 8% is the best or tied in each row. Going from 14 to 30 days is worth **+$0.61 [0.34, 0.89] per decision**; going down to 7 days loses $1.04. LightGBM (tuned) agrees: 30 days, +$0.61 at 8%.
+
+**April snapshot, same check** (109,291 shared decisions):
+
+| $ per decision, April | 5% drop | 8% drop | 10% drop | 15% drop |
+|---|---|---|---|---|
+| 7 days | $2.19 | $2.15 | $2.16 | $2.04 |
+| 14 days | $3.23 | **$3.22** (today) | $3.22 | $3.04 |
+| **30 days** | **$3.63** | $3.52 | $3.49 | $3.26 |
+
+Same story, smaller gap. At 30 days, 5%, 8% and 10% all beat today with intervals clear of zero: 30 days / 8% gives **+$0.29 [0.09, 0.52]**. Here the rule's top pick is 30 days / 5% (+$0.41 [0.18, 0.65]), only $0.11 ahead of 8%. LightGBM agrees again (30 days / 5% first, 8% +$0.26).
+
+**It isn't just prices drifting down.** If you wait on a random 20% of decisions, you earn $0.10 per decision at 14 days and $0.17 at 30, so drift explains about $0.07 of the gap. The rest is that the items the model picks keep falling for longer. Precision rises from 55% to 73% because 30 days gives a drop more time to come (base rate 21% → 33%).
+
+**What the 30 days costs:**
+
+| CatBoost, WAIT on 20% | 14 days / 8% | 30 days / 8% |
+|---|---|---|
+| $ per decision (day N) | $3.54 | $4.15 |
+| $ per day waited | $0.25 | $0.14 |
+| Wrong WAITs that end up paying more | 10.7% | 11.8% |
+| …average extra paid when they do | $10.32 | $13.84 |
+
+**The rule we agreed picks 30 days: 8% on the current data, 5% on April.** On both datasets 30 days beats today by an interval clear of zero, and 5% and 8% are within $0.12 of each other on each. **Recommendation: 30 days / 8%.** It keeps today's threshold, wins on the current data, and is clearly ahead of 14 days on April. But that is twice the wait for about 17% more, and half the money per day waited. Whether shoppers will hold off for a month on a purchase is a product question this data can't answer. If the answer is no, 14 days / 8% stays: every other 14-day threshold is worse or tied.
+
+---
+
+### Study 024 — When to stay quiet
+`s024_stay_quiet.py` — the chosen version (30 days / 8%) and calibrator (Platt). Settings picked on validation, judged once on test.
+
+The rule: **say WAIT only if the calibrated chance is at least τ AND the expected net saving is at least $Y.** Expected net saving = price × (p × what a right WAIT saves + (1 − p) × what a wrong WAIT costs). Both are measured on day N, per volatility third, on each window's training rows only. **The cost of being wrong is built into the rule.** It is not a separate filter:
+
+| Volatility | A right WAIT saves | A wrong WAIT costs | Wrong WAITs that pay more |
+|---|---|---|---|
+| Calm | 15.1% of price | 3.1% | 16% |
+| Medium | 10.7% | 4.2% | 43% |
+| **Twitchy** | 13.6% | **11.0%** | 49% |
+
+Twitchy items are where WAIT pays off, and also where a wrong one hurts most.
+
+Picked on validation (the most dollars per decision with precision of at least 50%): **chance ≥ 35% and net saving ≥ $0.25.**
+
+| On test | Stays quiet | Right when it says WAIT | $ per decision | vs chance ≥ 40% |
+|---|---|---|---|---|
+| **R4: chance + net $** | 68.8% | 63.2% | **$4.35** | **+$0.18 [0.08, 0.28]** |
+| Calibrated chance ≥ 40% | 68.1% | 64.2% | $4.18 | — |
+| T5 placeholder: chance ≥ 40% and price ≥ $25 | 72.9% | 65.6% | $4.13 | −$0.05 [−0.07, −0.02] |
+
+**April, same version (30 days / 8%):** the procedure picks chance ≥ 10% and net ≥ $0.25. It stays quiet on 67% of decisions and beats calibrated chance ≥ 40% by **+$0.43 [0.24, 0.63]**. The $25 floor costs −$0.03 [−0.04, −0.02] again. **The dollar cut-off comes out at $0.25 on both datasets; the chance cut-off doesn't (35% vs 10%).** That fits the figure below: the net-saving test does the work, and the chance test is close to optional. (`s024_stay_quiet.py apr2026_500 30 0.08`)
+
+**If 14 days stays**, the same procedure picks chance ≥ 15% and net ≥ $2: it stays quiet on 81% of decisions and beats chance ≥ 40% by **+$0.55 [0.29, 0.88]**. On the shorter window the dollar test matters more than the chance test. (`s024_stay_quiet.py prices 14 0.08`)
+
+![](results/figures/s024_stay_quiet_Prices_walk_r4_h30_t0.08.png)
+
+**What the figure shows:**
+- **Jumpiness alone is useless.** It tops out at about $1 per decision.
+- **Chance alone is beaten by anything that knows the price.**
+- **Net $ alone is as good as the combination.** On test it's flat at $4.42–4.50 per decision anywhere from 40% to 75% quiet. So how often to stay quiet costs almost nothing in dollars; it's a trust choice. The 50% precision floor is what sets it at 69%, and that floor is a product dial, not a finding.
+
+**The price floor is the wrong tool.** A flat $25 cut costs money: the under-$25 WAITs it silences are right 55% of the time and still pay on average. The net-saving test already does the job. It stays quiet on 86% of under-$25 decisions ($0.99 per WAIT it does show) and on only 45% of over-$200 decisions ($33 per WAIT). That is Study 006's "say nothing on cheap calm items", learned rather than hard-coded.
+
+**Hand-off to T5 (#87):** `results/r4_quiet_rule_Prices_walk_r4.json` (April: `r4_quiet_rule_apr2026_500_Prices_walk_r4_h30_t0.08.json`) has `min_drop_chance`, `min_saving`, `min_price_for_wait` (0, so the floor is off), the volatility cut-offs, and the per-band gains, from the newest window. Wiring it in, and serving Platt on the 30-day model, is a follow-up once #81's recommendation is accepted.
+
+---
+
 ## 4. What this adds up to
 
 **The bad news.** What we shipped doesn't work. A model at lift 1.05 is a coin flip wearing a confidence score. Had we deployed to real users we'd have been giving random advice with an authoritative-looking percentage attached.
@@ -416,13 +524,27 @@ python r2_charts.py                # figures in results/figures/
 
 `Prices.csv` and `Product.csv` are copied here from `origin/Training_data_generation:notebooks/`.
 
+**R4 (Studies 022–024).** Fit the models first. That saves validation and test scores for each walk-forward window; add `--data ../studies/snapshots/apr2026_500/Prices.csv.gz` for the April data. Tuned CatBoost is slow: the 12-version sweep takes about 4 hours on the current data and about 8 on April. Once #80 is merged, add `lstm_s0` to the first command.
+
+```bash
+cd backend
+python -m ml.bench.r4 --models top90,rel90,cat_tuned_all,xgb_tuned_all,lightgbm-tuned,xgb,small-nn-tuned --tag r4
+                                                       # 14 days / 8%: calibration (s022)
+for H in 7 14 30; do for T in 0.05 0.08 0.10 0.15; do
+  python -m ml.bench.r4 --models top90,rel90,cat_tuned_all,lightgbm-tuned --horizon $H --threshold $T
+done; done                                             # the 12 versions (s023)
+cd ../studies
+python s022_calibration.py [prices|apr2026_500]
+python s023_horizon_threshold.py [prices|apr2026_500]
+python s024_stay_quiet.py [prices|apr2026_500] [horizon threshold]   # default: s022/s023's picks
+```
+
 **These are drafts, not finished work.** They were written quickly to answer specific questions. Before anyone builds on them, they should be folded into the proper harness — and **every number here must be re-derived on the new harvest**, because the current dataset is 312 electronics best-sellers with a weekly sampling artifact and known bad rows.
 
 ## Open studies, not yet run
 
 | # | Question |
 |---|---|
-| 002b | **Horizon choice.** The 14-day window came from the old model's target and was never justified. Ceiling is $5.08 at 14 days, $8.01 at 30, $13.33 at 90 (204 ASINs, mean price $98). What horizon is the product actually built around? Everything in Studies 001/002 is sized at 14 days by default. |
 | 008 | Alert latency — how fast must we notify before the value decays? |
 | 010 | Subscribe & Save orchestration — how much is the 15% tier worth over a year? |
 | 011 | Pack-size / unit-price arbitrage across product variants |
