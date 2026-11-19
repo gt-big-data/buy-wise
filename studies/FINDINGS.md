@@ -321,6 +321,16 @@ Scored on **day-N dollars**: the shopper waits and buys on the last day, with no
 
 **The threshold barely matters; the horizon does.** At a fixed horizon, the four thresholds land within $0.22 of each other, and 8% is the best or tied in each row. Going from 14 to 30 days is worth **+$0.61 [0.34, 0.89] per decision**; going down to 7 days loses $1.04. LightGBM (tuned) agrees: 30 days, +$0.61 at 8%.
 
+**April snapshot, same check** (109,291 shared decisions):
+
+| $ per decision, April | 5% drop | 8% drop | 10% drop | 15% drop |
+|---|---|---|---|---|
+| 7 days | $2.19 | $2.15 | $2.16 | $2.04 |
+| 14 days | $3.23 | **$3.22** (today) | $3.22 | $3.04 |
+| **30 days** | **$3.63** | $3.52 | $3.49 | $3.26 |
+
+Same story, smaller gap. At 30 days, 5%, 8% and 10% all beat today with intervals clear of zero: 30 days / 8% gives **+$0.29 [0.09, 0.52]**. Here the rule's top pick is 30 days / 5% (+$0.41 [0.18, 0.65]), only $0.11 ahead of 8%. LightGBM agrees again (30 days / 5% first, 8% +$0.26).
+
 **It isn't just prices drifting down.** If you wait on a random 20% of decisions, you earn $0.10 per decision at 14 days and $0.17 at 30, so drift explains about $0.07 of the gap. The rest is that the items the model picks keep falling for longer. Precision rises from 55% to 73% because 30 days gives a drop more time to come (base rate 21% → 33%).
 
 **What the 30 days costs:**
@@ -332,7 +342,7 @@ Scored on **day-N dollars**: the shopper waits and buys on the last day, with no
 | Wrong WAITs that end up paying more | 10.7% | 11.8% |
 | …average extra paid when they do | $10.32 | $13.84 |
 
-**The rule we agreed picks 30 days / 8%.** It beats today by an interval clear of zero, and it is the largest gain of any version. But that is twice the wait for about 17% more, and half the money per day waited. Whether shoppers will hold off for a month on a purchase is a product question this data can't answer. If the answer is no, 14 days / 8% stays: every other 14-day threshold is worse or tied.
+**The rule we agreed picks 30 days: 8% on the current data, 5% on April.** On both datasets 30 days beats today by an interval clear of zero, and 5% and 8% are within $0.12 of each other on each. **Recommendation: 30 days / 8%.** It keeps today's threshold, wins on the current data, and is clearly ahead of 14 days on April. But that is twice the wait for about 17% more, and half the money per day waited. Whether shoppers will hold off for a month on a purchase is a product question this data can't answer. If the answer is no, 14 days / 8% stays: every other 14-day threshold is worse or tied.
 
 ---
 
@@ -357,6 +367,8 @@ Picked on validation (the most dollars per decision with precision of at least 5
 | Calibrated chance ≥ 40% | 68.1% | 64.2% | $4.18 | — |
 | T5 placeholder: chance ≥ 40% and price ≥ $25 | 72.9% | 65.6% | $4.13 | −$0.05 [−0.07, −0.02] |
 
+**April, same version (30 days / 8%):** the procedure picks chance ≥ 10% and net ≥ $0.25. It stays quiet on 67% of decisions and beats calibrated chance ≥ 40% by **+$0.43 [0.24, 0.63]**. The $25 floor costs −$0.03 [−0.04, −0.02] again. **The dollar cut-off comes out at $0.25 on both datasets; the chance cut-off doesn't (35% vs 10%).** That fits the figure below: the net-saving test does the work, and the chance test is close to optional. (`s024_stay_quiet.py apr2026_500 30 0.08`)
+
 **If 14 days stays**, the same procedure picks chance ≥ 15% and net ≥ $2: it stays quiet on 81% of decisions and beats chance ≥ 40% by **+$0.55 [0.29, 0.88]**. On the shorter window the dollar test matters more than the chance test. (`s024_stay_quiet.py prices 14 0.08`)
 
 ![](results/figures/s024_stay_quiet_Prices_walk_r4_h30_t0.08.png)
@@ -368,7 +380,7 @@ Picked on validation (the most dollars per decision with precision of at least 5
 
 **The price floor is the wrong tool.** A flat $25 cut costs money: the under-$25 WAITs it silences are right 55% of the time and still pay on average. The net-saving test already does the job. It stays quiet on 86% of under-$25 decisions ($0.99 per WAIT it does show) and on only 45% of over-$200 decisions ($33 per WAIT). That is Study 006's "say nothing on cheap calm items", learned rather than hard-coded.
 
-**Hand-off to T5 (#87):** `results/r4_quiet_rule_Prices_walk_r4.json` has `min_drop_chance`, `min_saving`, `min_price_for_wait` (0, so the floor is off), the volatility cut-offs, and the per-band gains, from the newest window. Wiring it in, and serving Platt on the 30-day model, is a follow-up once #81's recommendation is accepted.
+**Hand-off to T5 (#87):** `results/r4_quiet_rule_Prices_walk_r4.json` (April: `r4_quiet_rule_apr2026_500_Prices_walk_r4_h30_t0.08.json`) has `min_drop_chance`, `min_saving`, `min_price_for_wait` (0, so the floor is off), the volatility cut-offs, and the per-band gains, from the newest window. Wiring it in, and serving Platt on the 30-day model, is a follow-up once #81's recommendation is accepted.
 
 ---
 
