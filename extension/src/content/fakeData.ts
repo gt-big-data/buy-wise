@@ -9,7 +9,7 @@ export type PanelData =
       offersChecked: number;
       reason: string;
       amazon: Offer;
-      best: Offer & { stars: number; years: number; freeReturns: boolean; fullWarranty: boolean };
+      best: Offer & { stars: number; ratingCount: number; positivePercent: number };
     }
   | {
       state: "wait";
@@ -46,12 +46,11 @@ export const FAKE: Record<Decision["status"], Decision> = {
       condition: "New",
       price: 369.0,
       arrives: daysFromNow(4),
-      stars: 4.8,
-      years: 7,
-      free_returns: true,
-      full_warranty: false,
+      stars: 4.5,
+      rating_count: 390,
+      positive_percent: 94,
     },
-    reason: "New, $80.99 less. TrailTech Outfitters has 4.8 stars over 7 years and free returns. Arrives 2 days later.",
+    reason: "TrailTech Outfitters sells it in New condition for $80.99 less. The seller has 4.5 stars from 390 ratings, 94% positive over the last 12 months.",
     wait: null,
     next_best: null,
   },

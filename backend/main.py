@@ -2,16 +2,18 @@ from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import List, Optional, Literal
 import logging
+import re
 import threading
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from routes.dashboard import router as dashboard_router
 from routes.track_record import router as track_record_router
 from schemas.common import RecommendationDirection
+from analysis.signals import analysis_signals, decide, load_results
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ try:
         get_watchlist,
         insert_user_activity,
         get_recent_user_activity,
+        insert_decision_log,
     )
     _DB_AVAILABLE = True
 except Exception as _exc:
@@ -50,6 +53,7 @@ except Exception as _exc:
     get_watchlist = None
     insert_user_activity = None
     get_recent_user_activity = None
+    insert_decision_log = None
 
 
 app = FastAPI(
@@ -211,16 +215,14 @@ class DecisionOffer(BaseModel):
 
     pinned: bool = False
 
-    # These are optional because the current Amazon offer scraper does not
-    # extract all seller-quality information yet.
+    # Seller quality, as Amazon's offer list shows it: "4.5 out of 5 stars
+    # (390 ratings) 94% positive over last 12 months". Amazon doesn't show a
+    # seller's years in business, return policy or warranty there.
     stars: Optional[float] = Field(None, ge=0, le=5)
-    years: Optional[float] = Field(None, ge=0)
-    rating_count: Optional[int] = Field(None, ge=0)
-    free_returns: Optional[bool] = Field(None, alias="freeReturns")
-    full_warranty: Optional[bool] = Field(None, alias="fullWarranty")
+    rating_count: Optional[int] = Field(None, ge=0, alias="ratingCount")
+    positive_percent: Optional[float] = Field(None, ge=0, le=100, alias="positivePercent")
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class DecisionRequest(BaseModel):
@@ -238,9 +240,8 @@ class DecisionOfferResponse(BaseModel):
 
 class QualifiedDecisionOfferResponse(DecisionOfferResponse):
     stars: float
-    years: float
-    free_returns: bool
-    full_warranty: bool
+    rating_count: int
+    positive_percent: float
 
 
 class DecisionWaitResponse(BaseModel):
@@ -266,6 +267,10 @@ class DecisionResponse(BaseModel):
     wait: Optional[DecisionWaitResponse] = None
     next_best: Optional[DecisionNextBestResponse] = None
 
+class DecisionLogRequest(BaseModel):
+    asin: str
+    decision: DecisionResponse
+    page_price: Optional[float] = None
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -530,7 +535,8 @@ def _condition_matches_profile(
     if not condition:
         return False
 
-    normalized = condition.strip().lower()
+    # Amazon writes used conditions as "Used - Very Good", "Used - Like New".
+    normalized = re.sub(r"^used\s*-\s*", "", condition.strip().lower())
 
     if profile_condition == "new_only":
         return normalized == "new"
@@ -639,6 +645,24 @@ def _offer_to_response(
     )
 
 
+MIN_SELLER_STARS = 4.0
+MIN_SELLER_RATINGS = 100
+MIN_SELLER_POSITIVE = 90
+
+
+def _seller_is_trusted(offer: DecisionOffer) -> bool:
+    """Only recommend a seller whose rating, rating count and recent positive
+    feedback are all on the page and all high enough."""
+    return (
+        offer.stars is not None
+        and offer.stars >= MIN_SELLER_STARS
+        and offer.rating_count is not None
+        and offer.rating_count >= MIN_SELLER_RATINGS
+        and offer.positive_percent is not None
+        and offer.positive_percent >= MIN_SELLER_POSITIVE
+    )
+
+
 def _find_qualified_alternative(
     request: DecisionRequest,
     amazon_offer: Optional[DecisionOffer],
@@ -656,10 +680,9 @@ def _find_qualified_alternative(
     qualified = []
 
     for offer in request.offers:
+        # Sellers who ship through Amazon (FBA) are still other sellers. Amazon's
+        # own offers have no seller rating, so the trust check skips them.
         if offer.pinned:
-            continue
-
-        if offer.ships_from_amazon:
             continue
 
         if not _condition_matches_profile(
@@ -678,18 +701,7 @@ def _find_qualified_alternative(
         ):
             continue
 
-        # Do not claim that a seller is well-rated unless the rating,
-        # seller tenure, returns, and warranty information are supplied.
-        if offer.stars is None or offer.stars < 4.0:
-            continue
-
-        if offer.years is None or offer.years < 1:
-            continue
-
-        if offer.free_returns is not True:
-            continue
-
-        if offer.full_warranty is not True:
+        if not _seller_is_trusted(offer):
             continue
 
         total_price = _offer_total_price(offer)
@@ -703,9 +715,8 @@ def _find_qualified_alternative(
             price=total_price,
             arrives=delivery.isoformat(),
             stars=offer.stars,
-            years=offer.years,
-            free_returns=offer.free_returns,
-            full_warranty=offer.full_warranty,
+            rating_count=offer.rating_count,
+            positive_percent=offer.positive_percent,
         )
 
         qualified.append((offer, response_offer))
@@ -922,11 +933,8 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
     """
     Unified decision endpoint for the browser extension.
 
-    Receives the current page's offers and the shopper's profile.
-    The profile is used only for this request and is never persisted.
-
-    This endpoint intentionally uses cached product/prediction data so
-    the extension does not wait for a Keepa fetch.
+    Uses cached product data, analysis signals, and the shopper's
+    per-request profile. The profile is never persisted.
     """
     _require_db()
 
@@ -954,9 +962,16 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
             detail="No price history is available for this product.",
         )
 
-    current_price = float(prices[0]["price"])
+    # Run the analysis pipeline using cached data and the current page offers.
+    signals = analysis_signals(
+        asin=request.asin,
+        offers=request.offers,
+        profile=request.profile,
+        prices=prices,
+        prediction=prediction,
+    )
 
-    # Use the page's pinned offer as the current Amazon offer when available.
+    # Preserve the existing API's Amazon offer representation.
     amazon_source = next(
         (offer for offer in request.offers if offer.pinned),
         None,
@@ -968,112 +983,105 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
         else None
     )
 
-    # The model's existing BUY/WAIT prediction is the placeholder decision rule.
-    recommendation = str(prediction["recommendation"]).upper()
-
-    confidence = float(prediction["confidence_score"])
-
-    pred_7d = (
-        float(prediction["pred_7d"])
-        if prediction.get("pred_7d") is not None
-        else None
-    )
-
-    pred_14d = (
-        float(prediction["pred_14d"])
-        if prediction.get("pred_14d") is not None
-        else None
-    )
-
-    pred_30d = (
-        float(prediction["pred_30d"])
-        if prediction.get("pred_30d") is not None
-        else None
-    )
-
-    future_predictions = [
-        value
-        for value in [pred_7d, pred_14d, pred_30d]
-        if value is not None
-    ]
-
-    expected_low = (
-        min(future_predictions)
-        if future_predictions
-        else current_price
-    )
-
-    if recommendation == "WAIT":
-        drop_chance = max(0.0, min(1.0, confidence))
-
-        return DecisionResponse(
-            show=True,
-            status="wait",
-            offers_checked=len(request.offers),
-            amazon=amazon_response,
-            best=None,
-            reason=(
-                f"The price model recommends waiting. "
-                f"It estimates a {drop_chance * 100:.0f}% chance "
-                f"of a price drop based on this product's price history."
-            ),
-            wait=DecisionWaitResponse(
-                price=round(current_price, 2),
-                expected_low=round(expected_low, 2),
-                drop_chance=round(drop_chance, 4),
-                drops=_count_recent_price_drops(prices),
-                months=4,
-            ),
-            next_best=None,
-        )
-
-    # If the model says BUY, check whether a verifiably qualified alternative
-    # seller is cheaper than the pinned Amazon offer.
+    # The analysis module uses older seller fields (years).
+    # Use the current API's verified seller-quality requirements instead.
     alternative = _find_qualified_alternative(
         request,
         amazon_source,
     )
 
+    best_offer = None
+
     if alternative is not None:
         source_offer, best_response = alternative
 
-        amazon_price = _offer_total_price(amazon_source)
-        savings = round(
-            amazon_price - best_response.price,
-            2,
-        )
+        amazon_total = _offer_total_price(amazon_source)
+        savings = round(amazon_total - best_response.price, 2)
 
-        return DecisionResponse(
-            show=True,
-            status="better_offer",
-            offers_checked=len(request.offers),
-            amazon=amazon_response,
-            best=best_response,
-            reason=(
-                f"{best_response.seller} offers the same eligible condition "
-                f"for ${savings:.2f} less than the Amazon offer. "
-                f"The seller has a {best_response.stars:.1f}/5 rating, "
-                f"at least one year of history, free returns, and a full warranty."
-            ),
-            wait=None,
-            next_best=None,
-        )
+        # Apply the minimum saving threshold from the versioned analysis rules.
+        rules = load_results()
+        min_saving = float(rules["quiet"]["min_saving"])
+
+        if savings >= min_saving:
+            best_offer = {
+                "seller": best_response.seller,
+                "condition": best_response.condition,
+                "price": best_response.price,
+                "arrives": best_response.arrives,
+                "stars": best_response.stars,
+                "rating_count": best_response.rating_count,
+                "positive_percent": best_response.positive_percent,
+                "saving": savings,
+            }
+
+    # Replace the legacy seller signal with the verified current API result.
+    signals["best_offer"] = {
+        "status": "ok",
+        "best": best_offer,
+        "next_best": None,
+    }
+
+    # Resolve conflicts between waiting and buying using the analysis rules.
+    decision = decide(signals)
 
     return DecisionResponse(
-        show=True,
-        status="nothing_better",
+        show=decision["show"],
+        status=decision["status"],
         offers_checked=len(request.offers),
         amazon=amazon_response,
-        best=None,
-        reason=(
-            "The price model does not currently recommend waiting, "
-            "and no cheaper alternative seller could be verified against "
-            "your condition, delivery, and seller-quality preferences."
+        best=(
+            QualifiedDecisionOfferResponse(**decision["best"])
+            if decision.get("best")
+            else None
         ),
-        wait=None,
-        next_best=None,
+        reason=decision["reason"],
+        wait=(
+            DecisionWaitResponse(**decision["wait"])
+            if decision.get("wait")
+            else None
+        ),
+        next_best=(
+            DecisionNextBestResponse(**decision["next_best"])
+            if decision.get("next_best")
+            else None
+        ),
     )
 
+@app.post("/decision-log")
+def log_decision(request: DecisionLogRequest):
+    _require_db()
+
+    if insert_decision_log is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Decision logging is unavailable",
+        )
+
+    if not request.decision.show:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot log a decision that was not shown",
+        )
+
+    try:
+        decision_log_id = insert_decision_log(
+            request.asin,
+            request.decision.status,
+            request.page_price,
+            request.decision.model_dump_json(),
+        )
+
+        return {
+            "status": "logged",
+            "decision_log_id": decision_log_id,
+        }
+
+    except Exception as exc:
+        logger.exception("Failed to log decision")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not log decision",
+        ) from exc
 
 @app.get("/product-info/{asin}", response_model=ProductInfoResponse)
 def get_product_info(asin: str) -> ProductInfoResponse:

@@ -21,6 +21,10 @@ export type RequestOffer = {
   shipsFrom: string | null;
   shipsFromAmazon: boolean;
   pinned: boolean;
+  // Seller rating from the offer list; null when it isn't shown (always for the buy box read)
+  stars: number | null;
+  ratingCount: number | null;
+  positivePercent: number | null;
 };
 
 export type DecisionRequest = {
@@ -73,6 +77,9 @@ function toRequestOffer(o: Offer, today: Date): RequestOffer {
     shipsFrom: o.shipsFrom,
     shipsFromAmazon: o.shipsFromAmazon,
     pinned: o.pinned,
+    stars: o.stars,
+    ratingCount: o.ratingCount,
+    positivePercent: o.positivePercent,
   };
 }
 
@@ -104,6 +111,9 @@ export function readBuyBoxOffer(page: PageOffers, root: ParentNode = document, t
     shipsFrom,
     shipsFromAmazon: /^amazon(\.com)?$/i.test(shipsFrom ?? seller),
     pinned: true,
+    stars: null,
+    ratingCount: null,
+    positivePercent: null,
   };
 }
 
@@ -121,6 +131,9 @@ function readUsedOffer(page: PageOffers): RequestOffer | null {
     shipsFrom: null,
     shipsFromAmazon: false,
     pinned: false,
+    stars: null,
+    ratingCount: null,
+    positivePercent: null,
   };
 }
 
