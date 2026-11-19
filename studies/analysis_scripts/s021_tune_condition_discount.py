@@ -18,7 +18,11 @@ from ml.offer_ranking import CONDITION_DISCOUNT, rank_offers  # noqa: E402
 
 sheet = pd.read_csv(ROOT / "studies/hand_check/pages.csv", dtype=str, keep_default_na=False)
 offers = pd.read_csv(ROOT / "studies/hand_check/offers.csv", dtype={"asin": str})
-DEV = offers.asin.unique()  # offers.csv only holds the dev pages
+# Dev = rows 1-25 of pages.csv, plus the backups whose notes say they replace
+# one of those rows. offers.csv also holds the test pages: never read them.
+first25 = set(sheet.asin.iloc[:25])
+replaces = sheet.notes.str.extract(r"Replaces (\w+)", expand=False)
+DEV = set(first25) | set(sheet.asin[replaces.isin(first25)])
 
 
 def num(x):
