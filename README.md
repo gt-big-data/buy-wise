@@ -35,6 +35,8 @@ Then open `chrome://extensions`, turn on Developer mode, click **Load unpacked**
 
 [ONBOARDING.md](ONBOARDING.md) walks through the full first-week setup.
 
+[DEMO.md](DEMO.md) is the demo day script, with a backup for every step.
+
 ## Working on it
 
 - [ROADMAP.md](ROADMAP.md) is the semester plan: teams, issues and what each Friday shows.
