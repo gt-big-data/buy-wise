@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 // "How BuyWise has done" (#93), from the backend's /track-record (#85).
 
-type Call = { asin: string; predicted_on: string; said: "WAIT" | "BUY"; price: number; low: number; end: number; amount: number };
+type Call = { asin: string; brand?: string | null; predicted_on: string; said: "WAIT" | "BUY"; price: number; low: number; end: number; amount: number };
 
 type Record = {
   products: number;
@@ -37,8 +37,9 @@ function CallList({ calls, right }: { calls: Call[]; right: boolean }) {
       {calls.map((c) => (
         <li key={c.asin + c.predicted_on} className="db-item">
           <div className="db-item-main">
-            <a className="db-item-title db-mono" href={`https://www.amazon.com/dp/${c.asin}`} target="_blank" rel="noopener">
-              {c.asin}
+            <a className="db-item-title" href={`https://www.amazon.com/dp/${c.asin}`} target="_blank" rel="noopener">
+              {c.brand ? `${c.brand} ` : ""}
+              <span className="db-mono db-muted">{c.asin}</span>
             </a>
             <p className="db-muted">
               Said {c.said === "WAIT" ? "Wait" : "Buy"} on {day(c.predicted_on)} at {money(c.price)}. {whatHappened(c)}
@@ -103,16 +104,8 @@ export default function TrackRecord() {
             were right, but most were Buy calls on prices that didn't move.
           </p>
 
-          <div className="db-columns">
-            <div>
-              <h3>Biggest wins</h3>
-              <CallList calls={record.wins} right={true} />
-            </div>
-            <div>
-              <h3>Biggest misses</h3>
-              <CallList calls={record.misses} right={false} />
-            </div>
-          </div>
+          <h3>Biggest wins</h3>
+          <CallList calls={record.wins} right={true} />
         </>
       )}
     </section>

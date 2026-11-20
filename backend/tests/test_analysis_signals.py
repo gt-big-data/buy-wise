@@ -187,7 +187,7 @@ def test_wait_when_a_drop_is_likely():
     _, d = run([amazon(price=349.0)], prediction=WAIT, prices=prices)
     assert d["status"] == "wait"
     assert d["wait"] == {"price": 349.0, "expected_low": 285.0, "drop_chance": 0.74, "drops": 2, "months": 4}
-    assert d["reason"] == "74% chance it drops 8% or more in the next 14 days."
+    assert d["reason"] == "Worth waiting if you can. It could drop to $321.08 or less in the next 14 days."
 
 
 def test_no_drop_count_when_the_stored_history_is_months_old():
@@ -362,7 +362,9 @@ def test_text_matches_copy_ts():
     for key, line in text.SKIP.items():
         assert f'{key}: "{line}"' in ts, key
     assert "`Same item, ${condition.toLowerCase()}, ${money(savings)} less.`" in ts
-    assert "`${pct(p)} chance it drops 8% or more in the next 14 days.`" in ts
+    assert "`Worth waiting if you can. It could drop to ${money(dropPrice(price))} or less in the next 14 days.`" in ts
+    assert "DROP_SIZE = 0.08" in ts and text.DROP_SIZE == 0.08
+    assert "Math.floor(price * (1 - DROP_SIZE) * 100) / 100" in ts and text.drop_price(299.0) == 275.08
     assert '"This is the best offer for you."' in ts
     assert ("`${r.stars.toFixed(1)} stars from ${r.count.toLocaleString(\"en-US\")} ratings, "
             "${Math.round(r.positive)}% positive.`") in ts
