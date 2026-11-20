@@ -1,6 +1,6 @@
 # BuyWise Fall 2026 Roadmap
 
-This is the plan for the semester: what we're building, who owns what, how we work, and what gets shown each Friday until demo day on **Nov 20**. Each issue has the details for its piece.
+This is the plan for the semester: what we're building, who owns what, how we work, and what gets shown each Friday until demo day. Each issue has the details for its piece.
 
 The [project board](https://github.com/users/AashishAnanth/projects/1) shows every issue with its team, start and end dates, and next checkpoint.
 
@@ -24,7 +24,7 @@ Leads: Aashish (platform and data viz), Rithwik and Vansh (analysis).
 |---|---|---|---|
 | **Data Viz** | Data viz | Everything the shopper sees: styling and the panel, the first-run profile, the watch flow and the dashboard | [#71](https://github.com/gt-big-data/buy-wise/issues/71), [#77](https://github.com/gt-big-data/buy-wise/issues/77), [#93](https://github.com/gt-big-data/buy-wise/issues/93) |
 | **Offers** | Platform | Reading every seller and product version off the page, and price alerts | [#69](https://github.com/gt-big-data/buy-wise/issues/69), [#74](https://github.com/gt-big-data/buy-wise/issues/74) |
-| **Engine** | Platform | The Keepa data, the daily price job, and the decision endpoint that turns everything into one answer per page | [#70](https://github.com/gt-big-data/buy-wise/issues/70), [#90](https://github.com/gt-big-data/buy-wise/issues/90), [#92](https://github.com/gt-big-data/buy-wise/issues/92) |
+| **Engine** | Platform | The price data, the daily price job, and the decision endpoint that turns everything into one answer per page | [#70](https://github.com/gt-big-data/buy-wise/issues/70), [#90](https://github.com/gt-big-data/buy-wise/issues/90), [#92](https://github.com/gt-big-data/buy-wise/issues/92) |
 | **Research** | Risheet, Miguel, Siya | A benchmark every model plugs into, model comparisons, calibration and when to say nothing, and a workshop paper | [#78](https://github.com/gt-big-data/buy-wise/issues/78)–[#82](https://github.com/gt-big-data/buy-wise/issues/82) |
 | **Tooling** | Miles, Himank, Nirv | Shared data, whether cheaper versions are actually worse, the track record, seller ranking, and handing results to the Engine | [#83](https://github.com/gt-big-data/buy-wise/issues/83)–[#87](https://github.com/gt-big-data/buy-wise/issues/87) |
 | **Misc** | Anyone | Checks on every PR, one-command setup, and fixing pages where the extension doesn't load | [#72](https://github.com/gt-big-data/buy-wise/issues/72), [#73](https://github.com/gt-big-data/buy-wise/issues/73) |
@@ -53,7 +53,7 @@ People can move between teams. Who is working on what is whoever is assigned on 
 | **Oct 30** | Offer reader correct across product types ([#69](https://github.com/gt-big-data/buy-wise/issues/69)) · Keepa data stored and daily prediction logging running ([#70](https://github.com/gt-big-data/buy-wise/issues/70), [#85](https://github.com/gt-big-data/buy-wise/issues/85)) · decision endpoint format agreed, with placeholder rules ([#92](https://github.com/gt-big-data/buy-wise/issues/92)) · panel in its final spot, with offer comparison ([#71](https://github.com/gt-big-data/buy-wise/issues/71)) · target prices and watch status ([#74](https://github.com/gt-big-data/buy-wise/issues/74)) · watch flow and dashboard designs ([#93](https://github.com/gt-big-data/buy-wise/issues/93)) · Research: first model leaderboard ([#78](https://github.com/gt-big-data/buy-wise/issues/78)–[#80](https://github.com/gt-big-data/buy-wise/issues/80)) · Tooling: first offer-ranking rule on real offers ([#86](https://github.com/gt-big-data/buy-wise/issues/86)) · advisor check-in 1 |
 | **Nov 6** | Live recommendations with reasons on real pages ([#92](https://github.com/gt-big-data/buy-wise/issues/92), [#71](https://github.com/gt-big-data/buy-wise/issues/71)) · alerts firing ([#74](https://github.com/gt-big-data/buy-wise/issues/74)) · product versions read ([#69](https://github.com/gt-big-data/buy-wise/issues/69)) · purchase-time question ([#77](https://github.com/gt-big-data/buy-wise/issues/77)) · watch flow on real data ([#93](https://github.com/gt-big-data/buy-wise/issues/93)) · demo script draft ([#94](https://github.com/gt-big-data/buy-wise/issues/94)) · Research: models re-run on Keepa data · Tooling: first predictions checked against real prices ([#85](https://github.com/gt-big-data/buy-wise/issues/85)) |
 | **Nov 13: freeze** | Final rules in the decision endpoint ([#92](https://github.com/gt-big-data/buy-wise/issues/92)) · dashboard with the real track record ([#93](https://github.com/gt-big-data/buy-wise/issues/93), [#85](https://github.com/gt-big-data/buy-wise/issues/85)) · usability test results ([#71](https://github.com/gt-big-data/buy-wise/issues/71)) · charts, website and a full demo run-through ([#94](https://github.com/gt-big-data/buy-wise/issues/94)) · Research: paper draft to the advisor before check-in 2 ([#82](https://github.com/gt-big-data/buy-wise/issues/82)). After this, only bug fixes, and every number shown at the demo is final. The paper keeps going. |
-| **Nov 20** | Demo day |
+| **Demo day** | The run in [DEMO.md](DEMO.md) |
 
 If something slips, we cut scope, not move dates.
 
@@ -78,4 +78,4 @@ Agree on the format of every handoff early, with a fake example, so both sides c
 
 ## After demo day
 
-- Decide where fresh prices come from once Keepa access ends (around Nov 22): reading the page when a shopper visits, a scheduled check, or a cheaper paid tracking service.
+- Fresh prices: Keepa is no longer used. The backend loads history from the datasets in `studies/` and records the live page price on every visit (#123, #135). Decide whether a scheduled check is worth adding.
