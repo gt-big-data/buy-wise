@@ -1,0 +1,22 @@
+{
+  "predictions": 8516,
+  "resolved": 8515,
+  "pending": 0,
+  "bad_data": 1,
+  "products": 293,
+  "first_day": "2025-08-28",
+  "last_day": "2026-03-26",
+  "hit_rate %": 84.08690546095127,
+  "base_rate %": 18.05049911920141,
+  "wait_calls": 598,
+  "buy_calls": 7917,
+  "wait_right %": 65.21739130434783,
+  "buy_right %": 85.51218896046481,
+  "precision %": 65.21739130434783,
+  "lift": 3.613051964583746,
+  "$ caught": 2.305974163241345,
+  "$ no alert": 1.651255431591295,
+  "$ saved by right WAITs": 19358.94,
+  "$ lost by wrong WAITs": 265.63000000000005,
+  "$ missed by wrong BUYs": 31265.16
+}
