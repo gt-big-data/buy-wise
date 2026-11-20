@@ -24,6 +24,10 @@ Writes to --out (default track_record_out/, git-ignored):
     summary.json      headline numbers for the data viz dashboard
     report.md         hit rate, dollars saved and lost, live vs offline, biggest misses
 
+The default weekly replay is committed in analysis/results/track_record/ (summary.json,
+resolved.csv, report.md) so a fresh clone's dashboard has a track record. After a new
+model ships, rerun the replay and copy those three files there.
+
 Only replay dates in the model's test period. Before that, the model was trained on
 those very prices, and its track record would look better than it is.
 """

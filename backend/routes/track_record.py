@@ -2,7 +2,8 @@
 
 Serves the files `scripts/track_record.py replay` writes (#85). No database: the
 numbers come from track_record_out/summary.json and resolved.csv. Rerun the script
-to refresh them.
+to refresh them. A fresh clone has no track_record_out/, so it falls back to the
+replay committed in analysis/results/track_record/.
 """
 
 import csv
@@ -15,6 +16,7 @@ from fastapi import APIRouter, HTTPException
 router = APIRouter(tags=["track record"])
 
 TRACK_RECORD_DIR = Path(os.getenv("TRACK_RECORD_DIR", Path(__file__).resolve().parents[1] / "track_record_out"))
+COMMITTED_DIR = Path(__file__).resolve().parents[1] / "analysis" / "results" / "track_record"
 TOP_N = 5
 
 
@@ -65,12 +67,20 @@ def _top(calls: list[dict]) -> list[dict]:
     return top
 
 
+def _source_dir() -> Path | None:
+    for d in (TRACK_RECORD_DIR, COMMITTED_DIR):
+        if (d / "summary.json").exists() and (d / "resolved.csv").exists():
+            return d
+    return None
+
+
 @router.get("/track-record")
 def get_track_record() -> dict:
-    summary_path = TRACK_RECORD_DIR / "summary.json"
-    resolved_path = TRACK_RECORD_DIR / "resolved.csv"
-    if not summary_path.exists() or not resolved_path.exists():
+    d = _source_dir()
+    if d is None:
         raise HTTPException(status_code=404, detail="no_track_record")
+    summary_path = d / "summary.json"
+    resolved_path = d / "resolved.csv"
 
     s = json.loads(summary_path.read_text())
     wins, misses = _wins_and_misses(resolved_path)

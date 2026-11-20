@@ -35,4 +35,24 @@ def test_track_record(tmp_path, monkeypatch):
 
 def test_track_record_missing(tmp_path, monkeypatch):
     monkeypatch.setattr(tr, "TRACK_RECORD_DIR", tmp_path)
+    monkeypatch.setattr(tr, "COMMITTED_DIR", tmp_path / "none")
     assert TestClient(app).get("/track-record").status_code == 404
+
+
+def test_track_record_falls_back_to_committed_copy(tmp_path, monkeypatch):
+    monkeypatch.setattr(tr, "TRACK_RECORD_DIR", tmp_path / "empty")
+    assert (tr.COMMITTED_DIR / "summary.json").exists()
+    summary = json.loads((tr.COMMITTED_DIR / "summary.json").read_text())
+
+    res = TestClient(app).get("/track-record")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["calls"] == summary["resolved"] > 0
+    assert body["products"] == summary["products"]
+
+
+def test_track_record_prefers_fresh_output(tmp_path, monkeypatch):
+    (tmp_path / "summary.json").write_text(json.dumps(SUMMARY))
+    (tmp_path / "resolved.csv").write_text(HEADER + "\n".join(ROWS) + "\n")
+    monkeypatch.setattr(tr, "TRACK_RECORD_DIR", tmp_path)
+    assert TestClient(app).get("/track-record").json()["calls"] == 4
