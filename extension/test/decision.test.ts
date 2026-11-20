@@ -16,6 +16,15 @@ describe("toPanelData", () => {
     expect(p.reason).toContain("$80.99 less");
   });
 
+  it("maps an Amazon-run offer with no seller ratings", () => {
+    const best = { ...FAKE.better_offer.best!, seller: "Amazon Resale", condition: "Used - Like New",
+      stars: null, rating_count: null, positive_percent: null };
+    const p = toPanelData({ ...FAKE.better_offer, best, reason: "Same item, used - like new, $72.89 less." }, TODAY);
+    expect(p?.state).toBe("better_offer");
+    if (p?.state !== "better_offer") return;
+    expect(p.best).toMatchObject({ seller: "Amazon Resale", stars: null, ratingCount: null, positivePercent: null });
+  });
+
   it("hides the panel when show is false", () => {
     expect(toPanelData({ ...FAKE.wait, show: false }, TODAY)).toBeNull();
   });

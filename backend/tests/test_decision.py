@@ -45,6 +45,16 @@ def test_untrusted_sellers_are_not_recommended(api, offer):
     assert decide(api, offer)["status"] == "nothing_better"
 
 
+def test_amazon_resale_is_recommended_without_ratings(api):
+    resale = {"seller": "Amazon Resale", "price": 360.0, "condition": "Used - Like New", "deliveryDate": SOON}
+    answer = api.post("/decision", json={"asin": "B0CCZ26B5V", "offers": [AMAZON, resale],
+                                         "profile": {"condition": "like_new"}}).json()
+    assert answer["status"] == "better_offer"
+    assert answer["best"]["seller"] == "Amazon Resale"
+    assert answer["best"]["stars"] is None and answer["best"]["rating_count"] is None
+    assert answer["reason"] == "Same item, used - like new, $89.99 less."
+
+
 def test_snake_case_field_names_also_work(api):
     offer = {"seller": "ADV Sellers", "price": 369.0, "condition": "New", "delivery_date": SOON,
              "stars": 4.5, "rating_count": 390, "positive_percent": 94}

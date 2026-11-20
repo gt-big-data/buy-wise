@@ -156,6 +156,19 @@ def test_seller_trust_bar():
         assert d["status"] == "nothing_better", bad
 
 
+def test_amazon_run_sellers_need_no_ratings():
+    """Amazon Resale and Amazon.com show no seller ratings on the page; T4 trusts them anyway."""
+    resale = {"seller": "Amazon Resale", "price": 360.0, "condition": "Used - Like New", "deliveryDate": D(3)}
+    _, d = run([amazon(), resale], profile={"condition": "like_new"})
+    assert d["status"] == "better_offer" and d["best"]["seller"] == "Amazon Resale"
+    assert d["best"]["stars"] is None and d["best"]["rating_count"] is None
+    assert d["reason"] == "Same item, used - like new, $89.99 less."
+    shop = resale | {"seller": "Some Shop"}
+    s, d = run([amazon(), shop, seller("Rated", 445.0)], profile={"condition": "like_new"})
+    assert d["status"] == "nothing_better"
+    assert {x["seller"]: x["reason"] for x in s["best_offer"]["skipped"]} == {"Some Shop": "low_ratings"}
+
+
 def test_pydantic_style_offer_objects_work():
     class Obj:
         def __init__(self, **kw):

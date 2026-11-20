@@ -238,9 +238,10 @@ class DecisionOfferResponse(BaseModel):
 
 
 class QualifiedDecisionOfferResponse(DecisionOfferResponse):
-    stars: float
-    rating_count: int
-    positive_percent: float
+    # None for Amazon-run sellers (Amazon.com, Amazon Resale), which show no ratings.
+    stars: Optional[float] = None
+    rating_count: Optional[int] = None
+    positive_percent: Optional[float] = None
 
 
 class DecisionWaitResponse(BaseModel):
