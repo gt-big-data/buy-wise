@@ -10,8 +10,6 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, Any, List
 
-from ml.evaluate import STUDIES
-
 
 def filter_by_condition_preference(condition_str: str, preference: str) -> bool:
     """Filters offers based on the user's explicit profile condition preference.
@@ -378,7 +376,10 @@ def add_typical_prices(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def run_batch_evaluation(prices_path: Path = STUDIES / "Prices.csv", user_preference: str = "any acceptable condition") -> pd.DataFrame:
+def run_batch_evaluation(prices_path: Path | None = None, user_preference: str = "any acceptable condition") -> pd.DataFrame:
+    # Imported here so the decision endpoint can use rank_offers without loading the benchmark.
+    from ml.evaluate import STUDIES
+    prices_path = prices_path or STUDIES / "Prices.csv"
     print(f"Running batch offer ranking on {prices_path} (Preference: {user_preference})...")
     # Read the raw export: load_prices renames amazon/used and drops `new`,
     # which this module needs under their original names.

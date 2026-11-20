@@ -1,6 +1,6 @@
 # Week one: get it running
 
-You don't need a Keepa API key. Leave it blank.
+You don't need a Keepa API key. BuyWise no longer uses Keepa.
 
 ## 1. Backend
 
@@ -25,7 +25,7 @@ curl localhost:8000/predict/B0CCZ26B5V
 
 The second should return a recommendation, the chance of a price drop, and a predicted price.
 
-**Use only the seeded ASINs.** They're the only products that work without a Keepa key.
+**Any of the 649 products in the price datasets works** (`studies/Prices.csv` and `studies/snapshots/apr2026_500/`). The backend loads each one the first time it's asked for. The seeded ASINs below are already loaded.
 
 These have real price history, and the model scores them live:
 

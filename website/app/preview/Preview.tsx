@@ -700,11 +700,11 @@ const screens: Screen[] = [
     summary: "No better offer today, and a drop is likely. The shopper can hand off the waiting.",
     decided: [
       "Chance of a drop, never 'confidence'.",
-      `WAIT appears only at a ${pct(MIN_WAIT_CHANCE)}+ chance, and always says what happens if the drop doesn't come.`,
+      `WAIT appears only at a ${pct(MIN_WAIT_CHANCE)}+ chance and when waiting is worth $2+ on average, counting what a wrong WAIT costs. It always says what happens if the drop doesn't come.`,
       "The pattern row says whether drops on this product are regular or rare.",
       "Watch at a target price, or when it's a good time.",
     ],
-    open: ["Where fresh prices come from after the Keepa month.", "Whether the expected low should be a range."],
+    open: ["Whether the expected low should be a range."],
     render: () => (
       <ProductPage title={bose.title} price={bose.price} arrives={bose.arrives} rating={bose.rating} imageLabel="Product photo">
         <WaitPanel />

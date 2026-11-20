@@ -130,6 +130,32 @@ def insert_price(
         if conn:
             conn.close()
 
+def insert_prices(product_id, records):
+    """Insert many price rows in one transaction. Each record: price, timestamp, and
+    optionally used_price, list_price, sales_rank, count_new, count_used."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.executemany("""
+            INSERT INTO prices
+              (product_id, price, timestamp, availability, deal_flag,
+               used_price, list_price, sales_rank, count_new, count_used)
+            VALUES (%s, %s, %s, TRUE, FALSE, %s, %s, %s, %s, %s)
+        """, [(product_id, r["price"], r["timestamp"], r.get("used_price"), r.get("list_price"),
+               r.get("sales_rank"), r.get("count_new"), r.get("count_used")) for r in records])
+        conn.commit()
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
 def get_price_history(product_id, limit=100):
     conn = None
     cursor = None

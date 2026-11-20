@@ -8,7 +8,7 @@ The backend is a FastAPI server backed by MySQL. It has three layers:
 |---|---|---|
 | API server | `main.py` | Chrome extension calls these endpoints |
 | DB layer | `db/connection.py` | All MySQL access goes through here |
-| Data jobs | `jobs/keepa_fetch.py` | Fetches price history from Keepa and writes to DB |
+| Price data | `jobs/csv_history.py` | Loads a product's price history from the datasets in `studies/` (649 products) and writes it to the DB |
 
 ---
 
@@ -24,7 +24,7 @@ This starts MySQL, loads `db/schema.sql`, `db/seed.sql` and `db/seed_real.sql`, 
 
 The SQL loads only into an empty database. `docker compose down -v` wipes it so the next `up` starts fresh.
 
-To use the Keepa key, copy `.env.example` to `.env` and fill in `KEEPA_API_KEY`. The container reads it from there. Leave it blank unless a lead has given you one.
+`studies/` is mounted read-only at `/studies`, so the backend can load any of the 649 products in the price datasets. No Keepa key is needed: BuyWise no longer uses Keepa.
 
 ### Running tests
 
@@ -66,23 +66,20 @@ All responses use Pydantic models — see `/docs` for full schemas.
 
 ### Fetch-on-demand behavior
 
-If `/predict/{asin}` or `/price-history/{asin}` is called for an ASIN not yet in the database, the server automatically:
+The first time `/predict/{asin}` or `/decision` sees an ASIN that isn't in the database, the server:
 
-1. Calls `keepa_fetch(asin)` to pull real price history from Keepa and write it to the DB
-2. Runs a stub trend-based prediction (`_fetch_and_seed` in `main.py`) and inserts it
+1. Loads its price history from `studies/snapshots/apr2026_500/Prices.csv.gz`, else `studies/Prices.csv` (`jobs/csv_history.py`). Both end in April 2026, so each history is shifted to end today; gaps and drops are unchanged.
+2. Scores it with the served model (`ml/buywise_clean.joblib`) and stores the prediction. With too little history (under ~30 days) it stores nothing rather than a made-up forecast.
 
-This means the extension works on any Amazon product page without pre-seeding. The DB is populated on first hit.
+Every one of the 649 products answers. A product outside the datasets still gets its sellers compared; it just never gets a WAIT.
 
-### Stub prediction (temporary)
+### Where the decision's rules come from
 
-The real ML model (XGBoost/LightGBM) has not been built yet. Until the Analysis team delivers it, `_fetch_and_seed` generates predictions using a simple heuristic:
+`/decision` reads its thresholds from `analysis/results/v<N>.json` (the newest), built by `scripts/build_analysis_results.py`:
 
-- Compute `diff = (current_price − 30-day average) / 30-day average`
-- If `diff > 0.05` (current price is 5%+ above its own history): **WAIT**, predicted prices trend back toward average over 7/14/30 days
-- Otherwise: **BUY**, predicted prices drift slightly upward (2% / 4% / 6%)
-- Confidence = `min(90%, 55% + |diff|%)`
-
-When the real model is ready, it should call `insert_prediction(...)` with its own values — the latest prediction row is always what the extension sees, so the stub row gets naturally superseded.
+- **When to show WAIT:** R4 (#81, Study 024), the 14-day rule: calibrated drop chance at least 15% and expected net saving at least $2, where the saving counts what a wrong WAIT costs on products as volatile as this one.
+- **Which other seller to recommend:** T4 (#86, `ml/offer_ranking.py`): condition discounts (a "Very Good" copy is worth 30% less than new), a minimum saving of max($2, 3%), and T4's score, which agreed with the hand checks on 50 of 50 pages. Sellers must also show at least 4.0 stars, 100 ratings and 90% positive (#129).
+- **Version verdicts:** T2 (#84).
 
 ---
 
