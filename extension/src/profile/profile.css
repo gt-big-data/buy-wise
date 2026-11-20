@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
 /* First-run and edit-profile page (profile.html). Colors follow the popup. */
 
 body {
@@ -139,4 +141,126 @@ body {
   color: #666;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* ── Theme: matches the panel (panel.css) ─────────────────────────────── */
+:root {
+  --bw-ink: #14161a;
+  --bw-ink-2: #3a3f47;
+  --bw-muted: #6b7280;
+  --bw-line: #eceef1;
+  --bw-paper: #f4f6f8;
+  --bw-green: #12a150;
+  --bw-green-dark: #0b7a3b;
+  --bw-green-soft: #e8f7ee;
+  --bw-amber: #e8930c;
+  --bw-amber-dark: #8a5300;
+  --bw-amber-soft: #fff4de;
+  --bw-blue: #2f6bea;
+  --bw-blue-dark: #1d3f94;
+  --bw-blue-soft: #eaf0ff;
+  --bw-grad: linear-gradient(135deg, #0f9d58 0%, #0b6e3a 100%);
+}
+
+.bw-profile {
+  background: var(--bw-paper);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--bw-ink);
+}
+
+.bw-profile * {
+  font-family: inherit;
+}
+
+.bw-profile__card {
+  border: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 20px 50px rgb(15 23 42 / 0.12);
+}
+
+.bw-profile__head {
+  margin: -20px -20px 16px;
+  padding: 18px 20px;
+  background: var(--bw-grad);
+  color: #fff;
+}
+
+.bw-profile__logo {
+  filter: brightness(0) invert(1);
+}
+
+.bw-profile__title {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bw-profile__intro {
+  color: var(--bw-ink-2);
+}
+
+.bw-profile__q-text {
+  font-weight: 700;
+  color: var(--bw-ink);
+}
+
+.bw-profile__opt {
+  border: 1px solid var(--bw-line);
+  border-radius: 12px;
+  background: #fff;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.bw-profile__opt:hover {
+  border-color: #b9e5c9;
+  background: var(--bw-green-soft);
+}
+
+.bw-profile__opt.is-selected {
+  border-color: var(--bw-green);
+  background: var(--bw-green-soft);
+  color: var(--bw-green-dark);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--bw-green) inset;
+}
+
+.bw-profile__opt input {
+  accent-color: var(--bw-green);
+}
+
+.bw-profile__btn {
+  border: 0;
+  border-radius: 12px;
+  background: var(--bw-green);
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.bw-profile__btn:hover {
+  filter: brightness(1.06);
+}
+
+.bw-profile__link {
+  color: var(--bw-green-dark);
+}
+
+.bw-profile__notice {
+  border-radius: 12px;
+  background: var(--bw-blue-soft);
+  color: var(--bw-blue-dark);
+}
+
+.bw-profile__assumed,
+.bw-profile__device {
+  color: var(--bw-muted);
+}
+
+html,
+body {
+  background: #f4f6f8;
+  margin: 0;
 }
