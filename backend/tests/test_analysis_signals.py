@@ -342,3 +342,29 @@ def test_fast_enough_for_the_panel():
     offers = [amazon()] + [seller(f"S{i}", 300.0 + i) for i in range(50)]
     s, _ = run(offers, prices=history(*([449.99] * 200)))
     assert s["timing_ms"]["total"] < 50  # milliseconds, cached prediction path
+
+
+# ── the page price is today's price (#104) ───────────────────────────────────
+
+def test_page_price_rescores_when_the_stored_price_is_stale():
+    seen = {}
+
+    def model(records, today):
+        seen["latest"] = max(records, key=lambda r: r["timestamp"])["price"]
+        return {"p_drop": 0.6, "pred_14d": 250.0, "recommendation": "WAIT"}
+
+    cached = {**WAIT, "price_at_prediction": 349.0}
+    s, d = run([amazon(price=299.0)], prediction=cached, prices=history(349.0, 349.0),
+               page_price=299.0, predict_fn=model)
+    assert seen["latest"] == 299.0 and s["price"]["source"] == "model"
+    assert d["wait"]["price"] == 299.0 and d["wait"]["expected_low"] == 250.0
+
+
+def test_cached_prediction_holds_when_it_was_scored_at_the_page_price():
+    def model(records, today):
+        raise AssertionError("should use the cached prediction")
+
+    cached = {**WAIT, "price_at_prediction": 349.0}
+    s, _ = run([amazon(price=350.0)], prediction=cached, prices=history(349.0, 349.0),
+               page_price=350.0, predict_fn=model)
+    assert s["price"]["source"].startswith("cached")

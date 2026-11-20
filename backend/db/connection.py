@@ -177,7 +177,8 @@ def get_price_history(product_id, limit=100):
         if conn:
             conn.close()
 
-def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence):
+def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence,
+                      *, price_at_prediction=None, p_drop=None):
     conn = None
     cursor = None
 
@@ -192,12 +193,15 @@ def insert_prediction(product_id, pred_7d, pred_14d, pred_30d, recommendation, c
                 pred_14d,
                 pred_30d,
                 recommendation,
-                confidence_score
+                confidence_score,
+                price_at_prediction,
+                p_drop
             )
-            VALUES (%s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
 
-        values = (product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence)
+        values = (product_id, pred_7d, pred_14d, pred_30d, recommendation, confidence,
+                  price_at_prediction, p_drop)
 
         cursor.execute(query, values)
         conn.commit()
