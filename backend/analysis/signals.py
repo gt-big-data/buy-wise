@@ -34,6 +34,7 @@ from analysis import text as copy  # mirrors website/app/preview/copy.ts
 
 RESULTS_DIR = Path(__file__).parent / "results"
 DROP_MONTHS = 4
+RECENT_DAYS = 30  # stored history older than this can't say what the price did "in the last 4 months"
 DROP_SIZE = 0.08  # ml.features.DROP_THRESHOLD; repeated so this module never imports pandas
 
 
@@ -399,6 +400,7 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
     today = today or date.today()
     profile = profile or {}
     offers = list(offers or [])
+    stored_end = max((d for d in (_day(_get(p, "timestamp", "date")) for p in prices or []) if d), default=None)
     prices, prediction = with_page_price(prices or [], prediction, page_price, today)
     t0 = time.perf_counter()
     timing = {}
@@ -416,6 +418,10 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
     stale = history_out_of_date(page_price, dataset_price)
     price = (_missing(stale) if stale else
              timed("price", lambda: price_signal(prices or [], prediction, today, predict_fn)))
+    if price["status"] == "ok" and (stored_end is None or (today - stored_end).days > RECENT_DAYS):
+        # The datasets end in April 2026: a count of "drops in the last 4 months" would
+        # describe months that aren't recent. The panel leaves the line out.
+        price = {**price, "drops": None}
     quiet = timed("quiet", lambda: quiet_signal(price, profile, results["quiet"]))
     best = timed("best_offer", lambda: best_offer_signal(offers, profile, results["offers"], today))
     version = timed("version", lambda: version_signal(asin, results))

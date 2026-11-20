@@ -213,3 +213,115 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+/* Replay a past call */
+
+.db-item--chosen {
+  background: #eef5ef;
+}
+
+.db-item--pick {
+  padding: 0;
+}
+
+.db-replay-pick {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.db-replay-pick .db-item-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.db-replay {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.db-replay-panel #buywise-root {
+  margin: 0 0 8px;
+}
+
+.db-replay-main {
+  min-width: 0;
+}
+
+.db-chart {
+  margin: 0;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #c9ccc6;
+  border-radius: 6px;
+}
+
+.db-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.db-chart figcaption {
+  margin-top: 6px;
+}
+
+.db-chart-window {
+  fill: #13853d;
+  fill-opacity: 0.08;
+}
+
+.db-chart-grid {
+  stroke: #e2e4df;
+}
+
+.db-chart-line {
+  fill: none;
+  stroke: #111311;
+  stroke-width: 1.5;
+}
+
+.db-chart-call {
+  stroke: #5f665f;
+  stroke-dasharray: 3 3;
+}
+
+.db-chart-dot {
+  fill: #111311;
+}
+
+.db-chart-low {
+  fill: #13853d;
+}
+
+.db-chart-label {
+  fill: #5f665f;
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.db-chart-strong {
+  fill: #111311;
+}
+
+.db-replay-outcome {
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .db-replay {
+    grid-template-columns: 1fr;
+  }
+}

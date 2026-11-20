@@ -23,6 +23,9 @@ type Props = {
   // The answer only saw the buy box; Amazon's full list hasn't been read yet
   partialOffers?: boolean;
   onOfferList?: (list: OfferListResult) => void;
+  // Set when the dashboard replays a past call: the panel as it would have looked that
+  // day, with nothing to click and no claims about that day's other sellers.
+  replayDate?: string;
 };
 
 export default function Panel({
@@ -35,6 +38,7 @@ export default function Panel({
   offers,
   partialOffers,
   onOfferList,
+  replayDate,
 }: Props) {
   const [minimized, setMinimized] = useState(false);
   const answer = status === "ready" ? data : null;
@@ -52,15 +56,17 @@ export default function Panel({
         <div className="bw-head">
           <img src={markUrl} alt="" width={16} height={18} />
           <span className="bw-name">BuyWise</span>
-          {answer && <span>{checkedOffers(answer.offersChecked)}</span>}
-          <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
-            ×
-          </button>
+          {replayDate ? <span>{replayDate}</span> : answer && <span>{checkedOffers(answer.offersChecked)}</span>}
+          {!replayDate && (
+            <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
+              ×
+            </button>
+          )}
         </div>
         <div className="bw-body" aria-live="polite">
           {!answer && <NoAnswer status={status} onRetry={onRetry} />}
           {answer?.state === "better_offer" && <BetterOffer data={answer} onSeeOffers={onSeeOffers} />}
-          {answer?.state === "wait" && <Wait data={answer} />}
+          {answer?.state === "wait" && <Wait data={answer} replay={!!replayDate} />}
           {answer?.state === "nothing_better" && <NothingBetter data={answer} />}
           {answer && partialOffers && <p className="bw-note">{PANEL_STATUS.partialOffers}</p>}
         </div>
@@ -141,7 +147,11 @@ function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: 
   );
 }
 
-function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
+function Wait({ data, replay }: { data: Extract<PanelData, { state: "wait" }>; replay: boolean }) {
+  const note = [
+    data.drops !== null && `It dropped ${data.drops} times in the last ${data.months} months.`,
+    !replay && "No other seller has it cheaper right now.",
+  ].filter(Boolean);
   return (
     <>
       <p className="bw-headline">
@@ -152,15 +162,15 @@ function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
           <dt>Price now</dt>
           <dd className="bw-mono">{money(data.price)}</dd>
         </div>
-        <div>
-          <dt>Expected low</dt>
-          <dd className="bw-mono">{money(data.expectedLow)}</dd>
-        </div>
+        {data.expectedLow !== null && (
+          <div>
+            <dt>Expected low</dt>
+            <dd className="bw-mono">{money(data.expectedLow)}</dd>
+          </div>
+        )}
       </dl>
-      <p className="bw-note">
-        It dropped {data.drops} times in the last {data.months} months. No other seller has it cheaper right now.
-      </p>
-      <WatchFlow price={data.price} expectedLow={data.expectedLow} />
+      {note.length > 0 && <p className="bw-note">{note.join(" ")}</p>}
+      {!replay && data.expectedLow !== null && <WatchFlow price={data.price} expectedLow={data.expectedLow} />}
     </>
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { choiceText, loadProfile, QUESTIONS, resolvedAnswers, type StoredProfile } from "../profile";
 import { PROFILE_LABEL } from "../../../website/app/preview/copy";
 import TrackRecord from "./TrackRecord";
+import Replay from "./Replay";
 import type { SentAlert, WatchedItem } from "../background/alerts";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
@@ -98,6 +99,7 @@ export default function Dashboard() {
       </section>
 
       <TrackRecord />
+      <Replay />
       
       <section>
         <h2>Your profile</h2>

@@ -68,7 +68,7 @@ All responses use Pydantic models — see `/docs` for full schemas.
 
 The first time `/predict/{asin}` or `/decision` sees an ASIN that isn't in the database, the server:
 
-1. Loads its price history from `studies/snapshots/apr2026_500/Prices.csv.gz`, else `studies/Prices.csv` (`jobs/csv_history.py`). Both end in April 2026, so each history is shifted to end today; gaps and drops are unchanged.
+1. Loads its price history from `studies/snapshots/apr2026_500/Prices.csv.gz`, else `studies/Prices.csv` (`jobs/csv_history.py`). Both end in April 2026, and the dates stay real. The model carries the last price forward to today, and WAIT is off when the page price is more than 10% from it.
 2. Scores it with the served model (`ml/buywise_clean.joblib`) and stores the prediction. With too little history (under ~30 days) it stores nothing rather than a made-up forecast.
 
 Every one of the 649 products answers. A product outside the datasets still gets its sellers compared; it just never gets a WAIT.

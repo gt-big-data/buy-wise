@@ -56,3 +56,38 @@ def test_track_record_prefers_fresh_output(tmp_path, monkeypatch):
     (tmp_path / "resolved.csv").write_text(HEADER + "\n".join(ROWS) + "\n")
     monkeypatch.setattr(tr, "TRACK_RECORD_DIR", tmp_path)
     assert TestClient(app).get("/track-record").json()["calls"] == 4
+
+def test_replay_list_follows_the_stated_rule(tmp_path, monkeypatch):
+    (tmp_path / "summary.json").write_text(json.dumps(SUMMARY))
+    (tmp_path / "resolved.csv").write_text(HEADER + "\n".join(ROWS) + "\n")
+    monkeypatch.setattr(tr, "TRACK_RECORD_DIR", tmp_path)
+
+    body = TestClient(app).get("/track-record/replay").json()
+    assert body["rule"] == tr.REPLAY_RULE
+    # A1's wrong Wait is skipped (one call per product); A2's right Buy saw no price rise
+    assert [(c["asin"], c["kind"], c["amount"]) for c in body["calls"]] == [("A1", "wait_right", 20.0),
+                                                                          ("A2", "buy_wrong", 30.0)]
+    assert body["calls"][0]["drop_chance"] == 0.6
+
+
+def test_replay_of_a_real_call_has_the_real_prices_around_it(monkeypatch):
+    """First listed call from the committed replay: prices with real dates, the 14-day low matches."""
+    from datetime import date, timedelta
+
+    monkeypatch.setattr(tr, "TRACK_RECORD_DIR", tr.COMMITTED_DIR / "none")
+    api = TestClient(app)
+    call = api.get("/track-record/replay").json()["calls"][0]
+    assert call["kind"] == "wait_right"
+
+    r = api.get(f"/track-record/replay/{call['asin']}/{call['predicted_on']}").json()
+    on = date.fromisoformat(call["predicted_on"])
+    days = [date.fromisoformat(d) for d, _ in r["prices"]]
+    assert days[0] == on - timedelta(days=60) and days[-1] == on + timedelta(days=14) == date.fromisoformat(r["end_on"])
+    assert dict(r["prices"])[call["predicted_on"]] == call["price"]
+    after = [p for d, p in r["prices"] if d > call["predicted_on"]]
+    assert min(after) == r["low"] < r["price"] and dict(r["prices"])[r["low_on"]] == r["low"]
+    assert r["drop_chance"] >= 0.4 and r["drops"] >= 0
+
+
+def test_replay_of_an_unknown_call_is_404():
+    assert TestClient(app).get("/track-record/replay/B0NOTREAL0/2025-09-25").status_code == 404

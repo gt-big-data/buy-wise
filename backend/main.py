@@ -257,7 +257,7 @@ class DecisionWaitResponse(BaseModel):
     price: float
     expected_low: float
     drop_chance: float
-    drops: int
+    drops: Optional[int]
     months: int
 
 

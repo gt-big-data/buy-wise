@@ -27,7 +27,8 @@ export type Decision = {
   // Ratings are null for Amazon-run sellers (Amazon.com, Amazon Resale), which show none.
   best: ApiBest | null;
   reason: string;
-  wait: { price: number; expected_low: number; drop_chance: number; drops: number; months: number } | null;
+  // drops is null when our price history is too old to say what happened recently.
+  wait: { price: number; expected_low: number; drop_chance: number; drops: number | null; months: number } | null;
   next_best: { price: number; days_later: number } | null;
 };
 
