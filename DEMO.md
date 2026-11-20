@@ -22,7 +22,7 @@ The hand-check notes are in `studies/hand_check/pages.csv`. Dataset prices are t
 
 Two things can change what a live page shows:
 
-- The extension records the live Amazon price each time a product page loads. Open PR #135 makes the decision use that page price. A live page can disagree with the dataset price.
+- The extension records the live Amazon price each time a product page loads, and the decision uses that page price (#135). So a live page can give a different answer than the dataset price would.
 - A trusted cheaper seller beats WAIT unless waiting is worth more. If the WAIT page shows "better offer", use a spare.
 
 ## Profile answers for the demo

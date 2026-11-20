@@ -21,8 +21,10 @@ export const steps: { title: string; body: string; factors?: string }[] = [
 export const built = [
   { title: "Chrome extension", detail: "React panel injected on Amazon pages" },
   { title: "Backend API", detail: "FastAPI + MySQL, watchlist & activity" },
-  { title: "Price data pipeline", detail: "Keepa price history for 300+ products" },
+  { title: "Price data", detail: "Three years of price history for 649 products" },
   { title: "Price-drop model", detail: "Calibrated chance of a drop in 14 days" },
+  { title: "An offer reader", detail: "Every seller, condition and price on the page" },
+  { title: "A decision layer", detail: "Seller trust, condition, shipping and your profile, weighed into one answer" },
 ];
 
 export const done = [
@@ -32,7 +34,7 @@ export const done = [
   },
   {
     title: "Rebuilt the forecasting model",
-    detail: "Right 55% of the time when it says wait, against a 22% base rate, on months it never trained on",
+    detail: "Says wait only when it's worth it: right on 52% of the waits it shows, saving $19.60 on average each time, on months it never trained on",
   },
   {
     title: "Measured where shoppers lose money",
@@ -42,8 +44,6 @@ export const done = [
 
 export const building = [
   { title: "A bigger, multi-category dataset", detail: "Thousands of products across categories and price ranges" },
-  { title: "An offer reader", detail: "Every seller, condition and price on the page, read reliably" },
-  { title: "A decision layer", detail: "Seller trust, warranty, shipping and condition, weighed for the buyer" },
   { title: "A redesigned extension", detail: "A cleaner panel on this design system, with a real track record" },
 ];
 

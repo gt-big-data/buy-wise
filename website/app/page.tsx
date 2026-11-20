@@ -114,7 +114,7 @@ function Hero() {
               View the code
             </a>
           </div>
-          <p className="mt-5 text-[13.5px] text-faint">In development. Demo day is December 2026.</p>
+          <p className="mt-5 text-[13.5px] text-faint">In development.</p>
         </div>
         <div className="min-w-0">
           <ConceptPanel />
@@ -335,7 +335,7 @@ export default function Home() {
       <section className="py-16 md:py-20">
         <div className={`${wrap} flex flex-col items-start justify-between gap-6 md:flex-row md:items-end`}>
           <div>
-            <h2 className={h2}>See it at demo day in December.</h2>
+            <h2 className={h2}>See it at demo day.</h2>
             <p className="mt-3 text-[17px] text-muted">Until then, the code and our findings are on GitHub.</p>
           </div>
           <a href={GITHUB_URL} target="_blank" rel="noopener" className={`${button} bg-ink text-white hover:bg-ink-2`}>
