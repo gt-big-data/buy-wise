@@ -83,13 +83,15 @@ function Detail({ c }: { c: ReplayDetail }) {
   return (
     <div className="db-replay">
       <div className="db-replay-panel">
-        <Panel
-          data={replayPanel(c)}
-          markUrl="mark.png"
-          onClose={() => {}}
-          onSeeOffers={() => {}}
-          replayDate={`as of ${replayDay(c.predicted_on)}`}
-        />
+        <div id="buywise-root">
+          <Panel
+            data={replayPanel(c)}
+            markUrl="mark.png"
+            onClose={() => {}}
+            onSeeOffers={() => {}}
+            replayDate={`as of ${replayDay(c.predicted_on)}`}
+          />
+        </div>
         {c.said === "BUY" && (
           <p className="db-muted">
             Drop chance that day: {Math.round(c.drop_chance * 100)}%, too low to say Wait.
