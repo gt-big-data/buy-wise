@@ -26,6 +26,7 @@ export type PanelData =
       dropChance: number;
       drops: number | null;
       months: number;
+      history?: [string, number][];
     }
   | {
       state: "nothing_better";
@@ -33,6 +34,7 @@ export type PanelData =
       nextBest: { price: number; daysLater: number } | null;
       pickWhy?: string | null;
       timing?: { status: "buy" | "unknown"; text: string } | null;
+      history?: [string, number][];
       passed?: { seller: string; condition: string; price: number; why: string }[];
       passedCount?: number;
     };

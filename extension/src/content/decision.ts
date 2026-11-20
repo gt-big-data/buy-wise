@@ -40,6 +40,8 @@ export type Decision = {
   ranking?: RankedOffer[];
   // Buy-now line when the panel isn't saying Wait
   timing?: { status: "buy" | "unknown"; text: string } | null;
+  // Daily [date, price] behind a Wait or Buy-now call; the last point is today's page price
+  history?: [string, number][];
 };
 
 export type RankedOffer = { seller: string; price: number; condition: string; verdict: string };
@@ -99,6 +101,7 @@ export function toPanelData(d: Decision, today = new Date(), pagePrice: number |
       dropChance: d.wait.drop_chance,
       drops: d.wait.drops,
       months: d.wait.months,
+      history: d.history ?? [],
     };
   }
 
@@ -108,6 +111,7 @@ export function toPanelData(d: Decision, today = new Date(), pagePrice: number |
     nextBest: d.next_best ? { price: d.next_best.price, daysLater: d.next_best.days_later } : null,
     pickWhy: d.pick_why ?? null,
     timing: d.timing ?? null,
+    history: d.history ?? [],
     passed: d.passed ?? [],
     passedCount: d.passed_count ?? (d.passed?.length ?? 0),
   };

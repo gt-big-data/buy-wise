@@ -624,3 +624,68 @@
 #buywise-root .bw-verdict--skip {
   opacity: 0.6;
 }
+
+/* Price chart */
+#buywise-root .bw-chart {
+  margin: 0;
+  padding: 12px 12px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--bw-line);
+  background: #fff;
+}
+
+#buywise-root .bw-chart svg {
+  display: block;
+  overflow: visible;
+}
+
+#buywise-root .bw-chart-fill {
+  fill: var(--bw-tone-soft);
+}
+
+#buywise-root .bw-chart-line {
+  fill: none;
+  stroke: var(--bw-tone);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+#buywise-root .bw-chart-gap {
+  fill: none;
+  stroke: var(--bw-tone);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  opacity: 0.7;
+}
+
+#buywise-root .bw-chart-target {
+  stroke: var(--bw-tone-dark);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
+}
+
+#buywise-root .bw-chart-label {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--bw-tone-dark);
+}
+
+#buywise-root .bw-chart-now {
+  fill: var(--bw-tone);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+#buywise-root .bw-chart figcaption {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-chart figcaption b {
+  color: var(--bw-ink-2);
+  font-weight: 700;
+}

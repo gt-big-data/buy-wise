@@ -4,7 +4,7 @@ import { extractASIN } from "./amazon";
 import { PageOffers } from "./offers";
 import OffersSection from "./OffersSection";
 import { OfferListResult } from "./offerList";
-import { LABEL, PANEL_STATUS, SOLD_BY_AMAZON, checkedOffers, dropChanceVsUsual, headline, ifDropsLine, trustLine } from "../../../website/app/preview/copy";
+import { LABEL, PANEL_STATUS, SOLD_BY_AMAZON, checkedOffers, dropChanceVsUsual, dropPrice, headline, ifDropsLine, trustLine } from "../../../website/app/preview/copy";
 import { defaultTarget, targetText } from "./watchTarget";
 import type { RankedOffer } from "./decision";
 
@@ -227,6 +227,7 @@ function Wait({ data, replay }: { data: Extract<PanelData, { state: "wait" }>; r
           <p className="bw-stat-foot">{dropChanceVsUsual(data.dropChance).includes("usually") ? "usually 18%" : ""}</p>
         </div>
       </div>
+      {data.history && <PriceChart history={data.history} target={dropPrice(data.price)} />}
       {note.length > 0 && <p className="bw-fine">{note.join(" ")}</p>}
       {!replay && data.expectedLow !== null && <WatchFlow price={data.price} expectedLow={data.expectedLow} />}
     </>
@@ -319,6 +320,7 @@ function NothingBetter({ data }: { data: Extract<PanelData, { state: "nothing_be
           </p>
         )}
       </div>
+      {buy && data.history && <PriceChart history={data.history} />}
       {data.timing && (
         <p className={`bw-timing ${buy ? "bw-timing--buy" : ""}`}>
           {buy ? data.timing.text.replace("Good time to buy. ", "") : data.timing.text}
@@ -331,5 +333,61 @@ function NothingBetter({ data }: { data: Extract<PanelData, { state: "nothing_be
         </p>
       )}
     </>
+  );
+}
+
+const monthDay = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+
+// Daily prices as a step line. The last point is today's page price; a long gap before
+// it (our data ends in April 2026) is drawn dashed so it doesn't read as a smooth trend.
+function PriceChart({ history, target }: { history: [string, number][]; target?: number }) {
+  if (history.length < 3) return null;
+  const W = 320;
+  const H = 96;
+  const pad = 6;
+  const t = history.map(([d]) => new Date(`${d}T12:00:00`).getTime());
+  const prices = history.map(([, p]) => p);
+  const lo = Math.min(...prices, target ?? Infinity);
+  const hi = Math.max(...prices);
+  const span = hi - lo || 1;
+  const t0 = t[0];
+  const tSpan = t[t.length - 1] - t0 || 1;
+  const gapIdx = t.length - 1;
+  const gap = t[gapIdx] - t[gapIdx - 1] > 30 * 86_400_000;
+  // compress a long gap to a fixed slice of the width
+  const gapW = gap ? 0.12 : 0;
+  const body = gap ? t[gapIdx - 1] - t0 || 1 : tSpan;
+  const x = (i: number) =>
+    pad + (W - 2 * pad) * (gap && i === gapIdx ? 1 : ((t[i] - t0) / body) * (1 - gapW));
+  const y = (p: number) => pad + (H - 2 * pad) * (1 - (p - lo) / span);
+  const end = gap ? gapIdx - 1 : gapIdx;
+  let d = `M${x(0)},${y(prices[0])}`;
+  for (let i = 1; i <= end; i++) d += ` H${x(i)} V${y(prices[i])}`;
+  const last = history.length - 1;
+  return (
+    <figure className="bw-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label="Price history">
+        <path d={`${d} V${H - pad} H${x(0)} Z`} className="bw-chart-fill" />
+        <path d={d} className="bw-chart-line" />
+        {gap && <path d={`M${x(end)},${y(prices[end])} L${x(last)},${y(prices[last])}`} className="bw-chart-gap" />}
+        {target !== undefined && (
+          <>
+            <line x1={pad} x2={W - pad} y1={y(target)} y2={y(target)} className="bw-chart-target" />
+            <text x={W - pad} y={y(target) - 4} textAnchor="end" className="bw-chart-label">
+              {money(target)}
+            </text>
+          </>
+        )}
+        <circle cx={x(last)} cy={y(prices[last])} r={4} className="bw-chart-now" />
+      </svg>
+      <figcaption>
+        <span>{monthDay(history[0][0])}</span>
+        <span>
+          low <b>{money(Math.min(...prices))}</b> · high <b>{money(hi)}</b>
+        </span>
+        <span>Today</span>
+      </figcaption>
+    </figure>
   );
 }

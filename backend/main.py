@@ -299,6 +299,8 @@ class DecisionResponse(BaseModel):
     timing: Optional[DecisionTimingResponse] = None
     passed_count: int = 0
     pick_why: Optional[str] = None
+    # Daily prices [date, price] behind a Wait or Buy-now call, for the panel's chart
+    history: list[tuple[str, float]] = []
 
 class DecisionLogRequest(BaseModel):
     asin: str
@@ -854,7 +856,28 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
         pick_why=decision.get("pick_why"),
         ranking=[DecisionRankResponse(**r) for r in decision.get("ranking", [])],
         timing=DecisionTimingResponse(**decision["timing"]) if decision.get("timing") else None,
+        history=(
+            _daily_history(prices, request.page_price)
+            if decision["status"] == "wait" or (decision.get("timing") or {}).get("status") == "buy"
+            else []
+        ),
     )
+
+
+def _daily_history(prices: list, page_price: Optional[float], days: int = 180) -> list[tuple[str, float]]:
+    """The last price of each day, the newest `days` days we have, plus today's page price."""
+    today = date.today().isoformat()
+    by_day: dict[str, float] = {}
+    for r in sorted(prices, key=lambda r: str(r["timestamp"])):
+        by_day[str(r["timestamp"])[:10]] = float(r["price"])
+    by_day.pop(today, None)
+    out = sorted(by_day.items())
+    if out:
+        last = date.fromisoformat(out[-1][0])
+        out = [d for d in out if (last - date.fromisoformat(d[0])).days <= days]
+    if page_price:
+        out.append((today, float(page_price)))
+    return out
 
 @app.post("/decision-log")
 def log_decision(request: DecisionLogRequest):
