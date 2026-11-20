@@ -234,20 +234,20 @@ def test_r4_dollar_test_silences_small_expected_savings():
     assert quiet_signal({**base, "price": 40.0}, {}, rules)["wait_worth_showing"]      # ~$3.33
 
 
-def test_stays_hidden_on_cheap_items_with_nothing_to_say():
+def test_cheap_items_still_show_the_panel():
     _, d = run([amazon(price=12.0)], prices=history(12.0, 12.0))
-    assert d == {**d, "show": False, "status": "nothing_better"}
+    assert d == {**d, "show": True, "status": "nothing_better"}
     _, d = run([amazon(price=349.0)], prices=history(349.0, 349.0))
     assert d["show"] is True and d["reason"] == "This is the best offer for you."
 
 
-def test_cheap_items_stay_hidden_when_the_price_signal_is_missing():
+def test_cheap_items_show_the_panel_when_the_price_signal_is_missing():
     """Stale history drops the price signal; the page price still marks a $9.99 item cheap."""
     s, d = run([amazon(price=9.99)], prediction=None, prices=history(29.0, 29.0), page_price=9.99,
                dataset_price=29.0)
-    assert s["price"]["status"] == "missing" and d["status"] == "nothing_better" and d["show"] is False
+    assert s["price"]["status"] == "missing" and d["status"] == "nothing_better" and d["show"] is True
     _, d = run([], prediction=None, prices=[], page_price=9.99, dataset_price=29.0)
-    assert d["show"] is False  # no Amazon offer either: falls back to the page price
+    assert d["show"] is True  # cheap items still get a panel
     s, d = run([amazon(price=349.0)], prediction=None, prices=history(29.0, 29.0), page_price=349.0,
                dataset_price=29.0)
     assert s["price"]["status"] == "missing" and d["show"] is True

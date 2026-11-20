@@ -576,5 +576,6 @@ def decide(signals: dict) -> dict:
     item_price = (price["price"] if price["status"] == "ok"
                   else (signals["amazon"] or {}).get("price") or signals.get("page_price"))
     cheap = item_price is not None and item_price < signals["min_price"]
-    return {**base, "show": bool(next_best) or bool(base["passed"]) or not cheap, "status": "nothing_better",
+    # Always shown: the panel says the Add to Cart offer is the one to buy, even on cheap items.
+    return {**base, "show": True, "status": "nothing_better",
             "reason": copy.headline_buy_here(), "next_best": next_best}
