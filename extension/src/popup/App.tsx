@@ -21,6 +21,7 @@ type WatchlistItem = {
   asin: string;
   title: string;
   current_recommendation: string | null;
+  recommendation_at_add?: string | null;
   recommendation_changed: boolean;
   target_price?: number | null;
   pred_14d?: number | null;
@@ -154,7 +155,6 @@ const App: React.FC = () => {
           {/* ── Alerts ── */}
           {alerts.length > 0 && (
             <div className="buywise-db-alerts-strip">
-              <span className="buywise-db-alerts-icon">⚡</span>
               <span className="buywise-db-alerts-text">
                 {alerts.length} watchlist item{alerts.length > 1 ? "s" : ""} changed recommendation
               </span>
@@ -179,20 +179,21 @@ const App: React.FC = () => {
             ) : (
               <div className="buywise-db-list">
                 {watchlist.slice(0, 5).map((item) => {
-                  const rec = (item.current_recommendation ?? "buy").toLowerCase();
+                  const shown = item.recommendation_at_add ?? item.current_recommendation;
+                  const rec = (shown ?? "buy").toLowerCase();
                   const changed = item.recommendation_changed;
                   return (
                     <div key={item.asin} className={`buywise-db-item buywise-db-item--${rec}`}>
                       <div className="buywise-db-item__left">
                         <span className={`buywise-db-chip buywise-db-chip--${rec}`}>
-                          {item.current_recommendation ?? "—"}
+                          {shown ?? "—"}
                         </span>
                         <span className="buywise-db-item__title">
                           {item.title ?? item.asin}
                         </span>
                       </div>
                       {changed && (
-                        <span className="buywise-db-item__alert" title="Recommendation changed">⚡</span>
+                        <span className="buywise-db-item__alert" title="Recommendation changed">Changed</span>
                       )}
                     </div>
                   );

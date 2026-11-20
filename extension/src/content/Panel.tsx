@@ -4,7 +4,8 @@ import { extractASIN } from "./amazon";
 import { PageOffers } from "./offers";
 import OffersSection from "./OffersSection";
 import { OfferListResult } from "./offerList";
-import { PANEL_STATUS, checkedOffers } from "../../../website/app/preview/copy";
+import { PANEL_STATUS, SOLD_BY_AMAZON, checkedOffers, trustLine } from "../../../website/app/preview/copy";
+import { defaultTarget, targetText } from "./watchTarget";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
@@ -63,7 +64,14 @@ export default function Panel({
           {answer?.state === "nothing_better" && <NothingBetter data={answer} />}
           {answer && partialOffers && <p className="bw-note">{PANEL_STATUS.partialOffers}</p>}
         </div>
-        {offers && <OffersSection offers={offers} onCompareOpen={() => setMinimized(true)} onList={onOfferList} />}
+        {offers && (
+          <OffersSection
+            offers={offers}
+            recommendedPrice={answer?.state === "better_offer" ? answer.best.price : null}
+            onCompareOpen={() => setMinimized(true)}
+            onList={onOfferList}
+          />
+        )}
       </div>
     </>
   );
@@ -86,6 +94,11 @@ function NoAnswer({ status, onRetry }: { status: PanelStatus; onRetry?: () => vo
 
 function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: "better_offer" }>; onSeeOffers: () => void }) {
   const { amazon, best } = data;
+  const why =
+    best.stars !== null && best.ratingCount !== null && best.positivePercent !== null
+      ? trustLine({ stars: best.stars, count: best.ratingCount, positive: best.positivePercent })
+      : SOLD_BY_AMAZON;
+  const warrantyMayNotApply = best.condition.trim().toLowerCase() !== "new" || best.fullWarranty === false;
 
   return (
     <>
@@ -112,9 +125,14 @@ function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: 
       </div>
       <p className="bw-note">
         <span className="bw-strong">Why: </span>
-        {data.reason}{" "}
-        {best.stars === null && "Sold by Amazon. "}
-        <span className="bw-caution">May not include the manufacturer warranty.</span>
+        {why}
+        {best.freeReturns && " Free returns."}
+        {warrantyMayNotApply && (
+          <>
+            {" "}
+            <span className="bw-caution">May not include the manufacturer warranty.</span>
+          </>
+        )}
       </p>
       <button type="button" className="bw-button" onClick={onSeeOffers}>
         See offer
@@ -142,15 +160,15 @@ function Wait({ data }: { data: Extract<PanelData, { state: "wait" }> }) {
       <p className="bw-note">
         It dropped {data.drops} times in the last {data.months} months. No other seller has it cheaper right now.
       </p>
-      <WatchFlow expectedLow={data.expectedLow} />
+      <WatchFlow price={data.price} expectedLow={data.expectedLow} />
     </>
   );
 }
 // Tap Watch, set a target, get notified. The target is saved to the backend's
 // watchlist, and the background script checks prices against it (#74).
-function WatchFlow({ expectedLow }: { expectedLow: number }) {
+function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number }) {
   const [step, setStep] = useState<"start" | "target" | "saving" | "watching">("start");
-  const [target, setTarget] = useState(String(Math.round(expectedLow)));
+  const [target, setTarget] = useState(() => targetText(defaultTarget(price, expectedLow)));
   const [error, setError] = useState<string | null>(null);
   const targetPrice = Number(target);
 
@@ -159,12 +177,12 @@ function WatchFlow({ expectedLow }: { expectedLow: number }) {
     setError(null);
     const asin = extractASIN();
     const res = await chrome.runtime
-      .sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin, target_price: targetPrice })
+      .sendMessage({ type: "BUYWISE_WATCHLIST_ADD", asin, target_price: targetPrice, recommendation: "WAIT" })
       .catch(() => null);
     if (res?.ok) {
       setStep("watching");
     } else {
-      setError(res?.error?.includes("not found") ? "BuyWise doesn't track this product yet." : "Couldn't save. Is the backend running?");
+      setError(res?.error?.includes("not found") ? "BuyWise doesn't track this product yet." : "Couldn't save right now. Try again in a moment.");
       setStep("target");
     }
   }

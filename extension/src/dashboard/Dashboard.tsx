@@ -20,7 +20,7 @@ export default function Dashboard() {
       setAlerts(res.alerts);
       setError(null);
     } else {
-      setError("Couldn't reach BuyWise. Is the backend running?");
+      setError("Couldn't reach BuyWise right now. Try again in a moment.");
     }
   }
 

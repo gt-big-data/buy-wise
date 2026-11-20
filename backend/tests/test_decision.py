@@ -102,3 +102,26 @@ def test_too_little_history_means_no_wait_not_a_made_up_one(api, monkeypatch):
         {"price": 549.0 - i, "timestamp": datetime(2026, 11, 12 + i)} for i in range(8)])
     answer = decide(api)
     assert answer["status"] == "nothing_better" and answer["wait"] is None
+
+
+def _watch(api, monkeypatch, **body):
+    saved = {}
+    monkeypatch.setattr(main, "add_to_watchlist", lambda **kw: saved.update(kw))
+    r = api.post("/watchlist", json={"user_id": "u1", "asin": "B0CCZ26B5V", "target_price": 99.0, **body})
+    assert r.status_code == 200
+    return saved["recommendation_at_add"]
+
+
+def test_watch_stores_what_the_panel_said(api, monkeypatch):
+    assert _watch(api, monkeypatch, recommendation_at_add="WAIT") == "WAIT"  # model says BUY
+
+
+def test_watch_without_the_panel_status_falls_back_to_the_model(api, monkeypatch):
+    assert _watch(api, monkeypatch) == "BUY"
+
+
+def test_better_offer_passes_returns_and_warranty_through(api):
+    best = decide(api, {**TRUSTED, "freeReturns": True, "fullWarranty": False})["best"]
+    assert best["free_returns"] is True and best["full_warranty"] is False
+    best = decide(api, TRUSTED)["best"]
+    assert best["free_returns"] is None and best["full_warranty"] is None

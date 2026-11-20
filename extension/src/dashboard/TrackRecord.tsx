@@ -65,10 +65,10 @@ export default function TrackRecord() {
       .sendMessage({ type: "BUYWISE_GET_TRACK_RECORD" })
       .then((res) => {
         if (res?.ok) setRecord(res.record);
-        else if (res?.error === "no_track_record") setError("No track record yet. Run backend/scripts/track_record.py replay.");
-        else setError("Couldn't reach BuyWise. Is the backend running?");
+        else if (res?.error === "no_track_record") setError("No track record yet.");
+        else setError("Couldn't reach BuyWise right now. Try again in a moment.");
       })
-      .catch(() => setError("Couldn't reach BuyWise. Is the backend running?"));
+      .catch(() => setError("Couldn't reach BuyWise right now. Try again in a moment."));
   }, []);
 
   return (

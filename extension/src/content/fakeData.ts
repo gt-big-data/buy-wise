@@ -9,7 +9,13 @@ export type PanelData =
       offersChecked: number;
       reason: string;
       amazon: Offer;
-      best: Offer & { stars: number | null; ratingCount: number | null; positivePercent: number | null };
+      best: Offer & {
+        stars: number | null;
+        ratingCount: number | null;
+        positivePercent: number | null;
+        freeReturns: boolean | null;
+        fullWarranty: boolean | null;
+      };
     }
   | {
       state: "wait";

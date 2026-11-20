@@ -15,9 +15,11 @@ type Props = {
   onCompareOpen?: () => void;
   // Each time the full list is read (first load, more rows on scroll)
   onList?: (list: OfferListResult) => void;
+  // The panel's recommended offer, if it named one. A cheaper offer here is one we passed on.
+  recommendedPrice?: number | null;
 };
 
-export default function OffersSection({ offers, onCompareOpen, onList }: Props) {
+export default function OffersSection({ offers, onCompareOpen, onList, recommendedPrice = null }: Props) {
   const [list, setList] = useState<OfferListResult | null>(null);
   const [comparing, setComparing] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
@@ -45,6 +47,7 @@ export default function OffersSection({ offers, onCompareOpen, onList }: Props) 
   const savings = lowest !== null && offers.oneTimePrice !== null ? offers.oneTimePrice - lowest : null;
   const sorted = list?.status === "ok" ? [...list.offers].sort((a, b) => total(a) - total(b)) : [];
   const shown = list?.offers.filter((o) => !o.pinned).length ?? 0;
+  const cheapestNotRecommended = recommendedPrice !== null && lowest !== null && lowest < recommendedPrice - 0.005;
 
   return (
     <section className="bw-offers" aria-label="Other sellers">
@@ -59,7 +62,9 @@ export default function OffersSection({ offers, onCompareOpen, onList }: Props) 
       </p>
       {savings !== null && savings >= 0.01 && (
         <p className="bw-note bw-note--tight">
+          {cheapestNotRecommended && "The cheapest is "}
           <span className="bw-good">{money(savings)} less</span> than the Add to Cart price
+          {cheapestNotRecommended && ", from an offer we don't recommend"}
         </p>
       )}
 

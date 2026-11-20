@@ -10,13 +10,22 @@ type ApiOffer = {
   arrives: string; // YYYY-MM-DD
 };
 
+// free_returns / full_warranty are null (or absent) when the page didn't say.
+type ApiBest = ApiOffer & {
+  stars: number | null;
+  rating_count: number | null;
+  positive_percent: number | null;
+  free_returns?: boolean | null;
+  full_warranty?: boolean | null;
+};
+
 export type Decision = {
   show: boolean;
   status: "better_offer" | "wait" | "nothing_better";
   offers_checked: number;
   amazon: ApiOffer | null;
   // Ratings are null for Amazon-run sellers (Amazon.com, Amazon Resale), which show none.
-  best: (ApiOffer & { stars: number | null; rating_count: number | null; positive_percent: number | null }) | null;
+  best: ApiBest | null;
   reason: string;
   wait: { price: number; expected_low: number; drop_chance: number; drops: number; months: number } | null;
   next_best: { price: number; days_later: number } | null;
@@ -60,6 +69,8 @@ export function toPanelData(d: Decision, today = new Date(), pagePrice: number |
         stars: d.best.stars ?? null,
         ratingCount: d.best.rating_count ?? null,
         positivePercent: d.best.positive_percent ?? null,
+        freeReturns: d.best.free_returns ?? null,
+        fullWarranty: d.best.full_warranty ?? null,
       },
     };
   }

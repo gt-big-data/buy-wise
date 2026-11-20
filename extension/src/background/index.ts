@@ -133,13 +133,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message?.type === "BUYWISE_WATCHLIST_ADD") {
-    const { asin, target_price } = message;
+    const { asin, target_price, recommendation } = message;
     getUserId()
       .then((userId) =>
         fetch(`${BACKEND_URL}/watchlist`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_id: userId, asin, target_price: target_price ?? null }),
+          body: JSON.stringify({
+            user_id: userId,
+            asin,
+            target_price: target_price ?? null,
+            // What the panel said, so the popup doesn't show BUY for something it said to wait on
+            ...(recommendation ? { recommendation_at_add: recommendation } : {}),
+          }),
         })
       )
       .then(async (r) => {

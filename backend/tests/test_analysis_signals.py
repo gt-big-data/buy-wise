@@ -234,6 +234,18 @@ def test_stays_hidden_on_cheap_items_with_nothing_to_say():
     assert d["show"] is True and d["reason"] == "This is the best offer for you."
 
 
+def test_cheap_items_stay_hidden_when_the_price_signal_is_missing():
+    """Stale history drops the price signal; the page price still marks a $9.99 item cheap."""
+    s, d = run([amazon(price=9.99)], prediction=None, prices=history(29.0, 29.0), page_price=9.99,
+               dataset_price=29.0)
+    assert s["price"]["status"] == "missing" and d["status"] == "nothing_better" and d["show"] is False
+    _, d = run([], prediction=None, prices=[], page_price=9.99, dataset_price=29.0)
+    assert d["show"] is False  # no Amazon offer either: falls back to the page price
+    s, d = run([amazon(price=349.0)], prediction=None, prices=history(29.0, 29.0), page_price=349.0,
+               dataset_price=29.0)
+    assert s["price"]["status"] == "missing" and d["show"] is True
+
+
 def test_buy_confidence_is_turned_into_drop_chance():
     """Rows from before migration 003 store confidence = 1 - P(drop) for BUY."""
     s, _ = run([amazon()], prediction={"recommendation": "BUY", "confidence_score": 0.9, "pred_14d": 440.0})
@@ -345,6 +357,10 @@ def test_text_matches_copy_ts():
     assert "`Same item, ${condition.toLowerCase()}, ${money(savings)} less.`" in ts
     assert "`${pct(p)} chance it drops 8% or more in the next 14 days.`" in ts
     assert '"This is the best offer for you."' in ts
+    assert ("`${r.stars.toFixed(1)} stars from ${r.count.toLocaleString(\"en-US\")} ratings, "
+            "${Math.round(r.positive)}% positive.`") in ts
+    assert text.trust_line(4.7, 21295, 92.5) == "4.7 stars from 21,295 ratings, 93% positive."
+    assert f'SOLD_BY_AMAZON = "{text.SOLD_BY_AMAZON}"' in ts
     assert "MIN_WAIT_CHANCE = 0.15" in ts and load_results()["quiet"]["min_drop_chance"] == 0.15
     assert text.pct(0.745) == "75%" and text.pct(0.005) == "1%"  # rounds like Math.round
 
