@@ -27,6 +27,7 @@ export const LABEL = {
   warranty: "Warranty",
   dropChance: "Chance of a drop",
   expectedLow: "Expected 14-day low",
+  ifDrops: "If it drops",
   low90: "90-day low",
   pattern: "Pattern",
   bestOther: "Best other offer",
@@ -54,6 +55,14 @@ export const dropChanceLine = (p: number) => `${pct(p)} chance of an 8%+ drop in
 export const patternLine = (drops: number, months: number, minDays: number, maxDays: number) =>
   `${drops} drops in ${months} months, each lasting ${minDays}–${maxDays} days`;
 export const MIN_WAIT_CHANCE = 0.15;
+// The drop a Wait call is about: 8% or more within 14 days.
+export const DROP_SIZE = 0.08;
+export const dropPrice = (price: number) => Math.floor(price * (1 - DROP_SIZE) * 100) / 100;
+export const ifDropsLine = (price: number) => `${money(dropPrice(price))} or less`;
+// How often an 8%+ drop happens within 14 days across all tracked products (track record base rate).
+export const USUAL_DROP_CHANCE = 0.18;
+export const dropChanceVsUsual = (p: number) =>
+  p >= USUAL_DROP_CHANCE * 1.25 ? `${pct(p)}, usually ${pct(USUAL_DROP_CHANCE)}` : pct(p);
 export const ifNoDropLine = (higherShare: number) => `Usually about the same price. ${pct(higherShare)} of past waits ended higher`;
 export const bestOtherLine = (o: { price: number; condition: string; arrives: string } | null) =>
   o ? `${money(o.price)}, ${o.condition.toLowerCase()}, arrives ${date(o.arrives)}` : "None cheaper";
@@ -67,7 +76,7 @@ export const savingsVs = (base: number, price: number) =>
 // Headlines: one sentence per status, always built from numbers.
 export const headline = {
   better_offer: (savings: number, condition: string) => `Same item, ${condition.toLowerCase()}, ${money(savings)} less.`,
-  wait: (p: number) => `${pct(p)} chance it drops 8% or more in the next 14 days.`,
+  wait: (price: number) => `Worth waiting if you can. It could drop to ${money(dropPrice(price))} or less in the next 14 days.`,
   buy_here: () => "This is the best offer for you.",
   buy_now_target: (price: number, target: number) => `${money(price)}, below your ${money(target)} target.`,
   buy_now_low: (price: number) => `${money(price)}, its lowest in 90 days.`,

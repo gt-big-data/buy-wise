@@ -496,7 +496,7 @@ def decide(signals: dict) -> dict:
 
     if can_wait:
         return {**base, "show": True, "status": "wait",
-                "reason": copy.headline_wait(price["drop_chance"]),
+                "reason": copy.headline_wait(price["price"]),
                 "wait": {k: price[k] for k in ("price", "expected_low", "drop_chance", "drops", "months")}}
 
     next_best = offer.get("next_best") if offer["status"] == "ok" else None

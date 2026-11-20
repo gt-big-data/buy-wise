@@ -26,8 +26,10 @@ TOP_N = 5
 
 
 def _call(row: dict, amount: float) -> dict:
+    from jobs import csv_history
     return {
         "asin": row["asin"],
+        "brand": csv_history._brands().get(row["asin"]),
         "predicted_on": row["predicted_on"],
         "said": row["recommendation"],
         "price": float(row["price_at_prediction"]),

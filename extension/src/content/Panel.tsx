@@ -4,7 +4,7 @@ import { extractASIN } from "./amazon";
 import { PageOffers } from "./offers";
 import OffersSection from "./OffersSection";
 import { OfferListResult } from "./offerList";
-import { PANEL_STATUS, SOLD_BY_AMAZON, checkedOffers, trustLine } from "../../../website/app/preview/copy";
+import { LABEL, PANEL_STATUS, SOLD_BY_AMAZON, checkedOffers, dropChanceVsUsual, headline, ifDropsLine, trustLine } from "../../../website/app/preview/copy";
 import { defaultTarget, targetText } from "./watchTarget";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
@@ -154,20 +154,20 @@ function Wait({ data, replay }: { data: Extract<PanelData, { state: "wait" }>; r
   ].filter(Boolean);
   return (
     <>
-      <p className="bw-headline">
-        Wait. {Math.round(data.dropChance * 100)}% chance this drops 8% or more in the next 14 days.
-      </p>
+      <p className="bw-headline">{headline.wait(data.price)}</p>
       <dl className="bw-rows">
         <div>
           <dt>Price now</dt>
           <dd className="bw-mono">{money(data.price)}</dd>
         </div>
-        {data.expectedLow !== null && (
-          <div>
-            <dt>Expected low</dt>
-            <dd className="bw-mono">{money(data.expectedLow)}</dd>
-          </div>
-        )}
+        <div>
+          <dt>{LABEL.ifDrops}</dt>
+          <dd className="bw-mono">{ifDropsLine(data.price)}</dd>
+        </div>
+        <div>
+          <dt>{LABEL.dropChance}</dt>
+          <dd className="bw-mono">{dropChanceVsUsual(data.dropChance)}</dd>
+        </div>
       </dl>
       {note.length > 0 && <p className="bw-note">{note.join(" ")}</p>}
       {!replay && data.expectedLow !== null && <WatchFlow price={data.price} expectedLow={data.expectedLow} />}
@@ -226,7 +226,7 @@ function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number 
             {step === "saving" ? "Saving..." : "Watch"}
           </button>
         </div>
-        <p className={error ? "bw-note bw-caution" : "bw-note"}>{error ?? `Expected low is ${money(expectedLow)}.`}</p>
+        <p className={error ? "bw-note bw-caution" : "bw-note"}>{error ?? `If it drops, it will be ${ifDropsLine(price)}.`}</p>
       </div>
     );
   }

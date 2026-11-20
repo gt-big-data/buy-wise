@@ -19,6 +19,7 @@ import {
   fulfillmentLine,
   headline,
   ifNoDropLine,
+  ifDropsLine,
   missLine,
   MIN_WAIT_CHANCE,
   money,
@@ -214,11 +215,11 @@ function WaitPanel() {
   return (
     <PanelShell meta={checked(bose.offersChecked)}>
       <div className="px-3.5 pb-3.5 pt-3">
-        <Verdict status="wait" text={headline.wait(bose.dropChance)} />
+        <Verdict status="wait" text={headline.wait(bose.price)} />
         <div className="mt-3">
           <PriceChart />
         </div>
-        <Row label={LABEL.expectedLow} value={money(bose.expectedLow)} />
+        <Row label={LABEL.ifDrops} value={ifDropsLine(bose.price)} />
         <Row label={LABEL.ifNoDrop} value={ifNoDropLine(bose.higherAfterWait)} />
         <Row label={LABEL.pattern} value={patternLine(p.drops, p.months, p.minDays, p.maxDays)} />
         <Row label={LABEL.bestOther} value={bestOtherLine(null)} />

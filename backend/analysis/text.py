@@ -8,6 +8,8 @@ tests/test_analysis_signals.py checks the two still match.
 """
 from __future__ import annotations
 
+import math
+
 
 def money(n: float) -> str:
     return f"${n:.2f}"
@@ -38,8 +40,15 @@ def trust_line(stars: float, count: int, positive: float) -> str:
 SOLD_BY_AMAZON = "Sold by Amazon."
 
 
-def headline_wait(p: float) -> str:
-    return f"{pct(p)} chance it drops 8% or more in the next 14 days."
+DROP_SIZE = 0.08
+
+
+def drop_price(price: float) -> float:
+    return math.floor(price * (1 - DROP_SIZE) * 100) / 100
+
+
+def headline_wait(price: float) -> str:
+    return f"Worth waiting if you can. It could drop to {money(drop_price(price))} or less in the next 14 days."
 
 
 def headline_buy_here() -> str:
