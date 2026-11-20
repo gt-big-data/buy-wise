@@ -173,6 +173,9 @@ class WatchlistAddRequest(BaseModel):
     user_id: str
     asin: str
     target_price: Optional[float] = None
+    # What the panel told the shopper (WAIT when it said wait). Older clients
+    # leave it out, and the model's latest recommendation is stored instead.
+    recommendation_at_add: Optional[RecommendationDirection] = None
 
 
 class ActivityRecord(BaseModel):
@@ -182,6 +185,7 @@ class ActivityRecord(BaseModel):
     action: ActivityAction = Field(..., example="dismissed")
     user_id: Optional[str] = Field(None, example="user_123")
     timestamp: datetime = Field(..., example="2026-03-16T00:00:00Z")
+    product_title: Optional[str] = Field(None, example="Bose QuietComfort Headphones")
 
 
 class RecentActivityResponse(BaseModel):
@@ -218,6 +222,8 @@ class DecisionOffer(BaseModel):
     stars: Optional[float] = Field(None, ge=0, le=5)
     rating_count: Optional[int] = Field(None, ge=0, alias="ratingCount")
     positive_percent: Optional[float] = Field(None, ge=0, le=100, alias="positivePercent")
+    free_returns: Optional[bool] = Field(None, alias="freeReturns")
+    full_warranty: Optional[bool] = Field(None, alias="fullWarranty")
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -242,6 +248,9 @@ class QualifiedDecisionOfferResponse(DecisionOfferResponse):
     stars: Optional[float] = None
     rating_count: Optional[int] = None
     positive_percent: Optional[float] = None
+    # None when the page didn't say.
+    free_returns: Optional[bool] = None
+    full_warranty: Optional[bool] = None
 
 
 class DecisionWaitResponse(BaseModel):
@@ -973,18 +982,22 @@ def add_watchlist_item(req: WatchlistAddRequest):
                 detail=f"Product {req.asin} not found",
             )
 
-        latest = get_latest_prediction(product["product_id"])
+        recommendation = req.recommendation_at_add.value if req.recommendation_at_add else None
 
-        if not latest:
-            raise HTTPException(
-                status_code=404,
-                detail=f"No prediction found for {req.asin}",
-            )
+        if recommendation is None:
+            latest = get_latest_prediction(product["product_id"])
+
+            if not latest:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No prediction found for {req.asin}",
+                )
+            recommendation = latest["recommendation"]
 
         add_to_watchlist(
             user_id=req.user_id,
             product_id=product["product_id"],
-            recommendation_at_add=latest["recommendation"],
+            recommendation_at_add=recommendation,
             target_price=req.target_price,
         )
 
@@ -1068,6 +1081,7 @@ def get_recent_activity(
             action=ActivityAction(row["action"]),
             user_id=row.get("user_id"),
             timestamp=row["timestamp"],
+            product_title=row.get("product_title"),
         )
         for row in rows
     ]

@@ -85,6 +85,10 @@ export const OFFER_TAG: Record<OfferTag, string> = {
 };
 
 export const ratingLine = (r: { stars: number; count: number }) => `${r.stars.toFixed(1)} stars · ${r.count.toLocaleString("en-US")} ratings`;
+// The "Why" under a better offer: who's selling it, since the headline already says the saving.
+export const trustLine = (r: { stars: number; count: number; positive: number }) =>
+  `${r.stars.toFixed(1)} stars from ${r.count.toLocaleString("en-US")} ratings, ${Math.round(r.positive)}% positive.`;
+export const SOLD_BY_AMAZON = "Sold by Amazon.";
 export const sellerLine = (r?: { stars: number; count: number; years: number }) =>
   r ? `${ratingLine(r)} · ${r.years} yr${r.years === 1 ? "" : "s"} selling` : "Sold by Amazon";
 export const fulfillmentLine = (o: { fulfilledByAmazon: boolean; freeReturns: boolean }) =>

@@ -30,6 +30,14 @@ def headline_better_offer(savings: float, condition: str) -> str:
     return f"Same item, {condition.lower()}, {money(savings)} less."
 
 
+# copy.ts trustLine: the "Why" under a better offer, about the seller, not the price.
+def trust_line(stars: float, count: int, positive: float) -> str:
+    return f"{stars:.1f} stars from {count:,} ratings, {int(positive + 0.5)}% positive."
+
+
+SOLD_BY_AMAZON = "Sold by Amazon."
+
+
 def headline_wait(p: float) -> str:
     return f"{pct(p)} chance it drops 8% or more in the next 14 days."
 

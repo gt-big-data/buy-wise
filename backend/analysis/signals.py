@@ -319,8 +319,8 @@ def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
                 "price": _total(o), "arrives": day.isoformat(), "stars": num(_get(o, "stars"), float),
                 "rating_count": num(_get(o, "rating_count", "ratingCount"), int),
                 "positive_percent": num(_get(o, "positive_percent", "positivePercent"), float),
-                "free_returns": bool(_get(o, "free_returns", "freeReturns", default=False)),
-                "full_warranty": bool(_get(o, "full_warranty", "fullWarranty", default=False)),
+                "free_returns": _get(o, "free_returns", "freeReturns"),
+                "full_warranty": _get(o, "full_warranty", "fullWarranty"),
                 "saving": round(amazon_total - _total(o), 2),
                 "t4_score": winner["score"]}
     later = sorted([s for s in slow if amazon_total - adjusted(s[0]) >= needed(amazon_total)],
@@ -422,7 +422,7 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
     timing["total"] = round((time.perf_counter() - t0) * 1000, 3)
     return {"asin": asin, "results_version": results["version"], "offers_checked": len(offers),
             "amazon": _amazon_response(offers), "price": price, "quiet": quiet,
-            "best_offer": best, "version": version,
+            "best_offer": best, "version": version, "page_price": page_price,
             "min_price": results["offers"].get("hide_nothing_better_below",
                                                results["quiet"]["min_price_for_wait"]),
             "timing_ms": timing}
@@ -481,16 +481,10 @@ def decide(signals: dict) -> dict:
             "status": "better_offer",
             "best": best_response,
             "reason": (
-                f"Same item, {best['condition'].lower()}, "
-                f"${best['saving']:.2f} less. "
-                f"{best['stars']:.1f} stars from "
-                f"{best['rating_count']:,} ratings, "
-                f"{best['positive_percent']:.0f}% positive."
+                copy.headline_better_offer(best["saving"], best["condition"]) + " "
+                + copy.trust_line(best["stars"], best["rating_count"], best["positive_percent"])
                 if all(best.get(k) is not None for k in ("stars", "rating_count", "positive_percent"))
-                else copy.headline_better_offer(
-                    best["saving"],
-                    best["condition"],
-                )
+                else copy.headline_better_offer(best["saving"], best["condition"])
             ),
         }
 
@@ -500,6 +494,9 @@ def decide(signals: dict) -> dict:
                 "wait": {k: price[k] for k in ("price", "expected_low", "drop_chance", "drops", "months")}}
 
     next_best = offer.get("next_best") if offer["status"] == "ok" else None
-    cheap = price["status"] == "ok" and price["price"] < signals["min_price"]
+    # Without a price signal (e.g. stale history), the page's own price still says whether it's cheap.
+    item_price = (price["price"] if price["status"] == "ok"
+                  else (signals["amazon"] or {}).get("price") or signals.get("page_price"))
+    cheap = item_price is not None and item_price < signals["min_price"]
     return {**base, "show": bool(next_best) or not cheap, "status": "nothing_better",
             "reason": copy.headline_buy_here(), "next_best": next_best}

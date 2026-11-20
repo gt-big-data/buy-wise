@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toPanelData } from "../src/content/decision";
 import { FAKE, pickFakeData } from "../src/content/fakeData";
+import { trustLine } from "../../website/app/preview/copy";
 
 const TODAY = new Date(2026, 10, 6);
 
@@ -23,6 +24,20 @@ describe("toPanelData", () => {
     expect(p?.state).toBe("better_offer");
     if (p?.state !== "better_offer") return;
     expect(p.best).toMatchObject({ seller: "Amazon Resale", stars: null, ratingCount: null, positivePercent: null });
+  });
+
+  it("passes free returns and warranty through, null when the page didn't say", () => {
+    const best = { ...FAKE.better_offer.best!, free_returns: true, full_warranty: false };
+    const p = toPanelData({ ...FAKE.better_offer, best }, TODAY);
+    if (p?.state !== "better_offer") throw new Error("expected better_offer");
+    expect(p.best).toMatchObject({ freeReturns: true, fullWarranty: false });
+    const q = toPanelData(FAKE.better_offer, TODAY);
+    if (q?.state !== "better_offer") throw new Error("expected better_offer");
+    expect(q.best).toMatchObject({ freeReturns: null, fullWarranty: null });
+  });
+
+  it("says why with the seller's ratings, word for word as text.py", () => {
+    expect(trustLine({ stars: 4.7, count: 21295, positive: 92.5 })).toBe("4.7 stars from 21,295 ratings, 93% positive.");
   });
 
   it("hides the panel when show is false", () => {
