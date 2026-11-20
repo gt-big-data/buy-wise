@@ -10,7 +10,7 @@ import { Decision, toPanelData } from "./decision";
 import { loadProfile, resolvedAnswers } from "../profile";
 import "./styles.css";
 import Panel, { PanelStatus } from "./Panel";
-import { openOffersPanel } from "./offerPanel";
+import { fetchOfferList, openOffersPanel } from "./offerPanel";
 import "./panel.css";
 import { pickFakeData, PanelData } from "./fakeData";
 
@@ -107,8 +107,8 @@ async function showPanel(): Promise<boolean> {
 }
 
 // The panel on a real product page: collect what's on the page, ask the decision
-// endpoint, and show its answer. Asks again once the shopper opens Amazon's full
-// offer list, since that has every seller rather than only the buy box.
+// endpoint, and show its answer. Fetches Amazon's full offer list up front so the
+// first answer covers every seller, and asks again if the shopper opens the list.
 async function mountLivePanel(): Promise<boolean> {
   if (!isAmazonProductPage()) return false;
   const asin = extractASIN();
@@ -194,8 +194,11 @@ async function mountLivePanel(): Promise<boolean> {
   }
 
   render();
+  const prefetch = fetchOfferList(asin);
   await pageSettled();
+  const fetched = await prefetch;
   if (!isCurrent()) return true;
+  if (fetched?.status === "ok" && !fullList) fullList = fetched;
   await ask();
   // Refresh the other-sellers summary once Amazon fills it in
   whenOtherSellersLoad(render);
