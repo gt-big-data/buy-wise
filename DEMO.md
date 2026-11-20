@@ -45,7 +45,7 @@ Use the laptop and the Chrome profile you will demo on.
 |---|---|---|
 | 1 | `git pull` on `main`. Then `docker compose up` from the repo root. | `curl localhost:8000/health` returns `ok` |
 | 2 | Load every demo product into the database: `curl localhost:8000/predict/<ASIN>` for each ASIN in the table above. | Each returns JSON, not `not_tracked`. Dataset products load from the CSVs on first sight. |
-| 3 | Build the track record: `docker compose exec backend python scripts/track_record.py replay`. It can take a few minutes. | `backend/track_record_out/summary.json` exists. The dashboard shows "How BuyWise has done" with numbers. |
+| 3 | Nothing to build: the track record ships with the repo (`backend/analysis/results/track_record/`, #138). | The dashboard shows "How BuyWise has done": 293 products, 65% of Wait calls dropped vs 18% at random. |
 | 4 | `chrome://extensions` → Developer mode → Load unpacked → `extension/dist`. The build is committed. Run `cd extension && npm run build` only if extension code changed. | Note the extension ID shown on its card. |
 | 5 | Bookmark the first-run screen: `chrome-extension://<extension ID>/profile.html?welcome`. Bookmark the dashboard: `chrome-extension://<extension ID>/dashboard.html`. | Both open |
 | 6 | Allow Chrome notifications: macOS System Settings → Notifications → Google Chrome → Allow. Turn off Focus and Do Not Disturb. | A test alert shows up (step 9) |
@@ -166,7 +166,7 @@ Before showing it, check `website/content/site.ts`. As of this PR it still has p
 | Amazon shows a captcha or a different page | Use the screenshots for that step |
 | Panel doesn't appear | Click the BuyWise toolbar icon to reopen it. Then reload the extension at `chrome://extensions` and the tab. |
 | No notification | Check Do Not Disturb. Use a new target. Point at Recent alerts on the dashboard. |
-| Track record says "No track record yet" | The replay didn't run. Use `07-dashboard.png`. |
+| Track record says "No track record yet" | The backend is on an old checkout. Pull main and restart it, or use `07-dashboard.png`. |
 
 ## Judge questions
 
