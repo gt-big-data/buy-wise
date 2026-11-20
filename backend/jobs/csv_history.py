@@ -64,6 +64,15 @@ def warm() -> None:
         log.warning("couldn't preload the price datasets: %s", exc)
 
 
+def last_price(asin: str):
+    """The last price the datasets have for this product (April 2026), or None."""
+    for path in SOURCES:
+        g = _by_asin(path).get(asin)
+        if g is not None and not g.empty:
+            return float(g.price.iloc[-1])
+    return None
+
+
 def known(asin: str) -> bool:
     return any(asin in _by_asin(p) for p in SOURCES)
 

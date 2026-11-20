@@ -777,6 +777,7 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
         prices=prices,
         prediction=prediction,
         page_price=request.page_price,
+        dataset_price=csv_history.last_price(request.asin),
     )
 
     # Preserve the existing API's Amazon offer representation.

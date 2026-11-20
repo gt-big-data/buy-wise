@@ -381,3 +381,24 @@ def test_cached_prediction_holds_when_it_was_scored_at_the_page_price():
     s, _ = run([amazon(price=350.0)], prediction=cached, prices=history(349.0, 349.0),
                page_price=350.0, predict_fn=model)
     assert s["price"]["source"].startswith("cached")
+
+
+def test_no_wait_when_the_page_price_has_moved_far_from_our_history():
+    """Datasets end in April 2026. A Roku that was $29 then and is $49 today must not get a
+    WAIT from the model reading that gap as a spike."""
+    def model(records, today):
+        return {"p_drop": 0.75, "pred_14d": 40.0, "recommendation": "WAIT"}
+
+    stale, d = run([amazon(price=49.0)], prediction=None, prices=history(29.0, 29.0), page_price=49.0,
+                   dataset_price=29.0, predict_fn=model)
+    assert stale["price"]["status"] == "missing" and "out of date" in stale["price"]["why"]
+    assert d["status"] != "wait"
+    fresh, d = run([amazon(price=30.0)], prediction=None, prices=history(29.0, 29.0), page_price=30.0,
+                   dataset_price=29.0, predict_fn=model)
+    assert fresh["price"]["status"] == "ok" and d["status"] == "wait"
+
+
+def test_offers_still_compared_when_history_is_out_of_date():
+    _, d = run([amazon(price=449.99), seller("Good", 369.0)], prices=history(300.0), page_price=449.99,
+               dataset_price=300.0)
+    assert d["status"] == "better_offer"

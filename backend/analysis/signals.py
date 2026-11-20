@@ -346,6 +346,22 @@ def version_signal(asin: str, results: dict) -> dict:
             "source": p["source"]}
 
 
+STALE_GAP = 0.10  # page price this far from the datasets' last price: history too old to judge
+
+
+def history_out_of_date(page_price: Optional[float], dataset_price: Optional[float]) -> Optional[str]:
+    """Our price history ends in April 2026. When today's page price has moved more than
+    10% since then, the model would read the gap as a one-day spike or crash and call it a
+    drop or a bargain. So no WAIT on those pages; the offers are still compared."""
+    if not page_price or not dataset_price:
+        return None
+    gap = page_price / dataset_price - 1
+    if abs(gap) <= STALE_GAP:
+        return None
+    return (f"price history is out of date: {copy.money(dataset_price)} in our data, "
+            f"{copy.money(page_price)} on the page ({gap:+.0%})")
+
+
 PAGE_PRICE_TOLERANCE = 0.01  # under 1% apart, the cached prediction still holds
 
 
@@ -367,6 +383,7 @@ def with_page_price(prices: list, prediction: Optional[dict], page_price: Option
 
 def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[list] = None,
                      prediction: Optional[dict] = None, *, page_price: Optional[float] = None,
+                     dataset_price: Optional[float] = None,
                      today: Optional[date] = None,
                      results: Optional[dict] = None, predict_fn: Optional[Callable] = None) -> dict:
     """Every analysis signal for one product page, each timed.
@@ -377,6 +394,7 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
     prices      price history records ({price, timestamp}), any order
     prediction  the cached DB prediction row, if any (skips running the model)
     page_price  the one-time price on the page the shopper is looking at (#104)
+    dataset_price  the last price in the price datasets, which end in April 2026
     """
     today = today or date.today()
     profile = profile or {}
@@ -395,7 +413,9 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
         return out
 
     results = results or timed("load_results", load_results)
-    price = timed("price", lambda: price_signal(prices or [], prediction, today, predict_fn))
+    stale = history_out_of_date(page_price, dataset_price)
+    price = (_missing(stale) if stale else
+             timed("price", lambda: price_signal(prices or [], prediction, today, predict_fn)))
     quiet = timed("quiet", lambda: quiet_signal(price, profile, results["quiet"]))
     best = timed("best_offer", lambda: best_offer_signal(offers, profile, results["offers"], today))
     version = timed("version", lambda: version_signal(asin, results))
