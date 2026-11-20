@@ -350,7 +350,7 @@ def test_page_price_rescores_when_the_stored_price_is_stale():
     seen = {}
 
     def model(records, today):
-        seen["latest"] = max(records, key=lambda r: r["timestamp"])["price"]
+        seen["latest"] = max(records, key=lambda r: str(r["timestamp"])[:10])["price"]
         return {"p_drop": 0.6, "pred_14d": 250.0, "recommendation": "WAIT"}
 
     cached = {**WAIT, "price_at_prediction": 349.0}
