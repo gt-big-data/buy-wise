@@ -1,3 +1,4 @@
+import { followLivePrices } from "./livePrices";
 import React from "react";
 import { createRoot, Root } from "react-dom/client";
 import { isAmazonProductPage, extractASIN } from "./amazon";
@@ -220,6 +221,7 @@ function init(): void {
     showPanel();
   }, 500);
   followVariantChanges();
+  followLivePrices();
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
