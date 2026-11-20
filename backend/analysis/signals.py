@@ -247,28 +247,33 @@ def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
     amazon = next((o for o in offers if _get(o, "pinned")), None)
     if amazon is None:
         return _missing("no Amazon pick (pinned offer) on the page")
-    amazon_day = _day(_get(amazon, "delivery_date", "deliveryDate"))
-    if amazon_day is None:
-        return _missing("the page didn't show when Amazon's pick arrives")
+    # Unreadable delivery text on the Add to Cart offer ("Overnight", "Arrives in 23 minutes")
+    # is fast delivery, so treat it as tomorrow rather than giving up on the comparison.
+    amazon_day = _day(_get(amazon, "delivery_date", "deliveryDate")) or today + timedelta(days=1)
     others = [o for o in offers if o is not amazon]
     if not others:
         return {"status": "ok", "best": None, "next_best": None, "skipped": [],
-                "why": "only one offer on the page", "source": rules["source"]}
+                "why": "only one offer on the page", "source": rules["source"],
+                "passed": [], "passed_count": 0, "pick_why": _pick_line(amazon),
+                "ranking": [_rank_row(amazon, "best" if _trusted(amazon, rules) else "add_to_cart")]}
     if all(_get(o, "stars") is None and not _amazon_run(o) for o in others):
         return _missing("the page didn't give seller ratings for the other offers")
 
     wanted = _get(profile, "condition", default="new_only")
     max_days = PATIENCE_DAYS.get(_get(profile, "patience", default="week_or_two"), 14)
     amazon_total = _total(amazon)
-    eligible, slow, skipped = [], [], []
+    eligible, slow, skipped, rejected = [], [], [], []
     for o in others:
         day = _day(_get(o, "delivery_date", "deliveryDate"))
         if not _condition_ok(_get(o, "condition"), wanted):
             skipped.append({"seller": _get(o, "seller"), "reason": "condition_profile"})
+            rejected.append((o, "condition_profile"))
         elif not _trusted(o, rules):
             skipped.append({"seller": _get(o, "seller"), "reason": "low_ratings"})
+            rejected.append((o, "low_ratings"))
         elif day is None or day < today or (max_days is not None and (day - today).days > max_days):
             skipped.append({"seller": _get(o, "seller"), "reason": "slow_shipping"})
+            rejected.append((o, "slow_shipping"))
             if day is not None and day >= today:
                 slow.append((o, day))
         else:
@@ -328,8 +333,62 @@ def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
                    key=lambda s: (_total(s[0]), s[1]))
     next_best = ({"price": _total(later[0][0]), "days_later": (later[0][1] - amazon_day).days}
                  if later else None)
+    best_offer = winner["_offer"] if best else None
+    ranking = [_rank_row(best_offer, "best"), _rank_row(amazon, "add_to_cart")] if best_offer \
+        else [_rank_row(amazon, "best" if _trusted(amazon, rules) else "add_to_cart")]
+    for r in ranked:
+        o = r["_offer"]
+        if o is amazon or o is best_offer:
+            continue
+        ranking.append(_rank_row(o, "costs_more" if _total(o) >= amazon_total else "small_saving"))
+    order = {"condition_profile": 0, "slow_shipping": 1, "low_ratings": 2}
+    for o, reason in sorted(rejected, key=lambda e: (order[e[1]], _total(e[0]))):
+        ranking.append(_rank_row(o, reason))
+    rejected += [(o, "small_saving") for o, _ in eligible if o is not best_offer]
+    cheaper = sorted(((o, r) for o, r in rejected if _total(o) < amazon_total - 0.005), key=lambda e: _total(e[0]))
+    passed = [{"seller": _get(o, "seller"), "condition": _get(o, "condition") or "New", "price": _total(o),
+               "why": _why_not(o, r, rules)} for o, r in cheaper[:3]]
     return {"status": "ok", "best": best, "next_best": next_best, "skipped": skipped,
-            "eligible": len(eligible), "source": rules["source"]}
+            "eligible": len(eligible), "source": rules["source"],
+            "passed": passed, "passed_count": len(cheaper), "pick_why": _pick_line(amazon),
+            "ranking": ranking}
+
+
+def _rank_row(o, verdict: str) -> dict:
+    return {"seller": _get(o, "seller"), "price": _total(o), "condition": _get(o, "condition") or "New",
+            "verdict": verdict}
+
+
+def _pick_line(o) -> str | None:
+    """The Add to Cart seller by name, with its ratings."""
+    line = _seller_line(o)
+    if line is None or _amazon_run(o):
+        return line
+    return f"Sold by {_get(o, 'seller')}, {line[0].lower()}{line[1:]}"
+
+
+def _seller_line(o) -> str | None:
+    """The seller's ratings in one line, or that Amazon runs it."""
+    if _amazon_run(o):
+        return copy.SOLD_BY_AMAZON
+    stars = _get(o, "stars")
+    count = _get(o, "rating_count", "ratingCount")
+    positive = _get(o, "positive_percent", "positivePercent")
+    if stars is None or count is None or positive is None:
+        return None
+    return copy.trust_line(float(stars), int(count), float(positive))
+
+
+def _why_not(o, reason: str, rules: dict) -> str:
+    """Why a cheaper offer isn't the one we recommend, with its seller's ratings."""
+    if reason == "low_ratings":
+        line = _seller_line(o)
+        bar = copy.trust_bar(rules["min_stars"], rules["min_ratings"], rules["min_positive"])
+        return f"{line[:-1]}, below our bar of {bar}." if line else f"No seller ratings shown; we need {bar}."
+    if reason == "small_saving":
+        used = str(_get(o, "condition") or "new").strip().lower() != "new"
+        return copy.SMALL_SAVING_USED if used else copy.SMALL_SAVING_NEW
+    return copy.SKIP[reason] + "."
 
 
 def version_signal(asin: str, results: dict) -> dict:
@@ -443,6 +502,14 @@ def _amazon_response(offers: list) -> Optional[dict]:
             "price": _total(a), "arrives": day.isoformat()}
 
 
+def _timing(price: dict) -> dict:
+    """What the panel says about buying now vs later when it isn't saying Wait."""
+    if price["status"] == "ok":
+        return {"status": "buy", "text": copy.timing_buy(price["drop_chance"])}
+    why = str(price.get("why", ""))
+    return {"status": "unknown", "text": copy.TIMING_STALE if "out of date" in why else copy.TIMING_NEW}
+
+
 def decide(signals: dict) -> dict:
     """Combine the signals into the decision endpoint's response (decision.ts Decision).
 
@@ -458,7 +525,12 @@ def decide(signals: dict) -> dict:
     best = offer.get("best") if offer["status"] == "ok" else None
     can_wait = quiet["status"] == "ok" and quiet["wait_worth_showing"]
     base = {"offers_checked": signals["offers_checked"], "amazon": signals["amazon"], "best": None,
-            "wait": None, "next_best": None}
+            "wait": None, "next_best": None,
+            "passed": offer.get("passed", []) if offer["status"] == "ok" else [],
+            "passed_count": offer.get("passed_count", 0) if offer["status"] == "ok" else 0,
+            "pick_why": offer.get("pick_why") if offer["status"] == "ok" else None,
+            "ranking": offer.get("ranking", []) if offer["status"] == "ok" else [],
+            "timing": None if can_wait else _timing(price)}
 
     if best and can_wait:
         p = price["drop_chance"]
@@ -504,5 +576,5 @@ def decide(signals: dict) -> dict:
     item_price = (price["price"] if price["status"] == "ok"
                   else (signals["amazon"] or {}).get("price") or signals.get("page_price"))
     cheap = item_price is not None and item_price < signals["min_price"]
-    return {**base, "show": bool(next_best) or not cheap, "status": "nothing_better",
+    return {**base, "show": bool(next_best) or bool(base["passed"]) or not cheap, "status": "nothing_better",
             "reason": copy.headline_buy_here(), "next_best": next_best}

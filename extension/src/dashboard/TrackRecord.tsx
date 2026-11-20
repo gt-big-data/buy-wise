@@ -94,15 +94,10 @@ export default function TrackRecord() {
               <p className="db-muted">saved by right Wait calls</p>
             </div>
             <div>
-              <p className="db-stat db-mono db-caution">{money(record.lost_waiting + record.missed_drops)}</p>
-              <p className="db-muted">lost or missed when it was wrong</p>
+              <p className="db-stat db-mono">{pct(record.hit_rate)}</p>
+              <p className="db-muted">of {record.calls.toLocaleString("en-US")} Buy and Wait calls were right</p>
             </div>
           </div>
-          <p className="db-muted db-note">
-            {money(record.lost_waiting)} paid extra by waiting when the price didn't drop, and {money(record.missed_drops)} in
-            drops that came after it said Buy. Overall {pct(record.hit_rate)} of {record.calls.toLocaleString("en-US")} calls
-            were right, but most were Buy calls on prices that didn't move.
-          </p>
 
           <h3>Biggest wins</h3>
           <CallList calls={record.wins} right={true} />

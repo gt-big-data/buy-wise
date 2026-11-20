@@ -111,9 +111,8 @@ def get_track_record() -> dict:
 # ── Replay a past call ───────────────────────────────────────────────────────
 
 REPLAY_RULE = ("The 3 biggest savings from right Wait calls, the biggest overpay from a wrong Wait, "
-               "the biggest drop missed after a Buy, and the 2 biggest price rises after a right Buy. "
-               "One call per product.")
-REPLAY_PICKS = (("wait_right", 3), ("wait_wrong", 1), ("buy_wrong", 1), ("buy_right", 2))
+               "and the 2 biggest price rises after a right Buy. One call per product.")
+REPLAY_PICKS = (("wait_right", 3), ("wait_wrong", 1), ("buy_right", 2))
 DAYS_BEFORE = 60
 
 

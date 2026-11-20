@@ -56,7 +56,7 @@ def _decision_ts_fields():
     """Field names of the Decision type the panel reads."""
     ts = (ROOT / "extension/src/content/decision.ts").read_text()
     body = re.search(r"export type Decision = \{(.*?)\n\};", ts, re.S).group(1)
-    return set(re.findall(r"^\s+(\w+):", body, re.M))
+    return set(re.findall(r"^\s+(\w+)\??:", body, re.M))
 
 
 def test_output_is_exactly_the_panel_format():

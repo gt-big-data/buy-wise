@@ -30,7 +30,19 @@ export type Decision = {
   // drops is null when our price history is too old to say what happened recently.
   wait: { price: number; expected_low: number; drop_chance: number; drops: number | null; months: number } | null;
   next_best: { price: number; days_later: number } | null;
+  // Cheaper offers we didn't recommend (cheapest first, at most 3) and why, with their seller ratings.
+  passed?: { seller: string; condition: string; price: number; why: string }[];
+  passed_count?: number;
+  // The Add to Cart seller's ratings, or "Sold by Amazon."
+  pick_why?: string | null;
+  // Every offer in BuyWise's order, with its verdict (best, add_to_cart, costs_more,
+  // small_saving, condition_profile, slow_shipping, low_ratings)
+  ranking?: RankedOffer[];
+  // Buy-now line when the panel isn't saying Wait
+  timing?: { status: "buy" | "unknown"; text: string } | null;
 };
+
+export type RankedOffer = { seller: string; price: number; condition: string; verdict: string };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -73,6 +85,7 @@ export function toPanelData(d: Decision, today = new Date(), pagePrice: number |
         freeReturns: d.best.free_returns ?? null,
         fullWarranty: d.best.full_warranty ?? null,
       },
+      passed: d.passed ?? [],
     };
   }
 
@@ -93,5 +106,9 @@ export function toPanelData(d: Decision, today = new Date(), pagePrice: number |
     state: "nothing_better",
     offersChecked: d.offers_checked,
     nextBest: d.next_best ? { price: d.next_best.price, daysLater: d.next_best.days_later } : null,
+    pickWhy: d.pick_why ?? null,
+    timing: d.timing ?? null,
+    passed: d.passed ?? [],
+    passedCount: d.passed_count ?? (d.passed?.length ?? 0),
   };
 }

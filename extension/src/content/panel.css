@@ -1,21 +1,42 @@
-/* Panel styles. Colors match website/app/globals.css, keep them in sync. */
+/* Panel styles */
 
 #buywise-root {
   all: initial;
   display: block;
-  margin: 12px 0;
 
-  --bw-paper: #f7f7f4;
+  --bw-ink: #14161a;
+  --bw-ink-2: #3a3f47;
+  --bw-muted: #6b7280;
+  --bw-line: #eceef1;
   --bw-card: #ffffff;
-  --bw-ink: #111311;
-  --bw-ink-2: #2c302d;
-  --bw-muted: #5f665f;
-  --bw-line: #e2e4df;
-  --bw-line-strong: #c9ccc6;
-  --bw-brand: #13853d;
-  --bw-brand-ink: #0e6b31;
-  --bw-caution: #8a6100;
-  --bw-radius: 6px;
+  --bw-paper: #f7f8fa;
+  --bw-green: #12a150;
+  --bw-green-dark: #0b7a3b;
+  --bw-green-soft: #e8f7ee;
+  --bw-amber: #e8930c;
+  --bw-amber-dark: #8a5300;
+  --bw-amber-soft: #fff4de;
+  --bw-blue: #2f6bea;
+  --bw-blue-dark: #1d3f94;
+  --bw-blue-soft: #eaf0ff;
+  --bw-caution: #a15c00;
+
+  --bw-tone: var(--bw-green);
+  --bw-tone-dark: var(--bw-green-dark);
+  --bw-tone-soft: var(--bw-green-soft);
+}
+
+#buywise-root,
+#buywise-root * {
+  box-sizing: border-box;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#buywise-root p,
+#buywise-root ul,
+#buywise-root li {
+  margin: 0;
+  padding: 0;
 }
 
 #buywise-root.bw-floating {
@@ -23,321 +44,583 @@
   top: 16px;
   right: 16px;
   z-index: 2147483647;
-  width: 340px;
+  width: 368px;
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   margin: 0;
-  border-radius: var(--bw-radius);
-  box-shadow: 0 8px 24px rgb(17 19 17 / 0.16);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgb(15 23 42 / 0.22), 0 2px 6px rgb(15 23 42 / 0.08);
+  animation: bw-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-#buywise-root * {
-  box-sizing: border-box;
-  margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+#buywise-root.bw-floating.bw-left {
+  right: auto;
+  left: 16px;
+}
+
+#buywise-root.bw-floating:has(.bw-chip) {
+  width: auto;
+  border-radius: 999px;
+}
+
+@keyframes bw-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 #buywise-root .bw-panel {
   background: var(--bw-card);
-  border: 1px solid var(--bw-line-strong);
-  border-radius: var(--bw-radius);
   color: var(--bw-ink);
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
+#buywise-root .bw-panel[hidden] {
+  display: none;
+}
+
+#buywise-root .bw-tone--good {
+  --bw-tone: var(--bw-green);
+  --bw-tone-dark: var(--bw-green-dark);
+  --bw-tone-soft: var(--bw-green-soft);
+}
+
+#buywise-root .bw-tone--wait {
+  --bw-tone: var(--bw-amber);
+  --bw-tone-dark: var(--bw-amber-dark);
+  --bw-tone-soft: var(--bw-amber-soft);
+}
+
+#buywise-root .bw-tone--buy {
+  --bw-tone: var(--bw-blue);
+  --bw-tone-dark: var(--bw-blue-dark);
+  --bw-tone-soft: var(--bw-blue-soft);
+}
+
+#buywise-root .bw-tone--neutral {
+  --bw-tone: #4b5563;
+  --bw-tone-dark: #1f2937;
+  --bw-tone-soft: #f2f4f7;
+}
+
+/* Header */
 #buywise-root .bw-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 8px 8px 14px;
-  border-bottom: 1px solid var(--bw-line);
-  font-size: 13px;
-  color: var(--bw-muted);
+  padding: 12px 14px 12px 16px;
+  background: linear-gradient(135deg, #0f9d58 0%, #0b6e3a 100%);
+  color: #fff;
+}
+
+#buywise-root .bw-logo {
+  filter: brightness(0) invert(1);
 }
 
 #buywise-root .bw-name {
-  font-weight: 500;
-  color: var(--bw-ink);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+#buywise-root .bw-head-chip {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+#buywise-root .bw-dash-link {
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid rgb(255 255 255 / 0.4);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#buywise-root .bw-dash-link:hover {
+  background: rgb(255 255 255 / 0.24);
 }
 
 #buywise-root .bw-close {
-  margin-left: auto;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 8px;
   background: none;
-  color: var(--bw-muted);
-  font-size: 18px;
+  color: #fff;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
 }
 
 #buywise-root .bw-close:hover {
-  background: var(--bw-paper);
-  color: var(--bw-ink);
+  background: rgb(255 255 255 / 0.16);
 }
 
+/* Body */
 #buywise-root .bw-body {
-  padding: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-#buywise-root .bw-headline {
-  font-size: 17px;
-  font-weight: 600;
+#buywise-root .bw-hero {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--bw-tone-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#buywise-root .bw-badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bw-tone);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#buywise-root .bw-big {
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--bw-tone-dark);
+}
+
+#buywise-root .bw-big-sub {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--bw-tone);
+}
+
+#buywise-root .bw-title {
+  font-size: 18px;
+  font-weight: 800;
   line-height: 1.3;
   letter-spacing: -0.01em;
+  color: var(--bw-tone-dark);
 }
 
-#buywise-root .bw-rows {
-  margin-top: 12px;
-  border-top: 1px solid var(--bw-line);
-  border-bottom: 1px solid var(--bw-line);
-  font-size: 14px;
-}
-
-#buywise-root .bw-rows > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-}
-
-#buywise-root .bw-rows > div + div {
-  border-top: 1px solid var(--bw-line);
-}
-
-#buywise-root dt {
-  color: var(--bw-muted);
-}
-
-#buywise-root .bw-note {
-  margin-top: 10px;
+#buywise-root .bw-sub {
+  color: var(--bw-ink-2);
   font-size: 13px;
-  line-height: 1.5;
-  color: var(--bw-muted);
 }
 
-#buywise-root .bw-mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+#buywise-root .bw-fine {
+  color: var(--bw-muted);
+  font-size: 12px;
 }
 
 #buywise-root .bw-strong {
-  font-weight: 500;
-  color: var(--bw-ink);
+  font-weight: 700;
 }
 
-#buywise-root .bw-good {
-  color: var(--bw-brand);
-}
-
-#buywise-root .bw-good-ink {
-  color: var(--bw-brand-ink);
+#buywise-root .bw-mono {
+  font-variant-numeric: tabular-nums;
 }
 
 #buywise-root .bw-caution {
   color: var(--bw-caution);
 }
 
-#buywise-root .bw-button {
-  margin-top: 12px;
-  height: 36px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: var(--bw-radius);
-  background: var(--bw-ink);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
+#buywise-root .bw-good {
+  color: var(--bw-green-dark);
+  font-weight: 700;
 }
 
-#buywise-root .bw-button:hover {
-  background: var(--bw-ink-2);
-}
-
-#buywise-root dt {
-  color: var(--bw-muted);
-  font-weight: 400;
-}
-
-#buywise-root .bw-compare {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-#buywise-root .bw-offer {
-  padding: 10px;
-  border: 1px solid var(--bw-line);
-  border-radius: var(--bw-radius);
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--bw-muted);
-}
-
-#buywise-root .bw-offer--best {
-  border-color: var(--bw-ink);
-}
-
-#buywise-root .bw-offer-label {
-  font-weight: 500;
-  color: var(--bw-ink);
-}
-
-#buywise-root .bw-offer-price {
-  margin-top: 4px;
-  font-size: 17px;
-  color: var(--bw-ink);
-}
-
-#buywise-root .bw-offer-seller {
-  margin-top: 4px;
-  color: var(--bw-ink-2);
-}
-
-#buywise-root .bw-watch {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--bw-line);
-  font-size: 13px;
-}
-
-#buywise-root .bw-watch-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--bw-ink);
-}
-
-#buywise-root .bw-watch-row {
-  margin-top: 8px;
+/* Best offer card */
+#buywise-root .bw-best {
+  border: 2px solid var(--bw-tone);
+  border-radius: 16px;
+  padding: 14px;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 6px 18px rgb(18 161 80 / 0.12);
 }
 
-#buywise-root .bw-money-input {
+#buywise-root .bw-best-top {
   display: flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 8px;
-  border: 1px solid var(--bw-line-strong);
-  border-radius: var(--bw-radius);
-  font-size: 14px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+#buywise-root .bw-best-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bw-tone-dark);
+}
+
+#buywise-root .bw-best-price {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+#buywise-root .bw-best-seller {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#buywise-root .bw-best-meta {
   color: var(--bw-muted);
-}
-
-#buywise-root .bw-money-input:focus-within {
-  border-color: var(--bw-ink);
-}
-
-#buywise-root .bw-money-input input {
-  width: 64px;
-  margin-left: 2px;
-  border: 0;
-  outline: none;
-  background: none;
-  font-size: 14px;
-  color: var(--bw-ink);
-}
-
-#buywise-root .bw-button--inline {
-  margin-top: 0;
-}
-
-#buywise-root .bw-button:disabled {
-  background: var(--bw-line-strong);
-  cursor: default;
-}
-
-#buywise-root .bw-link {
-  padding: 0;
-  border: 0;
-  background: none;
   font-size: 13px;
-  color: var(--bw-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
 }
 
-#buywise-root .bw-link:hover {
-  color: var(--bw-ink);
-}
-
-/* Other sellers (#69) */
-
-#buywise-root .bw-offers {
-  padding: 12px 14px 14px;
-  border-top: 1px solid var(--bw-line);
-  font-size: 13px;
-  color: var(--bw-ink);
-}
-
-#buywise-root .bw-note--tight {
+#buywise-root .bw-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 2px;
 }
 
-#buywise-root .bw-button--quiet {
-  height: 32px;
-  border: 1px solid var(--bw-line-strong);
-  background: var(--bw-card);
-  color: var(--bw-ink);
-  font-size: 13px;
-}
-
-#buywise-root .bw-button--quiet:hover {
+#buywise-root .bw-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
   background: var(--bw-paper);
+  color: var(--bw-ink-2);
+  font-size: 12px;
+  font-weight: 600;
 }
 
-#buywise-root .bw-offer-list {
-  margin-top: 10px;
-  padding: 0;
+#buywise-root .bw-pill--good {
+  background: var(--bw-green-soft);
+  color: var(--bw-green-dark);
+}
+
+#buywise-root .bw-pill--warn {
+  background: var(--bw-amber-soft);
+  color: var(--bw-amber-dark);
+}
+
+#buywise-root .bw-cta {
+  margin-top: 6px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bw-tone);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+#buywise-root .bw-cta:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+#buywise-root .bw-vs {
+  color: var(--bw-muted);
+  font-size: 12px;
+}
+
+#buywise-root .bw-vs s {
+  color: var(--bw-ink-2);
+}
+
+/* Why not the cheaper ones */
+#buywise-root .bw-details {
+  border-radius: 12px;
+  background: var(--bw-paper);
+  padding: 10px 12px;
+}
+
+#buywise-root .bw-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--bw-ink-2);
+}
+
+#buywise-root .bw-passed {
   list-style: none;
+  margin-top: 8px;
 }
 
-#buywise-root .bw-offer-list > li {
+#buywise-root .bw-passed li {
   padding: 8px 0;
   border-top: 1px solid var(--bw-line);
 }
 
+#buywise-root .bw-passed-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+#buywise-root .bw-passed-why {
+  color: var(--bw-muted);
+  font-size: 12px;
+}
+
+/* Timing */
+#buywise-root .bw-timing {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bw-paper);
+  color: var(--bw-ink-2);
+  font-size: 12px;
+}
+
+#buywise-root .bw-timing--buy {
+  background: var(--bw-blue-soft);
+  color: var(--bw-blue-dark);
+  font-weight: 600;
+}
+
+/* Wait stats */
+#buywise-root .bw-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+#buywise-root .bw-stats > div {
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--bw-line);
+}
+
+#buywise-root .bw-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bw-muted);
+}
+
+#buywise-root .bw-stat {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+#buywise-root .bw-stat--tone {
+  color: var(--bw-tone-dark);
+}
+
+#buywise-root .bw-stat-foot {
+  font-size: 11px;
+  color: var(--bw-muted);
+}
+
+/* Buttons */
+#buywise-root .bw-button {
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bw-tone);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#buywise-root .bw-button--quiet {
+  background: var(--bw-paper);
+  color: var(--bw-ink);
+  border: 1px solid var(--bw-line);
+  font-weight: 600;
+}
+
+#buywise-root .bw-button--inline {
+  width: auto;
+  padding: 9px 16px;
+}
+
+#buywise-root .bw-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#buywise-root .bw-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--bw-tone-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Watch flow */
+#buywise-root .bw-watch {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#buywise-root .bw-watch-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#buywise-root .bw-watch-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#buywise-root .bw-money-input {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--bw-line);
+  border-radius: 10px;
+}
+
+#buywise-root .bw-money-input input {
+  border: 0;
+  outline: none;
+  width: 100%;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#buywise-root .bw-note {
+  color: var(--bw-muted);
+  font-size: 12px;
+}
+
+/* Loading */
+#buywise-root .bw-loader {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--bw-line) 0%, #d4d8de 50%, var(--bw-line) 100%);
+  background-size: 200% 100%;
+  animation: bw-shimmer 1.1s linear infinite;
+}
+
+@keyframes bw-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Minimized chip */
+#buywise-root .bw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #0f9d58 0%, #0b6e3a 100%);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Other offers: kept quiet */
+#buywise-root .bw-offers {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--bw-line);
+  background: var(--bw-paper);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+}
+
+#buywise-root .bw-offers > .bw-strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bw-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#buywise-root .bw-note--tight {
+  margin-top: -4px;
+}
+
+#buywise-root .bw-offer-list {
+  list-style: none;
+  border-radius: 12px;
+  background: var(--bw-card);
+  border: 1px solid var(--bw-line);
+  overflow: hidden;
+}
+
+#buywise-root .bw-offer-list li {
+  padding: 9px 12px;
+  border-top: 1px solid var(--bw-line);
+}
+
+#buywise-root .bw-offer-list li:first-child {
+  border-top: 0;
+}
+
 #buywise-root .bw-offer-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+  font-size: 13px;
+}
+
+#buywise-root .bw-offer-detail {
+  color: var(--bw-muted);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 #buywise-root .bw-tag {
   margin-left: auto;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--bw-muted);
+  white-space: nowrap;
 }
 
-#buywise-root .bw-offer-detail {
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--bw-muted);
-}
-
-#buywise-root .bw-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 32px;
-  padding: 0 12px;
-  border: 1px solid var(--bw-line-strong);
+#buywise-root .bw-tag--good,
+#buywise-root .bw-tag--skip {
+  padding: 2px 8px;
   border-radius: 999px;
-  background: var(--bw-card);
-  color: var(--bw-ink);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
 }
 
-#buywise-root.bw-floating:has(.bw-chip) {
-  width: auto;
-  border-radius: 999px;
+#buywise-root .bw-tag--good {
+  background: var(--bw-green-soft);
+  color: var(--bw-green-dark);
+  font-weight: 800;
+}
+
+#buywise-root .bw-tag--skip {
+  background: var(--bw-amber-soft);
+  color: var(--bw-amber-dark);
+}
+
+#buywise-root .bw-verdict--good {
+  background: linear-gradient(90deg, var(--bw-green-soft), #fff 70%);
+}
+
+#buywise-root .bw-verdict--skip {
+  opacity: 0.6;
 }

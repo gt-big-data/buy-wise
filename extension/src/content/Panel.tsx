@@ -6,6 +6,7 @@ import OffersSection from "./OffersSection";
 import { OfferListResult } from "./offerList";
 import { LABEL, PANEL_STATUS, SOLD_BY_AMAZON, checkedOffers, dropChanceVsUsual, headline, ifDropsLine, trustLine } from "../../../website/app/preview/copy";
 import { defaultTarget, targetText } from "./watchTarget";
+import type { RankedOffer } from "./decision";
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 
@@ -26,7 +27,9 @@ type Props = {
   // Set when the dashboard replays a past call: the panel as it would have looked that
   // day, with nothing to click and no claims about that day's other sellers.
   replayDate?: string;
+  ranking?: RankedOffer[];
 };
+
 
 export default function Panel({
   data,
@@ -39,11 +42,20 @@ export default function Panel({
   partialOffers,
   onOfferList,
   replayDate,
+  ranking,
 }: Props) {
   const [minimized, setMinimized] = useState(false);
   const answer = status === "ready" ? data : null;
+  const tone = !answer
+    ? "neutral"
+    : answer.state === "better_offer"
+      ? "good"
+      : answer.state === "wait"
+        ? "wait"
+        : answer.timing?.status === "buy"
+          ? "buy"
+          : "neutral";
 
-  // Stays mounted while minimized so the offer list keeps updating behind the chip
   return (
     <>
       {minimized && (
@@ -52,11 +64,24 @@ export default function Panel({
           BuyWise
         </button>
       )}
-      <div className="bw-panel" hidden={minimized}>
+      <div className={`bw-panel bw-tone--${tone}`} hidden={minimized}>
         <div className="bw-head">
-          <img src={markUrl} alt="" width={16} height={18} />
+          <img className="bw-logo" src={markUrl} alt="" width={18} height={20} />
           <span className="bw-name">BuyWise</span>
-          {replayDate ? <span>{replayDate}</span> : answer && <span>{checkedOffers(answer.offersChecked)}</span>}
+          {replayDate ? (
+            <span className="bw-head-chip">{replayDate}</span>
+          ) : (
+            answer && answer.offersChecked > 0 && <span className="bw-head-chip">{checkedOffers(answer.offersChecked)}</span>
+          )}
+          {!replayDate && (
+            <button
+              type="button"
+              className="bw-dash-link"
+              onClick={() => chrome.runtime.sendMessage({ type: "BUYWISE_OPEN_DASHBOARD" }).catch(() => undefined)}
+            >
+              Dashboard
+            </button>
+          )}
           {!replayDate && (
             <button type="button" className="bw-close" aria-label="Hide BuyWise on this page" onClick={onClose}>
               ×
@@ -68,14 +93,15 @@ export default function Panel({
           {answer?.state === "better_offer" && <BetterOffer data={answer} onSeeOffers={onSeeOffers} />}
           {answer?.state === "wait" && <Wait data={answer} replay={!!replayDate} />}
           {answer?.state === "nothing_better" && <NothingBetter data={answer} />}
-          {answer && partialOffers && <p className="bw-note">{PANEL_STATUS.partialOffers}</p>}
+          {answer && partialOffers && <p className="bw-fine">{PANEL_STATUS.partialOffers}</p>}
         </div>
         {offers && (
           <OffersSection
             offers={offers}
             recommendedPrice={answer?.state === "better_offer" ? answer.best.price : null}
-            onCompareOpen={() => setMinimized(true)}
+            onCompareOpen={() => document.getElementById("buywise-root")?.classList.add("bw-left")}
             onList={onOfferList}
+            ranking={ranking}
           />
         )}
       </div>
@@ -84,98 +110,129 @@ export default function Panel({
 }
 
 function NoAnswer({ status, onRetry }: { status: PanelStatus; onRetry?: () => void }) {
-  if (status === "loading") return <p className="bw-note">{PANEL_STATUS.loading}</p>;
-  if (status === "not_tracked") return <p className="bw-note">{PANEL_STATUS.notTracked}</p>;
+  if (status === "loading")
+    return (
+      <div className="bw-hero">
+        <div className="bw-loader" aria-hidden="true" />
+        <p className="bw-sub">{PANEL_STATUS.loading}</p>
+      </div>
+    );
+  if (status === "not_tracked") return <p className="bw-sub">{PANEL_STATUS.notTracked}</p>;
   return (
-    <>
-      <p className="bw-note bw-caution">{status === "timeout" ? PANEL_STATUS.timeout : PANEL_STATUS.error}</p>
+    <div className="bw-hero">
+      <p className="bw-sub bw-caution">{status === "timeout" ? PANEL_STATUS.timeout : PANEL_STATUS.error}</p>
       {onRetry && (
         <button type="button" className="bw-button bw-button--quiet" onClick={onRetry}>
           {PANEL_STATUS.retry}
         </button>
       )}
-    </>
+    </div>
   );
 }
 
 function BetterOffer({ data, onSeeOffers }: { data: Extract<PanelData, { state: "better_offer" }>; onSeeOffers: () => void }) {
   const { amazon, best } = data;
-  const why =
+  const rating =
     best.stars !== null && best.ratingCount !== null && best.positivePercent !== null
       ? trustLine({ stars: best.stars, count: best.ratingCount, positive: best.positivePercent })
       : SOLD_BY_AMAZON;
   const warrantyMayNotApply = best.condition.trim().toLowerCase() !== "new" || best.fullWarranty === false;
+  const saving = amazon.price - best.price;
+  const pctOff = Math.round((saving / amazon.price) * 100);
 
   return (
     <>
-      <p className="bw-headline">
-        Same item, <span className="bw-good">{money(amazon.price - best.price)} less</span> from another seller.
-      </p>
-      <div className="bw-compare">
-        <div className="bw-offer">
-          <p className="bw-offer-label">Amazon's pick</p>
-          <p className="bw-offer-price bw-mono">{money(amazon.price)}</p>
-          <p className="bw-offer-seller">{amazon.seller}</p>
-          <p className="bw-offer-meta">
-            {amazon.condition}, arrives {amazon.arrives}
-          </p>
-        </div>
-        <div className="bw-offer bw-offer--best">
-          <p className="bw-offer-label">Best for you</p>
-          <p className="bw-offer-price bw-mono bw-good-ink">{money(best.price)}</p>
-          <p className="bw-offer-seller">{best.seller}</p>
-          <p className="bw-offer-meta">
-            {best.condition}, arrives {best.arrives}
-          </p>
-        </div>
+      <div className="bw-hero">
+        <span className="bw-badge">Better deal found</span>
+        <p className="bw-big">
+          {money(saving)} <span className="bw-big-sub">less · {pctOff}% off</span>
+        </p>
+        <p className="bw-sub">Same item from another seller.</p>
       </div>
-      <p className="bw-note">
-        <span className="bw-strong">Why: </span>
-        {why}
-        {best.freeReturns && " Free returns."}
-        {warrantyMayNotApply && (
-          <>
-            {" "}
-            <span className="bw-caution">May not include the manufacturer warranty.</span>
-          </>
-        )}
+
+      <div className="bw-best">
+        <div className="bw-best-top">
+          <span className="bw-best-label">Best for you</span>
+          <span className="bw-best-price bw-mono">{money(best.price)}</span>
+        </div>
+        <p className="bw-best-seller">{best.seller}</p>
+        <p className="bw-best-meta">
+          {best.condition} · arrives {best.arrives}
+        </p>
+        <p className="bw-pill-row">
+          <span className="bw-pill bw-pill--good">{rating}</span>
+          {best.freeReturns && <span className="bw-pill">Free returns</span>}
+          {warrantyMayNotApply && <span className="bw-pill bw-pill--warn">Warranty may not apply</span>}
+        </p>
+        <button type="button" className="bw-cta" onClick={onSeeOffers}>
+          See this offer →
+        </button>
+      </div>
+
+      <p className="bw-vs">
+        Add to Cart is <s className="bw-mono">{money(amazon.price)}</s> from {amazon.seller}, arrives {amazon.arrives}
       </p>
-      <button type="button" className="bw-button" onClick={onSeeOffers}>
-        See offer
-      </button>
+      <Passed offers={data.passed} />
     </>
+  );
+}
+
+function Passed({ offers }: { offers?: { seller: string; condition: string; price: number; why: string }[] }) {
+  if (!offers || offers.length === 0) return null;
+  return (
+    <details className="bw-details">
+      <summary>
+        Why not the {offers.length} cheaper offer{offers.length === 1 ? "" : "s"}?
+      </summary>
+      <ul className="bw-passed">
+        {offers.map((o) => (
+          <li key={o.seller + o.price}>
+            <p className="bw-passed-top">
+              <span className="bw-strong">{o.seller}</span>
+              <span className="bw-mono">{money(o.price)}</span>
+            </p>
+            <p className="bw-passed-why">
+              {o.condition} · {o.why}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
 function Wait({ data, replay }: { data: Extract<PanelData, { state: "wait" }>; replay: boolean }) {
   const note = [
-    data.drops !== null && `It dropped ${data.drops} times in the last ${data.months} months.`,
+    data.drops !== null && data.drops > 0 && `It dropped ${data.drops} times in the last ${data.months} months.`,
     !replay && "No other seller has it cheaper right now.",
   ].filter(Boolean);
   return (
     <>
-      <p className="bw-headline">{headline.wait(data.price)}</p>
-      <dl className="bw-rows">
+      <div className="bw-hero">
+        <span className="bw-badge">Wait</span>
+        <p className="bw-title">{headline.wait(data.price)}</p>
+      </div>
+      <div className="bw-stats">
         <div>
-          <dt>Price now</dt>
-          <dd className="bw-mono">{money(data.price)}</dd>
+          <p className="bw-stat-label">Price now</p>
+          <p className="bw-stat bw-mono">{money(data.price)}</p>
         </div>
         <div>
-          <dt>{LABEL.ifDrops}</dt>
-          <dd className="bw-mono">{ifDropsLine(data.price)}</dd>
+          <p className="bw-stat-label">{LABEL.ifDrops}</p>
+          <p className="bw-stat bw-mono bw-stat--tone">{ifDropsLine(data.price).replace(" or less", "")}</p>
         </div>
         <div>
-          <dt>{LABEL.dropChance}</dt>
-          <dd className="bw-mono">{dropChanceVsUsual(data.dropChance)}</dd>
+          <p className="bw-stat-label">Drop chance</p>
+          <p className="bw-stat bw-mono">{Math.round(data.dropChance * 100)}%</p>
+          <p className="bw-stat-foot">{dropChanceVsUsual(data.dropChance).includes("usually") ? "usually 18%" : ""}</p>
         </div>
-      </dl>
-      {note.length > 0 && <p className="bw-note">{note.join(" ")}</p>}
+      </div>
+      {note.length > 0 && <p className="bw-fine">{note.join(" ")}</p>}
       {!replay && data.expectedLow !== null && <WatchFlow price={data.price} expectedLow={data.expectedLow} />}
     </>
   );
 }
-// Tap Watch, set a target, get notified. The target is saved to the backend's
-// watchlist, and the background script checks prices against it (#74).
+
 function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number }) {
   const [step, setStep] = useState<"start" | "target" | "saving" | "watching">("start");
   const [target, setTarget] = useState(() => targetText(defaultTarget(price, expectedLow)));
@@ -247,11 +304,29 @@ function WatchFlow({ price, expectedLow }: { price: number; expectedLow: number 
 }
 
 function NothingBetter({ data }: { data: Extract<PanelData, { state: "nothing_better" }> }) {
+  const buy = data.timing?.status === "buy";
   return (
     <>
-      <p className="bw-headline">This is the best offer for you.</p>
+      <div className="bw-hero">
+        <span className="bw-badge">{buy ? "Buy now" : "Best offer"}</span>
+        <p className="bw-title">{buy ? "Good time to buy, and this is the best offer for you." : "This is the best offer for you."}</p>
+        {data.pickWhy && (
+          <p className="bw-sub">
+            {data.pickWhy}
+            {data.passedCount
+              ? ` We checked ${data.passedCount} cheaper offer${data.passedCount === 1 ? "" : "s"}; none was worth switching to.`
+              : " No other seller has it for less."}
+          </p>
+        )}
+      </div>
+      {data.timing && (
+        <p className={`bw-timing ${buy ? "bw-timing--buy" : ""}`}>
+          {buy ? data.timing.text.replace("Good time to buy. ", "") : data.timing.text}
+        </p>
+      )}
+      <Passed offers={data.passed} />
       {data.nextBest && (
-        <p className="bw-note">
+        <p className="bw-fine">
           Next best is {money(data.nextBest.price)} and arrives {data.nextBest.daysLater} days later.
         </p>
       )}

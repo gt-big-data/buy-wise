@@ -63,3 +63,19 @@ VERSION_LINE = {
     "same": "Reviews show no real difference between versions",
     "mixed": "Reviews are mixed between versions",
 }
+
+
+def trust_bar(min_stars: float, min_ratings: int, min_positive: float) -> str:
+    return f"{min_stars:.1f}+ stars, {int(min_positive)}%+ positive, {min_ratings}+ ratings"
+
+
+SMALL_SAVING_USED = "Not enough cheaper to be worth buying used over new."
+SMALL_SAVING_NEW = "Saves too little to be worth switching sellers."
+
+
+def timing_buy(p: float) -> str:
+    return f"Good time to buy. Waiting two weeks isn't likely to save you much ({pct(p)} chance of an 8%+ drop)."
+
+
+TIMING_STALE = "No buy-or-wait call: our price history for this item is out of date."
+TIMING_NEW = "No buy-or-wait call: we don't have price history for this item yet."

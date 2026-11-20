@@ -266,6 +266,25 @@ class DecisionNextBestResponse(BaseModel):
     days_later: int
 
 
+class DecisionRankResponse(BaseModel):
+    seller: str
+    price: float
+    condition: str
+    verdict: str
+
+
+class DecisionTimingResponse(BaseModel):
+    status: str
+    text: str
+
+
+class DecisionPassedResponse(BaseModel):
+    seller: str
+    condition: str
+    price: float
+    why: str
+
+
 class DecisionResponse(BaseModel):
     show: bool
     status: Literal["better_offer", "wait", "nothing_better"]
@@ -275,6 +294,11 @@ class DecisionResponse(BaseModel):
     reason: str
     wait: Optional[DecisionWaitResponse] = None
     next_best: Optional[DecisionNextBestResponse] = None
+    passed: list[DecisionPassedResponse] = []
+    ranking: list[DecisionRankResponse] = []
+    timing: Optional[DecisionTimingResponse] = None
+    passed_count: int = 0
+    pick_why: Optional[str] = None
 
 class DecisionLogRequest(BaseModel):
     asin: str
@@ -825,6 +849,11 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
             if decision.get("next_best")
             else None
         ),
+        passed=[DecisionPassedResponse(**p) for p in decision.get("passed", [])],
+        passed_count=decision.get("passed_count", 0),
+        pick_why=decision.get("pick_why"),
+        ranking=[DecisionRankResponse(**r) for r in decision.get("ranking", [])],
+        timing=DecisionTimingResponse(**decision["timing"]) if decision.get("timing") else None,
     )
 
 @app.post("/decision-log")

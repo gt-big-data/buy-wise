@@ -16,6 +16,7 @@ export type PanelData =
         freeReturns: boolean | null;
         fullWarranty: boolean | null;
       };
+      passed?: { seller: string; condition: string; price: number; why: string }[];
     }
   | {
       state: "wait";
@@ -30,6 +31,10 @@ export type PanelData =
       state: "nothing_better";
       offersChecked: number;
       nextBest: { price: number; daysLater: number } | null;
+      pickWhy?: string | null;
+      timing?: { status: "buy" | "unknown"; text: string } | null;
+      passed?: { seller: string; condition: string; price: number; why: string }[];
+      passedCount?: number;
     };
 
 function daysFromNow(n: number): string {

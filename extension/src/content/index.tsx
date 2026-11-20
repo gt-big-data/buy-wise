@@ -6,7 +6,7 @@ import { extractOffers } from "./offers";
 import { OfferListResult } from "./offerList";
 import { readVersions } from "./versions";
 import { buildDecisionRequest } from "./decisionRequest";
-import { Decision, toPanelData } from "./decision";
+import { Decision, RankedOffer, toPanelData } from "./decision";
 import { loadProfile, resolvedAnswers } from "../profile";
 import "./styles.css";
 import Panel, { PanelStatus } from "./Panel";
@@ -124,6 +124,7 @@ async function mountLivePanel(): Promise<boolean> {
   let partialOffers = true;
   let fullList: OfferListResult | null = null;
   let lastRequest = 0;
+  let ranking: RankedOffer[] = [];
 
   const render = () => {
     if (!isCurrent()) return;
@@ -138,6 +139,7 @@ async function mountLivePanel(): Promise<boolean> {
         offers={extractOffers()}
         partialOffers={partialOffers}
         onOfferList={onOfferList}
+        ranking={ranking}
       />
     );
   };
@@ -172,6 +174,7 @@ async function mountLivePanel(): Promise<boolean> {
       return;
     }
     data = next;
+    ranking = (res.decision as Decision).ranking ?? [];
     status = "ready";
     partialOffers = request.offers_source === "page";
     render();

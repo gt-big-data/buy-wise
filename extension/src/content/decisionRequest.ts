@@ -60,8 +60,8 @@ export function toIsoDate(text: string | null | undefined, today = new Date()): 
     if (d.getTime() < start.getTime() - 31 * 86_400_000) d = new Date(start.getFullYear() + 1, month, day);
     return d.getMonth() === month ? iso(d) : null;
   }
-  if (/\btoday\b/.test(t)) return iso(start);
-  if (/\btomorrow\b/.test(t)) return iso(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1));
+  if (/\btoday\b|\barrives in \d+\s*(min|minute|hour|hr)/.test(t)) return iso(start);
+  if (/\btomorrow\b|\bovernight\b/.test(t)) return iso(new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1));
   return null;
 }
 

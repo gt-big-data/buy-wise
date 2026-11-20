@@ -2,12 +2,19 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { PageOffers } from "./offers";
 import { Offer, OfferListResult } from "./offerList";
 import { openOffersPanel, watchOfferList } from "./offerPanel";
+import type { RankedOffer } from "./decision";
 
 // Other sellers, in the panel's style. Shows Amazon's summary box right away and
 // the full list once the shopper asks for it (Amazon only loads it on click).
 
 const money = (n: number) => `$${n.toFixed(2)}`;
 const total = (o: Offer) => o.price + (o.shippingCost ?? 0);
+const sellerRating = (o: Offer) =>
+  /^amazon/i.test(o.seller)
+    ? "Run by Amazon, Amazon returns"
+    : o.stars !== null && o.ratingCount !== null && o.positivePercent !== null
+      ? `${o.stars.toFixed(1)}★ · ${o.ratingCount.toLocaleString("en-US")} ratings · ${Math.round(o.positivePercent)}% positive`
+      : "No seller ratings shown";
 
 type Props = {
   offers: PageOffers;
@@ -17,10 +24,28 @@ type Props = {
   onList?: (list: OfferListResult) => void;
   // The panel's recommended offer, if it named one. A cheaper offer here is one we passed on.
   recommendedPrice?: number | null;
+  // BuyWise's order and verdict for each offer, from the decision endpoint
+  ranking?: RankedOffer[];
 };
 
-export default function OffersSection({ offers, onCompareOpen, onList, recommendedPrice = null }: Props) {
+const VERDICT: Record<string, { label: string; tone: "good" | "plain" | "skip" }> = {
+  best: { label: "Best for you", tone: "good" },
+  add_to_cart: { label: "Add to Cart", tone: "plain" },
+  costs_more: { label: "Good seller, costs more", tone: "plain" },
+  small_saving: { label: "Saves too little", tone: "plain" },
+  condition_profile: { label: "Not your condition", tone: "skip" },
+  slow_shipping: { label: "Arrives too late", tone: "skip" },
+  low_ratings: { label: "Low seller ratings", tone: "skip" },
+};
+
+function verdictFor(o: Offer, ranking: RankedOffer[]): { rank: number; verdict: string | null } {
+  const i = ranking.findIndex((r) => r.seller === o.seller && Math.abs(r.price - total(o)) < 0.01);
+  return i >= 0 ? { rank: i, verdict: ranking[i].verdict } : { rank: Number.MAX_SAFE_INTEGER, verdict: null };
+}
+
+export default function OffersSection({ offers, onCompareOpen, onList, recommendedPrice = null, ranking = [] }: Props) {
   const [list, setList] = useState<OfferListResult | null>(null);
+  const [showSkipped, setShowSkipped] = useState(false);
   const [comparing, setComparing] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
 
@@ -45,7 +70,15 @@ export default function OffersSection({ offers, onCompareOpen, onList, recommend
 
   const lowest = offers.otherOffersLowestPrice;
   const savings = lowest !== null && offers.oneTimePrice !== null ? offers.oneTimePrice - lowest : null;
-  const sorted = list?.status === "ok" ? [...list.offers].sort((a, b) => total(a) - total(b)) : [];
+  const ranked =
+    list?.status === "ok"
+      ? [...list.offers]
+          .map((o) => ({ o, ...verdictFor(o, ranking) }))
+          .sort((a, b) => a.rank - b.rank || total(a.o) - total(b.o))
+      : [];
+  const isSkip = (v: string | null) => v !== null && VERDICT[v]?.tone === "skip";
+  const skippedCount = ranked.filter((r) => isSkip(r.verdict)).length;
+  const visible = showSkipped ? ranked : ranked.filter((r) => !isSkip(r.verdict));
   const shown = list?.offers.filter((o) => !o.pinned).length ?? 0;
   const cheapestNotRecommended = recommendedPrice !== null && lowest !== null && lowest < recommendedPrice - 0.005;
 
@@ -83,12 +116,16 @@ export default function OffersSection({ offers, onCompareOpen, onList, recommend
       {list?.status === "ok" && (
         <>
           <ul className="bw-offer-list">
-            {sorted.map((o, i) => (
-              <li key={`${o.sellerId ?? o.seller}-${i}`}>
+            {visible.map(({ o, verdict }, i) => (
+              <li key={`${o.sellerId ?? o.seller}-${i}`} className={verdict ? `bw-verdict--${VERDICT[verdict]?.tone ?? "plain"}` : undefined}>
                 <div className="bw-offer-row">
                   <span className="bw-mono bw-strong">{money(total(o))}</span>
                   <span>{o.condition ?? "Unknown condition"}</span>
-                  {o.pinned && <span className="bw-tag">Add to Cart</span>}
+                  {verdict && VERDICT[verdict] ? (
+                    <span className={`bw-tag bw-tag--${VERDICT[verdict].tone}`}>{VERDICT[verdict].label}</span>
+                  ) : (
+                    o.pinned && <span className="bw-tag">Add to Cart</span>
+                  )}
                 </div>
                 <p className="bw-offer-detail">
                   {o.seller}
@@ -99,9 +136,15 @@ export default function OffersSection({ offers, onCompareOpen, onList, recommend
                       : ""}
                   {o.deliveryDate ? ` · ${o.deliveryDate}` : ""}
                 </p>
+                <p className="bw-offer-detail">{sellerRating(o)}</p>
               </li>
             ))}
           </ul>
+          {skippedCount > 0 && (
+            <button type="button" className="bw-button bw-button--quiet" onClick={() => setShowSkipped((s) => !s)}>
+              {showSkipped ? "Hide offers we'd skip" : `Show ${skippedCount} offer${skippedCount === 1 ? "" : "s"} we'd skip`}
+            </button>
+          )}
           {list.totalCount !== null && list.totalCount > shown && (
             <p className="bw-note">
               Showing {shown} of {list.totalCount}. Scroll Amazon's list to load more.
