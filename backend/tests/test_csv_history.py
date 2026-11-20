@@ -11,17 +11,17 @@ from jobs import csv_history
 TODAY = datetime(2026, 11, 20, 15, 30)
 
 
-def test_histories_end_today_with_the_original_gaps_and_prices():
+def test_histories_keep_their_real_dates_and_prices():
+    """No shift to today: the history ends in April 2026, where the dataset does."""
     from ml.bench.data import load_prices
     raw = load_prices(csv_history.SOURCES[0]).dropna(subset=["price"])
     asin = raw.asin.iloc[0]
     raw = raw[(raw.asin == asin) & (raw.price > 0)].sort_values("date")
 
-    records = csv_history.fetch_price_history(asin, today=TODAY)
-    assert records[-1]["timestamp"].date() == TODAY.date()
+    records = csv_history.fetch_price_history(asin)
+    assert [r["timestamp"] for r in records] == [d.to_pydatetime() for d in raw.date]
     assert [r["price"] for r in records] == [round(p, 2) for p in raw.price]
-    gaps = [(b["timestamp"] - a["timestamp"]).days for a, b in zip(records, records[1:])]
-    assert gaps == [d.days for d in raw.date.diff().dropna()]
+    assert records[-1]["timestamp"] < datetime(2026, 5, 1)
 
 
 def test_newer_dataset_wins_and_both_are_covered():
@@ -29,11 +29,11 @@ def test_newer_dataset_wins_and_both_are_covered():
     older = set(csv_history._by_asin(csv_history.SOURCES[1]))
     assert len(april | older) == 649
     only_older = next(iter(older - april))
-    assert csv_history.known(only_older) and csv_history.fetch_price_history(only_older, today=TODAY)
+    assert csv_history.known(only_older) and csv_history.fetch_price_history(only_older)
 
 
 def test_unknown_products_have_no_history():
-    assert csv_history.fetch_price_history("B0NOTREAL0", today=TODAY) == []
+    assert csv_history.fetch_price_history("B0NOTREAL0") == []
     assert csv_history.save("B0NOTREAL0", []) is False
 
 
@@ -42,7 +42,7 @@ def test_enough_history_for_the_model_on_almost_every_product():
     long_enough = 0
     asins = set(csv_history._by_asin(csv_history.SOURCES[0])) | set(csv_history._by_asin(csv_history.SOURCES[1]))
     for asin in asins:
-        r = csv_history.fetch_price_history(asin, today=TODAY)
+        r = csv_history.fetch_price_history(asin)
         long_enough += (r[-1]["timestamp"] - r[0]["timestamp"]).days >= 60
     assert long_enough / len(asins) > 0.9
 

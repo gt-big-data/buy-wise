@@ -21,9 +21,9 @@ export type PanelData =
       state: "wait";
       offersChecked: number;
       price: number;
-      expectedLow: number;
+      expectedLow: number | null;
       dropChance: number;
-      drops: number;
+      drops: number | null;
       months: number;
     }
   | {

@@ -125,6 +125,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "BUYWISE_GET_REPLAY") {
+    const path = message.asin ? `/track-record/replay/${message.asin}/${message.day}` : "/track-record/replay";
+    fetch(`${BACKEND_URL}${path}`)
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.detail ?? `replay: ${r.status}`);
+        }
+        return r.json();
+      })
+      .then((replay) => sendResponse({ ok: true, replay }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
   if (message?.type === "BUYWISE_CHECK_PRICES") {
     checkPrices()
       .then((sent) => sendResponse({ ok: true, sent }))

@@ -8,9 +8,10 @@ products between them, the same data every model and study was built on:
 
 When the extension opens one of these products and the database doesn't have it yet,
 the backend loads its history from here, the way it used to call Keepa. Both datasets
-end in April 2026, so each history is shifted to end today (scripts/make_real_seed.py
-does the same for seed_real.sql). Gaps between price changes, drops and their sizes
-are kept exactly; only the calendar moves.
+end in April 2026, and the dates stay real: a history ends in April, not today. The
+model forward-fills the last April price to today, and the decision guard
+(analysis.signals.history_out_of_date) turns WAIT off when the page price has moved
+more than 10% since then.
 
 In Docker, studies/ is mounted at /studies (docker-compose.yml). Set STUDIES_DIR to
 read it from somewhere else.
@@ -19,10 +20,8 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -77,8 +76,13 @@ def known(asin: str) -> bool:
     return any(asin in _by_asin(p) for p in SOURCES)
 
 
-def fetch_price_history(asin: str, today: Optional[datetime] = None) -> list[dict]:
-    """The product's price records, shifted to end today. [] if no dataset has it.
+def rows(asin: str, path: Path):
+    """One product's rows in one dataset (asin, date, price, ...), oldest first, or None."""
+    return _by_asin(path).get(asin)
+
+
+def fetch_price_history(asin: str) -> list[dict]:
+    """The product's price records, with their real dates. [] if no dataset has it.
 
     Same record shape as jobs.keepa_fetch: price, timestamp (datetime), used_price,
     list_price, sales_rank, count_new, count_used."""
@@ -87,17 +91,15 @@ def fetch_price_history(asin: str, today: Optional[datetime] = None) -> list[dic
         g = _by_asin(path).get(asin)
         if g is None or g.empty:
             continue
-        end = (today or datetime.now(timezone.utc)).replace(tzinfo=None)
-        shift = pd.Timestamp(end.date()) - g.date.max().normalize()
         records = []
         for row in g.itertuples(index=False):
-            rec = {"price": round(float(row.price), 2),
-                   "timestamp": (row.date + shift).to_pydatetime()}
+            rec = {"price": round(float(row.price), 2), "timestamp": row.date.to_pydatetime()}
             for c in EXTRA:
                 v = getattr(row, c)
                 rec[c] = None if pd.isna(v) else int(v) if c in INTS else round(float(v), 2)
             records.append(rec)
-        log.info("loaded %d prices for %s from %s (shifted %s days)", len(records), asin, path.name, shift.days)
+        log.info("loaded %d prices for %s from %s, through %s", len(records), asin, path.name,
+                 records[-1]["timestamp"].date())
         return records
     return []
 

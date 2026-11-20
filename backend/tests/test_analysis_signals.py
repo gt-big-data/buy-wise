@@ -190,6 +190,13 @@ def test_wait_when_a_drop_is_likely():
     assert d["reason"] == "74% chance it drops 8% or more in the next 14 days."
 
 
+def test_no_drop_count_when_the_stored_history_is_months_old():
+    """History ending in April can't say what the price did in the last 4 months."""
+    prices = [{**p, "timestamp": p["timestamp"] - timedelta(days=200)} for p in history(349.0, 300.0, 349.0)]
+    _, d = run([amazon(price=349.0)], prediction=WAIT, prices=prices)
+    assert d["status"] == "wait" and d["wait"]["drops"] is None
+
+
 @pytest.mark.parametrize("why, kw", [
     ("cheap item: 74% of a $9.99 drop is worth under $2", dict(prices=history(9.99, 9.99), offers=[amazon(price=9.99)])),
     ("needs it soon", dict(profile={"patience": "soon"})),
