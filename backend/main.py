@@ -2,7 +2,6 @@ from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import List, Optional, Literal
 import logging
-import re
 import threading
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -13,18 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from routes.dashboard import router as dashboard_router
 from routes.track_record import router as track_record_router
 from schemas.common import RecommendationDirection
-from analysis.signals import analysis_signals, decide, load_results
+from analysis.signals import analysis_signals, decide
+from jobs import csv_history
 
 logger = logging.getLogger(__name__)
 
-# Keepa can be imported independently of database availability.
-keepa_fetch = None
-try:
-    from jobs.keepa_fetch import fetch_price_history as keepa_fetch
-except Exception as _exc:
-    logger.warning("Keepa fetch unavailable at startup: %s", _exc)
-
-# Database imports are separate so a DB failure doesn't disable Keepa imports.
+# Database imports are separate so a DB failure doesn't stop the app starting.
 try:
     from db.connection import (
         get_product,
@@ -56,6 +49,9 @@ except Exception as _exc:
     get_recent_user_activity = None
     insert_decision_log = None
 
+
+# Load the price datasets in the background so the first product page doesn't wait.
+threading.Thread(target=csv_history.warm, daemon=True).start()
 
 app = FastAPI(
     title="BuyWise API",
@@ -528,38 +524,6 @@ def _bucket_price_history(
     )
 
 
-def _condition_matches_profile(
-    condition: Optional[str],
-    profile_condition: str,
-) -> bool:
-    """Check whether an offer's condition is allowed by the shopper profile."""
-    if not condition:
-        return False
-
-    # Amazon writes used conditions as "Used - Very Good", "Used - Like New".
-    normalized = re.sub(r"^used\s*-\s*", "", condition.strip().lower())
-
-    if profile_condition == "new_only":
-        return normalized == "new"
-
-    if profile_condition == "like_new":
-        return normalized in {"new", "like new", "new - open box"}
-
-    if profile_condition == "any_good":
-        allowed = (
-            "new",
-            "like new",
-            "very good",
-            "good",
-        )
-        return any(
-            normalized == value or normalized.startswith(value + " ")
-            for value in allowed
-        )
-
-    return False
-
-
 def _parse_delivery_date(value: Optional[str]) -> Optional[date]:
     """Parse a delivery date only when the supplied value is an actual date."""
     if not value:
@@ -569,60 +533,6 @@ def _parse_delivery_date(value: Optional[str]) -> Optional[date]:
         return date.fromisoformat(value[:10])
     except (TypeError, ValueError):
         return None
-
-
-def _delivery_matches_patience(
-    delivery: date,
-    patience: str,
-) -> bool:
-    days_until_delivery = (delivery - date.today()).days
-
-    if days_until_delivery < 0:
-        return False
-
-    if patience == "soon":
-        return days_until_delivery <= 3
-
-    if patience == "week_or_two":
-        return days_until_delivery <= 14
-
-    # "deal" means the shopper is willing to wait.
-    return True
-
-
-def _count_recent_price_drops(prices: list, months: int = 4) -> int:
-    """Count recorded price decreases of at least 8% over the recent period."""
-    if not prices:
-        return 0
-
-    cutoff = datetime.utcnow() - timedelta(days=months * 30)
-
-    recent = [
-        p for p in prices
-        if p.get("timestamp") and p["timestamp"] >= cutoff
-    ]
-
-    recent_asc = sorted(
-        recent,
-        key=lambda p: p["timestamp"],
-    )
-
-    drops = 0
-    previous_price = None
-
-    for point in recent_asc:
-        price = float(point["price"])
-
-        if (
-            previous_price is not None
-            and previous_price > 0
-            and price <= previous_price * 0.92
-        ):
-            drops += 1
-
-        previous_price = price
-
-    return drops
 
 
 def _offer_total_price(offer: DecisionOffer) -> float:
@@ -646,89 +556,6 @@ def _offer_to_response(
     )
 
 
-MIN_SELLER_STARS = 4.0
-MIN_SELLER_RATINGS = 100
-MIN_SELLER_POSITIVE = 90
-
-
-def _seller_is_trusted(offer: DecisionOffer) -> bool:
-    """Only recommend a seller whose rating, rating count and recent positive
-    feedback are all on the page and all high enough."""
-    return (
-        offer.stars is not None
-        and offer.stars >= MIN_SELLER_STARS
-        and offer.rating_count is not None
-        and offer.rating_count >= MIN_SELLER_RATINGS
-        and offer.positive_percent is not None
-        and offer.positive_percent >= MIN_SELLER_POSITIVE
-    )
-
-
-def _find_qualified_alternative(
-    request: DecisionRequest,
-    amazon_offer: Optional[DecisionOffer],
-) -> Optional[tuple]:
-    """
-    Find a cheaper third-party offer only when the request contains the
-    seller-quality and delivery details required by the panel.
-
-    Returns (source_offer, response_offer), or None.
-    """
-    if amazon_offer is None:
-        return None
-
-    amazon_total = _offer_total_price(amazon_offer)
-    qualified = []
-
-    for offer in request.offers:
-        # Sellers who ship through Amazon (FBA) are still other sellers. Amazon's
-        # own offers have no seller rating, so the trust check skips them.
-        if offer.pinned:
-            continue
-
-        if not _condition_matches_profile(
-            offer.condition,
-            request.profile.condition,
-        ):
-            continue
-
-        delivery = _parse_delivery_date(offer.delivery_date)
-        if delivery is None:
-            continue
-
-        if not _delivery_matches_patience(
-            delivery,
-            request.profile.patience,
-        ):
-            continue
-
-        if not _seller_is_trusted(offer):
-            continue
-
-        total_price = _offer_total_price(offer)
-
-        if total_price >= amazon_total:
-            continue
-
-        response_offer = QualifiedDecisionOfferResponse(
-            seller=offer.seller,
-            condition=offer.condition or "New",
-            price=total_price,
-            arrives=delivery.isoformat(),
-            stars=offer.stars,
-            rating_count=offer.rating_count,
-            positive_percent=offer.positive_percent,
-        )
-
-        qualified.append((offer, response_offer))
-
-    if not qualified:
-        return None
-
-    qualified.sort(key=lambda item: item[1].price)
-    return qualified[0]
-
-
 _seed_locks: dict[str, threading.Lock] = {}
 _seed_locks_guard = threading.Lock()
 
@@ -746,12 +573,16 @@ def _fetch_and_seed(asin: str) -> None:
 
 
 def _fetch_and_seed_unlocked(asin: str) -> None:
-    """Pull price history from Keepa for an unseen ASIN and score it."""
+    """Load an unseen ASIN's price history from the repo's datasets and score it.
+
+    BuyWise no longer uses Keepa: jobs.csv_history serves the 649 products in
+    studies/. Anything else stays not tracked."""
     try:
-        records = keepa_fetch(asin)
-        logger.info("Keepa returned %d records for %s", len(records), asin)
+        if not csv_history.save(asin, csv_history.fetch_price_history(asin)):
+            logger.info("%s is not in the price datasets", asin)
+            return
     except Exception as exc:
-        logger.error("Keepa fetch failed for %s: %s", asin, exc)
+        logger.error("loading price history for %s failed: %s", asin, exc)
         return
 
     product = get_product(asin)
@@ -787,28 +618,10 @@ def _score_and_store(product: dict, asin: str) -> None:
         )
 
     except Exception as ml_exc:
-        logger.warning(
-            "ML inference failed for %s (%s); falling back to heuristic",
-            asin,
-            ml_exc,
-        )
-
-        current = float(prices[0]["price"])
-        avg = sum(float(p["price"]) for p in prices) / len(prices)
-        diff = (current - avg) / avg if avg else 0
-
-        if diff > 0.05:
-            recommendation = "WAIT"
-            confidence = min(0.90, 0.55 + abs(diff))
-            pred_7d = round(avg + (current - avg) * 0.6, 2)
-            pred_14d = round(avg + (current - avg) * 0.3, 2)
-            pred_30d = round(avg, 2)
-        else:
-            recommendation = "BUY"
-            confidence = min(0.90, 0.55 + abs(diff))
-            pred_7d = round(current * 1.02, 2)
-            pred_14d = round(current * 1.04, 2)
-            pred_30d = round(current * 1.06, 2)
+        # No made-up forecast: without the model there is no drop chance, so the
+        # decision endpoint shows no WAIT and still compares the sellers.
+        logger.warning("no prediction for %s: %s", asin, ml_exc)
+        return
 
     insert_prediction(
         product["product_id"],
@@ -935,33 +748,21 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
     Unified decision endpoint for the browser extension.
 
     Uses cached product data, analysis signals, and the shopper's
-    per-request profile. The profile is never persisted.
+    per-request profile. The profile is never persisted. A product the backend
+    hasn't seen is loaded from the price datasets first (jobs/csv_history.py).
     """
     _require_db()
 
     product = get_product(request.asin)
 
     if not product:
-        raise HTTPException(
-            status_code=404,
-            detail="Product is not tracked yet. Load its price history first.",
-        )
+        _fetch_and_seed(request.asin)
+        product = get_product(request.asin)
 
-    prediction = get_latest_prediction(product["product_id"])
-
-    if not prediction:
-        raise HTTPException(
-            status_code=404,
-            detail="No cached prediction is available for this product yet.",
-        )
-
-    prices = db_get_price_history(product["product_id"], limit=1000)
-
-    if not prices:
-        raise HTTPException(
-            status_code=404,
-            detail="No price history is available for this product.",
-        )
+    # Every signal can be missing: a product outside the price datasets, or with too
+    # little history for the model, still gets its sellers compared.
+    prediction = get_latest_prediction(product["product_id"]) if product else None
+    prices = db_get_price_history(product["product_id"], limit=1000) if product else []
 
     # Run the analysis pipeline using cached data and the current page offers.
     signals = analysis_signals(
@@ -983,44 +784,6 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
         if amazon_source is not None
         else None
     )
-
-    # The analysis module uses older seller fields (years).
-    # Use the current API's verified seller-quality requirements instead.
-    alternative = _find_qualified_alternative(
-        request,
-        amazon_source,
-    )
-
-    best_offer = None
-
-    if alternative is not None:
-        source_offer, best_response = alternative
-
-        amazon_total = _offer_total_price(amazon_source)
-        savings = round(amazon_total - best_response.price, 2)
-
-        # Apply the minimum saving threshold from the versioned analysis rules.
-        rules = load_results()
-        min_saving = float(rules["quiet"]["min_saving"])
-
-        if savings >= min_saving:
-            best_offer = {
-                "seller": best_response.seller,
-                "condition": best_response.condition,
-                "price": best_response.price,
-                "arrives": best_response.arrives,
-                "stars": best_response.stars,
-                "rating_count": best_response.rating_count,
-                "positive_percent": best_response.positive_percent,
-                "saving": savings,
-            }
-
-    # Replace the legacy seller signal with the verified current API result.
-    signals["best_offer"] = {
-        "status": "ok",
-        "best": best_offer,
-        "next_best": None,
-    }
 
     # Resolve conflicts between waiting and buying using the analysis rules.
     decision = decide(signals)

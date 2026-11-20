@@ -152,30 +152,89 @@ def price_signal(prices: list, prediction: Optional[dict], today: date,
     low = round(min(float(low), price), 2) if low is not None else price
     return {"status": "ok", "price": round(price, 2), "drop_chance": round(p_drop, 4),
             "expected_low": low, "recommendation": rec, "drops": drops, "months": DROP_MONTHS,
-            "source": source}
+            "vol30": vol30(prices, today), "source": source}
+
+
+def vol30(prices: list, today: date) -> Optional[float]:
+    """The model's own 30-day volatility feature (ml.features) as of today, or None.
+    R4's wait economics differ by volatility band, so the quiet rule needs it."""
+    try:
+        import pandas as pd
+        from ml.features import add_features, daily_panel
+        df = pd.DataFrame({"asin": "X", "price": [float(_get(p, "price")) for p in prices],
+                           "date": [pd.Timestamp(_day(_get(p, "timestamp", "date"))) for p in prices]})
+        v = add_features(daily_panel(df, until=pd.Timestamp(today))).vol30.iloc[-1]
+        return None if pd.isna(v) else float(v)
+    except Exception:
+        return None
+
+
+BANDS = ("calm", "medium", "twitchy")
+
+
+def volatility_band(v: Optional[float], cuts: list) -> str:
+    """R4's bands: vol30 tercile cut-offs from train. Unknown volatility counts as medium."""
+    if v is None:
+        return "medium"
+    return BANDS[0] if v <= cuts[0] else BANDS[1] if v <= cuts[1] else BANDS[2]
 
 
 def quiet_signal(price: dict, profile, rules: dict) -> dict:
-    """Is a WAIT worth showing? Placeholder for R4 (#81), thresholds from the results file."""
+    """Is a WAIT worth showing? R4 (#81, Study 024): only when BOTH
+
+        calibrated drop chance  >= min_drop_chance
+        expected net saving     >= min_saving, where
+        net = price * (p * G_right[band] + (1 - p) * G_wrong[band])
+
+    G_wrong is negative: a wrong WAIT often means paying more on day 14, so the rule
+    stays quiet on cheap, calm items by itself, without a hard price floor."""
     if price["status"] != "ok":
         return _missing("needs the price signal", wait_worth_showing=False)
+    p, amount = price["drop_chance"], price["price"]
+    band = volatility_band(price.get("vol30"), rules["vol30_cuts"]) if "bands" in rules else None
+    if band:
+        g = rules["bands"][band]
+        net = round(amount * (p * g["G_right"] + (1 - p) * g["G_wrong"]), 2)
+    else:  # v1 placeholder rules: no economics, the drop chance is the whole bar
+        net = round(amount - price["expected_low"], 2)
+    out = {"status": "ok", "band": band, "net_saving": net, "source": rules["source"]}
     if _get(profile, "patience", default="week_or_two") == "soon":
-        return {"status": "ok", "wait_worth_showing": False, "why": "shopper needs it soon",
-                "source": rules["source"]}
-    if price["price"] < rules["min_price_for_wait"]:
-        return {"status": "ok", "wait_worth_showing": False,
-                "why": f"under {copy.money(rules['min_price_for_wait'])}: waiting saves too little",
-                "source": rules["source"]}
-    if price["drop_chance"] < rules["min_drop_chance"]:
-        return {"status": "ok", "wait_worth_showing": False,
-                "why": f"drop chance under {copy.pct(rules['min_drop_chance'])}", "source": rules["source"]}
-    return {"status": "ok", "wait_worth_showing": True, "why": "likely drop on an item worth waiting for",
-            "source": rules["source"]}
+        return {**out, "wait_worth_showing": False, "why": "shopper needs it soon"}
+    if amount < rules["min_price_for_wait"]:
+        return {**out, "wait_worth_showing": False,
+                "why": f"under {copy.money(rules['min_price_for_wait'])}: waiting saves too little"}
+    if p < rules["min_drop_chance"]:
+        return {**out, "wait_worth_showing": False, "why": f"drop chance under {copy.pct(rules['min_drop_chance'])}"}
+    if band and net < rules["min_saving"]:
+        return {**out, "wait_worth_showing": False,
+                "why": f"expected saving {copy.money(net)} is under {copy.money(rules['min_saving'])}"}
+    return {**out, "wait_worth_showing": True,
+            "why": f"{copy.pct(p)} drop chance, worth {copy.money(net)} on average"}
 
 
-def best_offer_signal(offers: list, profile, rules: dict, min_saving: float) -> dict:
-    """The cheapest other offer that fits the shopper, beats Amazon's pick by at least
-    min_saving, and has the seller details the panel shows. Placeholder for T4 (#86)."""
+PATIENCE_DAYS = {"soon": 3, "week_or_two": 14, "deal": None}  # how soon it must arrive
+
+
+def _trusted(o, rules: dict) -> bool:
+    """The panel names a seller only with all three numbers on the page, all high enough."""
+    stars = _get(o, "stars")
+    count = _get(o, "rating_count", "ratingCount")
+    positive = _get(o, "positive_percent", "positivePercent")
+    return (stars is not None and count is not None and positive is not None
+            and stars >= rules["min_stars"] and count >= rules["min_ratings"]
+            and positive >= rules["min_positive"])
+
+
+def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
+    """The best other offer for this shopper, ranked by T4 (#86, ml.offer_ranking).
+
+    An offer counts only if its condition fits the profile, it arrives within the
+    shopper's patience, and its seller clears the trust bar. T4 then ranks what's
+    left against Amazon's pick on the condition-adjusted price (a "Used - Very Good"
+    copy must be 30% cheaper to be worth as much as new) and keeps Amazon's pick
+    unless the winner saves at least max(min_saving_usd, min_saving_pct of its price)."""
+    from ml.offer_ranking import rank_offers
+
     amazon = next((o for o in offers if _get(o, "pinned")), None)
     if amazon is None:
         return _missing("no Amazon pick (pinned offer) on the page")
@@ -190,38 +249,71 @@ def best_offer_signal(offers: list, profile, rules: dict, min_saving: float) -> 
         return _missing("the page didn't give seller ratings for the other offers")
 
     wanted = _get(profile, "condition", default="new_only")
+    max_days = PATIENCE_DAYS.get(_get(profile, "patience", default="week_or_two"), 14)
     amazon_total = _total(amazon)
     eligible, slow, skipped = [], [], []
     for o in others:
         day = _day(_get(o, "delivery_date", "deliveryDate"))
-        stars, years = _get(o, "stars"), _get(o, "years")
         if not _condition_ok(_get(o, "condition"), wanted):
             skipped.append({"seller": _get(o, "seller"), "reason": "condition_profile"})
-        elif stars is None or years is None or stars < rules["min_stars"] or years < rules["min_years"]:
+        elif not _trusted(o, rules):
             skipped.append({"seller": _get(o, "seller"), "reason": "low_ratings"})
-        elif day is None or (day - amazon_day).days > rules["max_days_later"]:
+        elif day is None or day < today or (max_days is not None and (day - today).days > max_days):
             skipped.append({"seller": _get(o, "seller"), "reason": "slow_shipping"})
-            if day is not None:
+            if day is not None and day >= today:
                 slow.append((o, day))
         else:
             eligible.append((o, day))
     for s in skipped:
         s["text"] = copy.SKIP[s["reason"]]
 
-    def rank(item):  # cheapest first, then soonest
-        return (_total(item[0]), item[1])
+    def needed(price: float) -> float:
+        return max(rules["min_saving_usd"], rules["min_saving_pct"] * price)
 
-    cheaper = sorted([e for e in eligible if _total(e[0]) <= amazon_total - min_saving], key=rank)
+    def adjusted(o) -> float:
+        c = str(_get(o, "condition") or "new").strip().lower()
+        d = rules["condition_discount"]
+        rung = d["new"] if c == "new" else next(
+            (d[k] for k in ("like new", "very good", "good", "acceptable", "refurbished") if k in c),
+            rules["unknown_condition_discount"])
+        return _total(o) / (1 - rung)
+
+    # T4 ranks every eligible offer against Amazon's pick. Cheapest, then soonest, goes in
+    # first so ties in T4's score break the same way.
+    eligible.sort(key=lambda e: (_total(e[0]), e[1]))
+    # Built the way T4's hand check built them (studies/analysis_scripts/s020): each offer
+    # with its own seller signals; T4 fills them in for Amazon-run sellers.
+    candidates = [{"source": _get(amazon, "seller"), "price": amazon_total,
+                   "condition": _get(amazon, "condition") or "New",
+                   "feedback_score": _get(amazon, "positive_percent", "positivePercent"),
+                   "rating_count": _get(amazon, "rating_count", "ratingCount"),
+                   "is_fba": bool(_get(amazon, "ships_from_amazon", "shipsFromAmazon", default=False)),
+                   "is_atc": True, "_offer": amazon}]
+    for o, day in eligible:
+        candidates.append({"source": _get(o, "seller"), "price": _total(o),
+                           "condition": _get(o, "condition") or "New",
+                           "feedback_score": float(_get(o, "positive_percent", "positivePercent")),
+                           "rating_count": int(_get(o, "rating_count", "ratingCount")),
+                           "is_fba": bool(_get(o, "ships_from_amazon", "shipsFromAmazon", default=False)),
+                           "_offer": o, "_day": day})
+    ranked = rank_offers(candidates, typical_new=None, typical_used=None,
+                         discounts=rules["condition_discount"])
+    winner = ranked[0] if ranked else None
+
     best = None
-    if cheaper:
-        o, day = cheaper[0]
+    if winner is not None and not winner.get("is_atc") \
+            and amazon_total - winner["effective_price"] >= needed(amazon_total):
+        o, day = winner["_offer"], winner["_day"]
         best = {"seller": _get(o, "seller"), "condition": _get(o, "condition") or "New",
                 "price": _total(o), "arrives": day.isoformat(), "stars": float(_get(o, "stars")),
-                "years": float(_get(o, "years")),
+                "rating_count": int(_get(o, "rating_count", "ratingCount")),
+                "positive_percent": float(_get(o, "positive_percent", "positivePercent")),
                 "free_returns": bool(_get(o, "free_returns", "freeReturns", default=False)),
                 "full_warranty": bool(_get(o, "full_warranty", "fullWarranty", default=False)),
-                "saving": round(amazon_total - _total(o), 2)}
-    later = sorted([s for s in slow if _total(s[0]) <= amazon_total - min_saving], key=rank)
+                "saving": round(amazon_total - _total(o), 2),
+                "t4_score": winner["score"]}
+    later = sorted([s for s in slow if amazon_total - adjusted(s[0]) >= needed(amazon_total)],
+                   key=lambda s: (_total(s[0]), s[1]))
     next_best = ({"price": _total(later[0][0]), "days_later": (later[0][1] - amazon_day).days}
                  if later else None)
     return {"status": "ok", "best": best, "next_best": next_best, "skipped": skipped,
@@ -274,14 +366,15 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
     results = results or timed("load_results", load_results)
     price = timed("price", lambda: price_signal(prices or [], prediction, today, predict_fn))
     quiet = timed("quiet", lambda: quiet_signal(price, profile, results["quiet"]))
-    best = timed("best_offer", lambda: best_offer_signal(offers, profile, results["offers"],
-                                                         results["quiet"]["min_saving"]))
+    best = timed("best_offer", lambda: best_offer_signal(offers, profile, results["offers"], today))
     version = timed("version", lambda: version_signal(asin, results))
     timing["total"] = round((time.perf_counter() - t0) * 1000, 3)
     return {"asin": asin, "results_version": results["version"], "offers_checked": len(offers),
             "amazon": _amazon_response(offers), "price": price, "quiet": quiet,
             "best_offer": best, "version": version,
-            "min_price": results["quiet"]["min_price_for_wait"], "timing_ms": timing}
+            "min_price": results["offers"].get("hide_nothing_better_below",
+                                               results["quiet"]["min_price_for_wait"]),
+            "timing_ms": timing}
 
 
 def _amazon_response(offers: list) -> Optional[dict]:
@@ -300,17 +393,13 @@ def decide(signals: dict) -> dict:
       1. A better offer and a likely drop: take whichever is cheaper in expectation.
          Waiting is worth p * expected_low + (1 - p) * price; the offer is certain.
       2. Otherwise a better offer wins (instant, no uncertainty).
-      3. Otherwise WAIT, if the quiet rule says it's worth showing.
+      3. Otherwise WAIT, if R4's quiet rule says it's worth showing.
       4. Otherwise "nothing better". Stay hidden on cheap items unless a cheaper
          offer arrives later (next_best), since there's nothing worth saying.
     """
     price, quiet, offer = signals["price"], signals["quiet"], signals["best_offer"]
     best = offer.get("best") if offer["status"] == "ok" else None
-    can_wait = (
-        quiet["status"] == "ok"
-        and quiet["wait_worth_showing"]
-        and price.get("recommendation") == "WAIT"
-    )
+    can_wait = quiet["status"] == "ok" and quiet["wait_worth_showing"]
     base = {"offers_checked": signals["offers_checked"], "amazon": signals["amazon"], "best": None,
             "wait": None, "next_best": None}
 

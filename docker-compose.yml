@@ -41,6 +41,8 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      # Price histories for the 649 products in the datasets (jobs/csv_history.py)
+      - ./studies:/studies:ro
     depends_on:
       mysql:
         condition: service_healthy

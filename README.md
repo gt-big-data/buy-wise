@@ -13,7 +13,7 @@ Built by the Georgia Tech Big Data Club, fall 2026. Demo day is Nov 20.
 | Part | Folder | What it does |
 |---|---|---|
 | Extension | [`extension/`](extension) | Reads the offers on Amazon product pages and shows the recommendation panel (Manifest V3, TypeScript) |
-| Backend | [`backend/`](backend) | FastAPI service: Keepa price data, the daily price job, and the decision endpoint that turns everything into one answer per page |
+| Backend | [`backend/`](backend) | FastAPI service: price history for 649 products, the served model, and the decision endpoint that turns everything into one answer per page |
 | Website | [`website/`](website) | The project site and a product preview (Next.js) |
 | Studies | [`studies/`](studies) | The data studies behind the product direction, with their scripts |
 

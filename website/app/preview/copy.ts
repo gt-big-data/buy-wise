@@ -53,7 +53,7 @@ export const checked = (n: number) => `Checked ${n} offers`;
 export const dropChanceLine = (p: number) => `${pct(p)} chance of an 8%+ drop in 14 days`;
 export const patternLine = (drops: number, months: number, minDays: number, maxDays: number) =>
   `${drops} drops in ${months} months, each lasting ${minDays}–${maxDays} days`;
-export const MIN_WAIT_CHANCE = 0.4;
+export const MIN_WAIT_CHANCE = 0.15;
 export const ifNoDropLine = (higherShare: number) => `Usually about the same price. ${pct(higherShare)} of past waits ended higher`;
 export const bestOtherLine = (o: { price: number; condition: string; arrives: string } | null) =>
   o ? `${money(o.price)}, ${o.condition.toLowerCase()}, arrives ${date(o.arrives)}` : "None cheaper";

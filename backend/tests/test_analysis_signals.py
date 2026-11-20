@@ -28,9 +28,9 @@ def amazon(price=449.99, arrives=2):
     return {"seller": "Amazon.com", "price": price, "condition": "New", "pinned": True, "deliveryDate": D(arrives)}
 
 
-def seller(name, price, condition="New", arrives=4, stars=4.8, years=7, **kw):
+def seller(name, price, condition="New", arrives=4, stars=4.8, ratings=390, positive=94, **kw):
     return {"seller": name, "price": price, "condition": condition, "deliveryDate": D(arrives),
-            "stars": stars, "years": years, "freeReturns": True, **kw}
+            "stars": stars, "ratingCount": ratings, "positivePercent": positive, "freeReturns": True, **kw}
 
 
 def history(*prices, start=100):
@@ -40,7 +40,7 @@ def history(*prices, start=100):
             for i, p in enumerate(prices)]
 
 
-BUY = {"recommendation": "BUY", "confidence_score": 0.8, "pred_14d": 440.0}
+BUY = {"recommendation": "BUY", "confidence_score": 0.9, "pred_14d": 440.0}  # 10% drop chance
 WAIT = {"recommendation": "WAIT", "confidence_score": 0.74, "pred_14d": 285.0}
 
 
@@ -65,13 +65,13 @@ def test_output_is_exactly_the_panel_format():
     assert d["status"] in ("better_offer", "wait", "nothing_better")
 
 
-# ── better offer (T4 placeholder) ────────────────────────────────────────────
+# ── better offer (T4, #86) ───────────────────────────────────────────────────
 
 def test_better_offer_matches_the_panels_own_fake_example():
     s, d = run([amazon(), seller("TrailTech Outfitters", 369.0)])
     assert d["status"] == "better_offer" and d["show"]
     assert d["best"]["seller"] == "TrailTech Outfitters" and d["best"]["price"] == 369.0
-    assert d["reason"] == "Same item, new, $80.99 less."
+    assert d["reason"] == "Same item, new, $80.99 less. 4.8 stars from 390 ratings, 94% positive."
     assert d["amazon"] == {"seller": "Amazon.com", "condition": "New", "price": 449.99, "arrives": D(2)}
 
 
@@ -79,17 +79,19 @@ def test_skipped_offers_say_why():
     s, _ = run([amazon(),
                 seller("Used", 300.0, condition="Used - Good"),
                 seller("Unrated", 310.0, stars=3.2),
-                seller("Slow", 320.0, arrives=12),
+                seller("Slow", 320.0, arrives=20),
+                seller("Few ratings", 330.0, ratings=28),
                 seller("Good", 400.0)])
     reasons = {x["seller"]: x["reason"] for x in s["best_offer"]["skipped"]}
-    assert reasons == {"Used": "condition_profile", "Unrated": "low_ratings", "Slow": "slow_shipping"}
+    assert reasons == {"Used": "condition_profile", "Unrated": "low_ratings", "Slow": "slow_shipping",
+                       "Few ratings": "low_ratings"}
     assert s["best_offer"]["best"]["seller"] == "Good"
-    assert s["best_offer"]["next_best"] == {"price": 320.0, "days_later": 10}  # cheaper, but 10 days later
+    assert s["best_offer"]["next_best"] == {"price": 320.0, "days_later": 18}  # cheaper, but 18 days later
     assert all(x["text"] == text.SKIP[x["reason"]] for x in s["best_offer"]["skipped"])
 
 
 def test_profile_changes_which_offers_count():
-    offers = [amazon(), seller("Used", 300.0, condition="Used - Good"), seller("New", 400.0)]
+    offers = [amazon(), seller("Used", 250.0, condition="Used - Good"), seller("New", 400.0)]
     assert run(offers, profile={"condition": "new_only"})[1]["best"]["seller"] == "New"
     assert run(offers, profile={"condition": "any_good"})[1]["best"]["seller"] == "Used"
 
@@ -116,6 +118,42 @@ def test_shipping_counts_and_ties_go_to_sooner_delivery():
 def test_tiny_savings_are_not_a_better_offer():
     _, d = run([amazon(price=100.0), seller("Penny", 99.50)])
     assert d["status"] == "nothing_better"
+    # T4: the saving must be at least max($2, 3% of Amazon's price), $3 here
+    assert run([amazon(price=100.0), seller("Close", 97.50)])[1]["status"] == "nothing_better"
+    assert run([amazon(price=100.0), seller("Enough", 96.50)])[1]["status"] == "better_offer"
+
+
+def test_used_copies_must_be_cheaper_by_their_condition_discount():
+    """T4's ladder: "Very Good" is worth 30% less than new, so 18% off isn't a deal."""
+    profile = {"condition": "any_good"}
+    meh = seller("Meh", 369.0, condition="Used - Very Good")
+    deal = seller("Deal", 250.0, condition="Used - Very Good")  # $357 as-new, $93 under
+    assert run([amazon(), meh], profile=profile)[1]["status"] == "nothing_better"
+    _, d = run([amazon(), meh, deal], profile=profile)
+    assert d["status"] == "better_offer" and d["best"]["seller"] == "Deal"
+    assert d["reason"].startswith("Same item, used - very good, $199.99 less.")
+
+
+def test_amazon_shipping_its_own_pick_needs_a_bigger_saving():
+    """T4 scores trust and fulfilment too: a 94%-positive seller $3.50 under an
+    Amazon-fulfilled $100 pick isn't worth switching for; $6 under is."""
+    fba = amazon(price=100.0) | {"shipsFromAmazon": True}
+    assert run([fba, seller("Small", 96.50)])[1]["status"] == "nothing_better"
+    assert run([fba, seller("Real", 94.00)])[1]["status"] == "better_offer"
+
+
+def test_patience_sets_how_late_an_offer_may_arrive():
+    offers = [amazon(), seller("Five days", 369.0, arrives=5)]
+    assert run(offers, profile={"patience": "week_or_two"})[1]["status"] == "better_offer"
+    s, d = run(offers, profile={"patience": "soon"})
+    assert d["status"] == "nothing_better"
+    assert s["best_offer"]["skipped"][0]["reason"] == "slow_shipping"
+
+
+def test_seller_trust_bar():
+    for bad in (dict(stars=3.9), dict(ratings=99), dict(positive=89)):
+        s, d = run([amazon(), seller("X", 300.0, **bad)])
+        assert d["status"] == "nothing_better", bad
 
 
 def test_pydantic_style_offer_objects_work():
@@ -123,13 +161,13 @@ def test_pydantic_style_offer_objects_work():
         def __init__(self, **kw):
             self.__dict__.update(kw)
     offers = [Obj(seller="Amazon.com", price=449.99, condition="New", pinned=True, delivery_date=D(2)),
-              Obj(seller="X", price=369.0, condition="New", delivery_date=D(4), stars=4.8, years=7,
-                  free_returns=True, full_warranty=True, shipping_cost=None)]
+              Obj(seller="X", price=369.0, condition="New", delivery_date=D(4), stars=4.8, rating_count=390,
+                  positive_percent=94.0, free_returns=True, full_warranty=True, shipping_cost=None)]
     _, d = run(offers)
     assert d["status"] == "better_offer" and d["best"]["full_warranty"] is True
 
 
-# ── wait and staying quiet (R4 placeholder) ──────────────────────────────────
+# ── wait and staying quiet (R4, #81) ─────────────────────────────────────────
 
 def test_wait_when_a_drop_is_likely():
     prices = history(349.0, 300.0, 349.0, 310.0, 349.0)  # dropped twice in the window
@@ -140,9 +178,9 @@ def test_wait_when_a_drop_is_likely():
 
 
 @pytest.mark.parametrize("why, kw", [
-    ("cheap item", dict(prices=history(19.99, 19.99), offers=[amazon(price=19.99)])),
+    ("cheap item: 74% of a $9.99 drop is worth under $2", dict(prices=history(9.99, 9.99), offers=[amazon(price=9.99)])),
     ("needs it soon", dict(profile={"patience": "soon"})),
-    ("drop unlikely", dict(prediction={**WAIT, "p_drop": 0.30})),
+    ("drop unlikely: under R4's 15%", dict(prediction={**WAIT, "p_drop": 0.10})),
 ])
 def test_no_wait_when_not_worth_it(why, kw):
     kw.setdefault("offers", [amazon(price=349.0)])
@@ -150,6 +188,30 @@ def test_no_wait_when_not_worth_it(why, kw):
     s, d = run(prediction=kw.pop("prediction", WAIT), **kw)
     assert d["status"] != "wait", why
     assert s["quiet"]["wait_worth_showing"] is False
+
+
+def test_r4_net_saving_by_volatility_band():
+    """net = price * (p * G_right + (1 - p) * G_wrong), with the band's gains from Study 024."""
+    from analysis.signals import quiet_signal, volatility_band
+    rules = load_results()["quiet"]
+    assert volatility_band(None, rules["vol30_cuts"]) == "medium"
+    assert volatility_band(0.0, rules["vol30_cuts"]) == "calm"
+    assert volatility_band(0.2, rules["vol30_cuts"]) == "twitchy"
+    price = {"status": "ok", "price": 100.0, "drop_chance": 0.3, "expected_low": 90.0, "vol30": 0.2}
+    q = quiet_signal(price, {}, rules)
+    g = rules["bands"]["twitchy"]
+    assert q["band"] == "twitchy" and q["net_saving"] == round(100 * (0.3 * g["G_right"] + 0.7 * g["G_wrong"]), 2)
+    # a wrong WAIT costs more on twitchy items, so the same chance is worth less there
+    calm = quiet_signal({**price, "vol30": 0.0}, {}, rules)
+    assert calm["net_saving"] > q["net_saving"]
+
+
+def test_r4_dollar_test_silences_small_expected_savings():
+    from analysis.signals import quiet_signal
+    rules = load_results()["quiet"]
+    base = {"status": "ok", "drop_chance": 0.5, "expected_low": 0.0, "vol30": 0.0}
+    assert not quiet_signal({**base, "price": 20.0}, {}, rules)["wait_worth_showing"]  # ~$1.67
+    assert quiet_signal({**base, "price": 40.0}, {}, rules)["wait_worth_showing"]      # ~$3.33
 
 
 def test_stays_hidden_on_cheap_items_with_nothing_to_say():
@@ -239,10 +301,10 @@ def test_version_verdict_from_the_results_file_both_directions():
 
 def test_results_file_is_versioned_and_named_in_every_answer():
     r = load_results()
-    assert r["version"] == "v1" and load_results("v1")["version"] == "v1"
+    assert r["version"] == "v2" and load_results("v1")["version"] == "v1"
     assert len(r["version_pairs"]["pairs"]) == 105
     s, _ = run([amazon()])
-    assert s["results_version"] == "v1"
+    assert s["results_version"] == "v2"
 
 
 def test_results_file_matches_the_studies_it_was_built_from():
@@ -254,6 +316,11 @@ def test_results_file_matches_the_studies_it_was_built_from():
     pairs, inputs = build.version_pairs()
     r = load_results("v1")
     assert pairs == r["version_pairs"]["pairs"] and inputs == r["inputs"]
+    # v2's rules come straight from R4's result file and T4's module
+    (quiet, q_in), (offers, o_in) = build.quiet_v2(), build.offers_v2()
+    v2 = load_results("v2")
+    assert v2["quiet"] == quiet and v2["offers"] == offers
+    assert v2["inputs"] == {**inputs, **q_in, **o_in}
 
 
 # ── shopper-facing text matches copy.ts ──────────────────────────────────────
@@ -265,7 +332,7 @@ def test_text_matches_copy_ts():
     assert "`Same item, ${condition.toLowerCase()}, ${money(savings)} less.`" in ts
     assert "`${pct(p)} chance it drops 8% or more in the next 14 days.`" in ts
     assert '"This is the best offer for you."' in ts
-    assert "MIN_WAIT_CHANCE = 0.4" in ts and load_results()["quiet"]["min_drop_chance"] == 0.4
+    assert "MIN_WAIT_CHANCE = 0.15" in ts and load_results()["quiet"]["min_drop_chance"] == 0.15
     assert text.pct(0.745) == "75%" and text.pct(0.005) == "1%"  # rounds like Math.round
 
 
