@@ -1,7 +1,7 @@
 import { parsePrice } from "./offers";
 
-// Reads the offer list inside Amazon's "Other sellers" panel (AOD). The panel
-// only exists after the shopper opens it; this never fetches anything itself.
+// Reads the offer list inside Amazon's "Other sellers" panel (AOD), either the
+// open panel on the page or the same markup fetched by offerPanel.fetchOfferList.
 
 export interface Offer {
   seller: string;
