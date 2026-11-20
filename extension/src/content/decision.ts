@@ -15,7 +15,8 @@ export type Decision = {
   status: "better_offer" | "wait" | "nothing_better";
   offers_checked: number;
   amazon: ApiOffer | null;
-  best: (ApiOffer & { stars: number; rating_count: number; positive_percent: number }) | null;
+  // Ratings are null for Amazon-run sellers (Amazon.com, Amazon Resale), which show none.
+  best: (ApiOffer & { stars: number | null; rating_count: number | null; positive_percent: number | null }) | null;
   reason: string;
   wait: { price: number; expected_low: number; drop_chance: number; drops: number; months: number } | null;
   next_best: { price: number; days_later: number } | null;
@@ -56,9 +57,9 @@ export function toPanelData(d: Decision, today = new Date(), pagePrice: number |
       amazon: toOffer(d.amazon, today),
       best: {
         ...toOffer(d.best, today),
-        stars: d.best.stars,
-        ratingCount: d.best.rating_count,
-        positivePercent: d.best.positive_percent,
+        stars: d.best.stars ?? null,
+        ratingCount: d.best.rating_count ?? null,
+        positivePercent: d.best.positive_percent ?? null,
       },
     };
   }

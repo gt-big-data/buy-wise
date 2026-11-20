@@ -215,8 +215,16 @@ def quiet_signal(price: dict, profile, rules: dict) -> dict:
 PATIENCE_DAYS = {"soon": 3, "week_or_two": 14, "deal": None}  # how soon it must arrive
 
 
+def _amazon_run(o) -> bool:
+    from ml.offer_ranking import is_amazon_run
+    return is_amazon_run(_get(o, "seller"))
+
+
 def _trusted(o, rules: dict) -> bool:
-    """The panel names a seller only with all three numbers on the page, all high enough."""
+    """The panel names a seller only with all three numbers on the page, all high enough.
+    Amazon-run sellers (Amazon.com, Amazon Resale, ...) show no ratings and pass as is."""
+    if _amazon_run(o):
+        return True
     stars = _get(o, "stars")
     count = _get(o, "rating_count", "ratingCount")
     positive = _get(o, "positive_percent", "positivePercent")
@@ -245,7 +253,7 @@ def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
     if not others:
         return {"status": "ok", "best": None, "next_best": None, "skipped": [],
                 "why": "only one offer on the page", "source": rules["source"]}
-    if all(_get(o, "stars") is None for o in others):
+    if all(_get(o, "stars") is None and not _amazon_run(o) for o in others):
         return _missing("the page didn't give seller ratings for the other offers")
 
     wanted = _get(profile, "condition", default="new_only")
@@ -289,11 +297,14 @@ def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
                    "rating_count": _get(amazon, "rating_count", "ratingCount"),
                    "is_fba": bool(_get(amazon, "ships_from_amazon", "shipsFromAmazon", default=False)),
                    "is_atc": True, "_offer": amazon}]
+    def num(v, cast):
+        return None if v is None else cast(v)
+
     for o, day in eligible:
         candidates.append({"source": _get(o, "seller"), "price": _total(o),
                            "condition": _get(o, "condition") or "New",
-                           "feedback_score": float(_get(o, "positive_percent", "positivePercent")),
-                           "rating_count": int(_get(o, "rating_count", "ratingCount")),
+                           "feedback_score": num(_get(o, "positive_percent", "positivePercent"), float),
+                           "rating_count": num(_get(o, "rating_count", "ratingCount"), int),
                            "is_fba": bool(_get(o, "ships_from_amazon", "shipsFromAmazon", default=False)),
                            "_offer": o, "_day": day})
     ranked = rank_offers(candidates, typical_new=None, typical_used=None,
@@ -305,9 +316,9 @@ def best_offer_signal(offers: list, profile, rules: dict, today: date) -> dict:
             and amazon_total - winner["effective_price"] >= needed(amazon_total):
         o, day = winner["_offer"], winner["_day"]
         best = {"seller": _get(o, "seller"), "condition": _get(o, "condition") or "New",
-                "price": _total(o), "arrives": day.isoformat(), "stars": float(_get(o, "stars")),
-                "rating_count": int(_get(o, "rating_count", "ratingCount")),
-                "positive_percent": float(_get(o, "positive_percent", "positivePercent")),
+                "price": _total(o), "arrives": day.isoformat(), "stars": num(_get(o, "stars"), float),
+                "rating_count": num(_get(o, "rating_count", "ratingCount"), int),
+                "positive_percent": num(_get(o, "positive_percent", "positivePercent"), float),
                 "free_returns": bool(_get(o, "free_returns", "freeReturns", default=False)),
                 "full_warranty": bool(_get(o, "full_warranty", "fullWarranty", default=False)),
                 "saving": round(amazon_total - _total(o), 2),
@@ -455,7 +466,7 @@ def decide(signals: dict) -> dict:
                 f"{best['stars']:.1f} stars from "
                 f"{best['rating_count']:,} ratings, "
                 f"{best['positive_percent']:.0f}% positive."
-                if "rating_count" in best and "positive_percent" in best
+                if all(best.get(k) is not None for k in ("stars", "rating_count", "positive_percent"))
                 else copy.headline_better_offer(
                     best["saving"],
                     best["condition"],
