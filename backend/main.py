@@ -226,6 +226,8 @@ class DecisionRequest(BaseModel):
     asin: str
     offers: List[DecisionOffer] = Field(default_factory=list)
     profile: DecisionProfile = Field(default_factory=DecisionProfile)
+    # The one-time price on the page (#104). Wins over the newest stored price.
+    page_price: Optional[float] = Field(None, gt=0)
 
 
 class DecisionOfferResponse(BaseModel):
@@ -630,6 +632,8 @@ def _score_and_store(product: dict, asin: str) -> None:
         pred_30d,
         recommendation,
         confidence,
+        price_at_prediction=float(prices[0]["price"]),
+        p_drop=result["p_drop"],
     )
 
     logger.info(
@@ -771,6 +775,7 @@ def get_decision(request: DecisionRequest) -> DecisionResponse:
         profile=request.profile,
         prices=prices,
         prediction=prediction,
+        page_price=request.page_price,
     )
 
     # Preserve the existing API's Amazon offer representation.

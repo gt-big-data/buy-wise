@@ -335,10 +335,28 @@ def version_signal(asin: str, results: dict) -> dict:
             "source": p["source"]}
 
 
+PAGE_PRICE_TOLERANCE = 0.01  # under 1% apart, the cached prediction still holds
+
+
+def with_page_price(prices: list, prediction: Optional[dict], page_price: Optional[float],
+                    today: date) -> tuple[list, Optional[dict]]:
+    """The page price is today's price (#104). Stored prices can be days or months old,
+    so unless the cached prediction was scored at this price (within 1%), today's price
+    joins the history and the model scores it fresh."""
+    if not page_price or page_price <= 0:
+        return prices, prediction
+    stamp = datetime.combine(today, datetime.min.time())
+    scored_at = (prediction or {}).get("price_at_prediction")
+    if scored_at is not None and abs(page_price - float(scored_at)) <= PAGE_PRICE_TOLERANCE * float(scored_at):
+        return prices, prediction
+    return [*prices, {"price": float(page_price), "timestamp": stamp}], None
+
+
 # ── The function #92 calls ───────────────────────────────────────────────────
 
 def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[list] = None,
-                     prediction: Optional[dict] = None, *, today: Optional[date] = None,
+                     prediction: Optional[dict] = None, *, page_price: Optional[float] = None,
+                     today: Optional[date] = None,
                      results: Optional[dict] = None, predict_fn: Optional[Callable] = None) -> dict:
     """Every analysis signal for one product page, each timed.
 
@@ -347,10 +365,12 @@ def analysis_signals(asin: str, offers: list, profile=None, prices: Optional[lis
     profile     the shopper's profile (condition, patience); never stored
     prices      price history records ({price, timestamp}), any order
     prediction  the cached DB prediction row, if any (skips running the model)
+    page_price  the one-time price on the page the shopper is looking at (#104)
     """
     today = today or date.today()
     profile = profile or {}
     offers = list(offers or [])
+    prices, prediction = with_page_price(prices or [], prediction, page_price, today)
     t0 = time.perf_counter()
     timing = {}
 
