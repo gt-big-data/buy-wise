@@ -1,0 +1,4 @@
+model,serve,why
+"CatBoost (tuned, 26 features)",platt,lowest ECE
+"XGBoost (tuned, 26 features)",platt,lowest ECE
+LSTM (seed 0),platt,lowest ECE

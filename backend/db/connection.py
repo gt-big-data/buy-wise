@@ -394,3 +394,39 @@ def get_recent_user_activity(limit=20, user_id=None):
             cursor.close()
         if conn:
             conn.close()
+
+
+def insert_decision_log(asin, status, page_price, decision_json):
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        query = """
+            INSERT INTO decision_logs (
+                asin,
+                status,
+                page_price,
+                decision_json
+            )
+            VALUES (%s, %s, %s, %s)
+        """
+
+        cursor.execute(
+            query,
+            (asin, status, page_price, decision_json),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+    except Exception:
+        if conn:
+            conn.rollback()
+        raise
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

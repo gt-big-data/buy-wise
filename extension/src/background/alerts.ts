@@ -69,7 +69,7 @@ async function runCheck(): Promise<number> {
     // One alert per target. Setting a new target can alert again.
     if (alerted[item.asin] === item.target) continue;
 
-    await chrome.notifications.create(`buywise-${item.asin}`, {
+    await chrome.notifications.create(`buywise-${item.asin}-${Date.now()}`, {
       type: "basic",
       iconUrl: "logo.png",
       title: `Price drop: ${item.title.slice(0, 60)}`,

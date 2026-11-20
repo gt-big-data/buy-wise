@@ -13,9 +13,11 @@ type Props = {
   offers: PageOffers;
   // Amazon's offer list slides in where the panel floats, so step aside while it's open
   onCompareOpen?: () => void;
+  // Each time the full list is read (first load, more rows on scroll)
+  onList?: (list: OfferListResult) => void;
 };
 
-export default function OffersSection({ offers, onCompareOpen }: Props) {
+export default function OffersSection({ offers, onCompareOpen, onList }: Props) {
   const [list, setList] = useState<OfferListResult | null>(null);
   const [comparing, setComparing] = useState(false);
   const stopRef = useRef<(() => void) | null>(null);
@@ -25,14 +27,17 @@ export default function OffersSection({ offers, onCompareOpen }: Props) {
   const handleCompare = useCallback(() => {
     setComparing(true);
     stopRef.current?.();
-    stopRef.current = watchOfferList(setList);
+    stopRef.current = watchOfferList((result) => {
+      setList(result);
+      onList?.(result);
+    });
     if (!openOffersPanel()) {
       stopRef.current();
       setList({ status: "unreadable", reason: "no offers link on the page", totalCount: null, offers: [] });
       return;
     }
     onCompareOpen?.();
-  }, [onCompareOpen]);
+  }, [onCompareOpen, onList]);
 
   if (offers.otherOffersCount === null) return null;
 

@@ -1,0 +1,13 @@
+fold,model,seconds
+walk1,rule: top of 90-day range,0.3634283999999752
+walk1,rule: price vs 90-day median,0.30330790000152774
+walk1,LightGBM (tuned),21.357176299992716
+walk2,rule: top of 90-day range,0.35104059999866877
+walk2,rule: price vs 90-day median,0.3233734000095865
+walk2,LightGBM (tuned),23.810387300007278
+walk3,rule: top of 90-day range,0.4720808999991277
+walk3,rule: price vs 90-day median,0.437053300003754
+walk3,LightGBM (tuned),28.194666700001108
+walk4,rule: top of 90-day range,0.37891929999750573
+walk4,rule: price vs 90-day median,0.4158857000002172
+walk4,LightGBM (tuned),31.631078599995817
